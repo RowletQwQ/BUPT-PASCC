@@ -1,4 +1,4 @@
-/usr/share/Pascal2c/pascal2c /data/workspace/myshixun/demo.pas /data/workspace/myshixun/demo.c
+/usr/share/Pascal2C/build/pascal2c /data/workspace/myshixun/demo.pas /data/workspace/myshixun/demo.c
 
 cd /data/workspace/myshixun/
 
