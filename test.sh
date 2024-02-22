@@ -5,5 +5,9 @@ cd /data/workspace/myshixun/open_set
 
 read filename
 
+if [ ! -e "$filename" ]; then
+    cd /data/workspace/myshixun/hidden_set
+
+
 gcc $filename
 ./a.out
