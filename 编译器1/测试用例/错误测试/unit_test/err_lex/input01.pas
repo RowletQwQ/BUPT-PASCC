@@ -1,0 +1,3 @@
+$program testLexError;
+begin$
+end.

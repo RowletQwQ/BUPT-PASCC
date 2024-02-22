@@ -1,0 +1,9 @@
+procedure-test
+2023
+2023
+
+function-test
+before testFunc := 54
+after testFunc := 54
+7
+24 54
