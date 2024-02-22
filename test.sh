@@ -7,7 +7,10 @@ read filename
 
 if [ ! -e "$filename" ]; then
     cd /data/workspace/myshixun/hidden_set
-
+    if [ ! -e "$filename" ]; then
+        echo "File does not exist."
+    fi
+fi
 
 gcc $filename
 ./a.out
