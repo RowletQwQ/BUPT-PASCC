@@ -5,7 +5,7 @@ for file in *.pas; do
 done
 #/usr/share/Pascal2C/build/pascal2c 00_main.pas 00_main.c
 
-read filename
+#read filename
 
-gcc $filename
-./a.out
+#gcc $filename
+#./a.out
