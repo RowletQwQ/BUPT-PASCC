@@ -9,6 +9,7 @@ if [ ! -e "$filename" ]; then
     cd /data/workspace/myshixun/hidden_set
     if [ ! -e "$filename" ]; then
         echo "File does not exist."
+        exit
     fi
 fi
 
