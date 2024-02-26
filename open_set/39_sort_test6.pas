@@ -4,7 +4,7 @@ var
   n, i: integer;
   ini_arr, sorted_arr: array[0..9] of integer;
 
-procedure countingsort();
+procedure countingsort;
 var
 i, j, k, jj: integer;
 count_arr: array[0..9] of integer;
@@ -36,7 +36,7 @@ begin
   ini_arr[8] := 7;
   ini_arr[9] := 8;
 
-  countingsort();
+  countingsort;
 
   for i := 0 to n - 1 do
   begin

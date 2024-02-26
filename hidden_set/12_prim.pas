@@ -27,7 +27,7 @@ begin
     same := 0;
 end;
 
-function prim():integer;
+function prim:integer;
 var i,j,t,res: integer;
 begin
   for i := 0 to m - 1 do
@@ -75,6 +75,6 @@ begin
     read(c[i]);
   end;
 
-  ret := prim();
+  ret := prim;
   write(ret);
 end.

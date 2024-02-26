@@ -5,7 +5,7 @@ EVAL1 = 95.033188;
 CONV1 = 233;
 MAX = 1000000000;
 TWO = 2.9; THREE = 3; FIVE = 5;
-e = 'error'; o = 'ok';
+e = 'e'; o = 'o';
 
 var p:integer;
 arr: array[0..9] of real;
@@ -32,12 +32,12 @@ begin
     float_eq := 0
 end;
 
-procedure error();
+procedure error;
 begin
   write(e);
 end;
 
-procedure ok();
+procedure ok;
 begin
   write(o);
 end;
@@ -45,21 +45,21 @@ end;
 procedure assert(cond: integer);
 begin 
   if cond = 0 then
-    error()
+    error
   else
-    ok();
+    ok;
 end;
 
 begin
   assert(float_eq(circle_area(5), circle_area(FIVE)));
   if 1.5 <> 0.0 then
-    ok();
+    ok;
   if (not (3.3 = 0.0)) then
-    ok();
+    ok;
   if (0.0 <> 0.0) and (3 <> 0.0) then
-    error();
+    error;
   if (0 <> 0.0) or (0.3 <> 0.0) then
-    ok();
+    ok;
 
   p := 0;
   arr[0] := 1.0;

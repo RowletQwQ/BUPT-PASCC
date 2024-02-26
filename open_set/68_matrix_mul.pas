@@ -6,7 +6,7 @@ i, x: integer;
   a0, a1, a2, b0, b1, b2, c0, c1, c2: array[0..2] of integer;
 
 
-function MultiplyMatrices(var a0, a1, a2, b0, b1, b2, c0, c1, c2: array of integer): integer;
+function MultiplyMatrices: integer;
 var
   i: integer;
 begin
@@ -34,7 +34,7 @@ begin
     b2[i] := i;
   end;
 
-  MultiplyMatrices(a0, a1, a2, b0, b1, b2, c0, c1, c2);
+  MultiplyMatrices;
 
   for i := 0 to N - 1 do
   begin

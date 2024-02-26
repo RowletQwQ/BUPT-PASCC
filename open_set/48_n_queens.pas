@@ -11,7 +11,7 @@ var
   line2: array[1..100] of integer;
   k, i: integer;
 
-procedure printans();
+procedure printans;
 var
   i: integer;
 begin
@@ -36,7 +36,7 @@ begin
     begin
       ans[step] := i;
       if step = n then
-        printans();
+        printans;
       row[i] := 1;
       line1[step + i] := 1;
       line2[n + step - i] := 1;

@@ -2,7 +2,7 @@ program main;
 var i,n: integer;
 arr:array[0..9] of integer;
 
-function bubblesort():integer;
+function bubblesort:integer;
 var i,j,tmp:integer;
 begin
   for i := 0 to n - 2 do
@@ -32,7 +32,7 @@ begin
   arr[7] := 5;
   arr[8] := 7;
   arr[9] := 8;
-  for i := bubblesort() to n - 1 do
+  for i := bubblesort to n - 1 do
   begin
     write(arr[i]);
   end;

@@ -16,7 +16,7 @@ begin
                        a32, 0);
 end;
 
-function param32_arr(): integer;
+function param32_arr: integer;
 var sum: integer;
 begin
     sum := arr[0][0] + arr[0][1];

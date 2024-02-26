@@ -2,8 +2,10 @@ program main;
 
 var
   M, L, N: integer;
+  a0, a1, a2, b0, b1, b2, c0, c1, c2: array[0..2] of integer;
+  i, x: integer;
 
-function tran(var a0, a1, a2, b0, b1, b2, c0, c1, c2: array of Single): integer;
+function tran: integer;
 var
   i: integer;
 begin
@@ -23,10 +25,6 @@ begin
   tran := 0;
 end;
 
-var
-  a0, a1, a2, b0, b1, b2, c0, c1, c2: array[0..2] of Single;
-  i, x: integer;
-
 begin
   N := 3;
   M := 3;
@@ -42,23 +40,20 @@ begin
     b2[i] := i;
   end;
 
-  tran(a0, a1, a2, b0, b1, b2, c0, c1, c2);
+  tran;
 
   for i := 0 to N-1 do
   begin
-    x := Round(c0[i]);
-    write(x);
+    write(c0[i]);
   end;
 
   for i := 0 to N-1 do
   begin
-    x := Round(c1[i]);
-    write(x);
+    write(c1[i]);
   end;
 
   for i := 0 to N-1 do
   begin
-    x := Round(c2[i]);
-    write(x);
+    write(c2[i]);
   end;
 end.

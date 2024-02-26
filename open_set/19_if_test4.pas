@@ -1,5 +1,5 @@
 program main;
-function if_ifElse_(): integer;
+function if_ifElse_: integer;
 var
     a, b: integer;
 begin
@@ -16,5 +16,5 @@ begin
 end;
 
 begin
-    write(if_ifElse_());
+    write(if_ifElse_);
 end.

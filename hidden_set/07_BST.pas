@@ -62,13 +62,13 @@ var
 begin
   if (x > value[root]) then
 begin
-    right_child[root] := delete(right_child[root], x);
+    right_child[root] := delete_node(right_child[root], x);
 end
 else
 begin
     if (x < value[root]) then
     begin
-        left_child[root] := delete(left_child[root], x);
+        left_child[root] := delete_node(left_child[root], x);
     end
     else
     begin
@@ -93,7 +93,7 @@ begin
             begin
                 tmp := find_minimum(right_child[root]);
                 value[root] := value[tmp];
-                right_child[root] := delete(right_child[root], value[tmp]);
+                right_child[root] := delete_node(right_child[root], value[tmp]);
             end;
         end;
     end;

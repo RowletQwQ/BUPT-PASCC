@@ -4,7 +4,7 @@ var
   n, i: integer;
   arr: array[0..9] of integer;
 
-procedure selectsort();
+procedure selectsort;
 var i,j,min,tmp: integer;
 begin
   for i := 0 to n - 2 do
@@ -37,7 +37,7 @@ begin
   arr[8] := 7;
   arr[9] := 8;
 
-  selectsort();
+  selectsort;
 
   for i := 0 to n - 1 do
   begin

@@ -11,7 +11,7 @@ var
   c1: array [0..2] of integer;
   c2: array [0..2] of integer;
 
-function sub(): integer;
+function sub: integer;
 begin
   for i := 0 to 2 do
   begin
@@ -38,7 +38,7 @@ begin
     b2[i] := i;
   end;
 
-  sub();
+  sub;
 
   for i := 0 to 2 do
   begin

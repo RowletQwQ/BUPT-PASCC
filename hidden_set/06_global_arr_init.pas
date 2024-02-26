@@ -8,7 +8,7 @@ var
   d: array[0..4, 0..2] of integer;
   e: array[0..4, 0..2] of integer;
 
-procedure InitializeArrays();
+procedure InitializeArrays;
 begin
   // Initialize arrays a0, b0, and c0 element by element
   a0[0] := 0;
@@ -81,7 +81,7 @@ end;
 begin
   ret := 0;
 
-  InitializeArrays();
+  InitializeArrays;
 
   ret := 5;
 

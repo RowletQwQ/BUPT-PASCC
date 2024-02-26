@@ -5,7 +5,7 @@ var
   a0, a1, a2, b0, b1, b2, c0, c1, c2: array[0..2] of integer;
   i, x: integer;
 
-function add(): integer;
+function add: integer;
 var
   i: integer;
 begin
@@ -34,7 +34,7 @@ begin
     b2[i] := i;
   end;
 
-  add();
+  add;
 
   for i := 0 to N - 1 do
   begin

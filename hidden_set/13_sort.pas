@@ -4,7 +4,7 @@ n,ret,i,t: integer;
 x,a,b,c: array[0..100004] of integer;
 cnt: array [0..400019] of integer;
 
-procedure sortA();
+procedure sortA;
 var i, j, t:integer;
 begin
     for i := 0 to n - 1 do
@@ -21,7 +21,7 @@ begin
     end;
 end;
 
-procedure sortB();
+procedure sortB;
 var mx,i,j,now: integer;
 begin
     mx := -100;
@@ -42,7 +42,7 @@ begin
     end;
 end;
 
-procedure sortC();
+procedure sortC;
 var i,j,id: integer;
 begin
     for i := 0 to n - 1 do
@@ -70,9 +70,9 @@ begin
         c[i] := b[i];
     end;
 
-    sortA();
-    sortB();
-    sortC();
+    sortA;
+    sortB;
+    sortC;
 
     for i := 0 to n - 1 do
     begin

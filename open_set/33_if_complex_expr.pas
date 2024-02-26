@@ -10,7 +10,7 @@ begin
   begin
     write(e);
   end;
-  if ((d mod 2 + 67) < 0) or ((a - b) <> 0) and ((c + 2) and 2 <> 0) then
+  if ((d mod 2 + 67) < 0) or ((a - b) <> 0) and ((c + 2) mod 2 <> 0) then
   begin
     e := 4;
     write(e);
