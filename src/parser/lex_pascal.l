@@ -72,6 +72,7 @@ QUOTE            [\'\"]
 
 /* yylval 就可以认为是 yacc 中 %union 定义的结构体(union 结构) */
 %%
+// TODO 此处定义其他TOKEN
 {WHITE_SAPCE}                                        // ignore whitespace
 \n                                                   ;
 {DIGIT}+                           yylval->number=atoi(yytext); RETURN_TOKEN(NUMBER);
