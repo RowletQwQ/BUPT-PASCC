@@ -1,4 +1,4 @@
-
+#pragma once
 
 #include <map>
 #include <ostream>
@@ -31,6 +31,12 @@ public:
     template <class T>
     Log &operator<<(T msg);
 
+    /**
+     * @brief 输出log
+     * @param level log的级别
+     * @param prefix log的前缀
+     * @param f log的内容
+     */
     void output(const LOG_LEVEL level, const char *prefix, const char *f, ...);
 
 private:
