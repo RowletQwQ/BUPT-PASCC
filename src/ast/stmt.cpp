@@ -1,5 +1,5 @@
-#include "stmt.hpp"
-#include "visitor.hpp"
+#include "ast/stmt.hpp"
+#include "ast/visitor.hpp"
 
 void ExprStmt::accept(StmtVisitor &visitor)
 {
