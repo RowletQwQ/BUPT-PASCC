@@ -9,6 +9,7 @@
 
 
 #include "common/log/log.hpp"
+#include "ast/stmt.hpp"
 #include "ir/ir_gen.hpp"
 #include "common/setting/settings.hpp"
 #include "parser/yacc_pascal.hpp"
@@ -76,31 +77,31 @@ int main(int argc, char *argv[])
     input_file.close();
 
     // 第一步：词法分析 and 语法分析
-    LOG_DEBUG("Start parsing code...")
+    LOG_DEBUG("Start parsing code...");
     ProgramStmt program_stmt;
     code_parse(code.c_str(), &program_stmt);
-    LOG_DEBUG("Parsing code done.")
+    LOG_DEBUG("Parsing code done.");
     // 第二步: 语义分析 & 生成中间代码
-    LOG_DEBUG("Start generating intermediate code...")
+    LOG_DEBUG("Start generating intermediate code...");
     // TODO
 
-    LOG_DEBUG("Generating intermediate code done.")
+    LOG_DEBUG("Generating intermediate code done.");
     // 第三步: 优化
     if (G_SETTINGS.opt_level)
     {
-        LOG_DEBUG("Start optimizing intermediate code...")
+        LOG_DEBUG("Start optimizing intermediate code...");
         // TODO
 
-        LOG_DEBUG("Optimizing intermediate code done.")
+        LOG_DEBUG("Optimizing intermediate code done.");
     }
 
 
     // 第四步: 生成目标代码
     std::ofstream output_file(G_SETTINGS.output_file);
     // TODO
-    LOG_DEBUG("Start generating target code...")
+    LOG_DEBUG("Start generating target code...");
 
-    LOG_DEBUG("Generating target code done.")
+    LOG_DEBUG("Generating target code done.");
 
     return 0;
 }
