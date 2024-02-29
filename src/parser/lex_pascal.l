@@ -35,7 +35,7 @@ while (0);
  * 第三个部分还是C代码，flex 会复制此段代码
  */
 
-#include "parser/stmt.hpp"
+#include "ast/stmt.hpp"
 #include "common/log/log.h"
 #include "yacc_pascal.hpp"
 
