@@ -200,6 +200,23 @@ public:
 /*******************************声明语句******************************************/
 
 /**
+ * @brief Pascal中的基本类型
+ * 
+ */
+enum class BasicType {
+    INT,
+    REAL,
+    CHAR,
+    BOOLEAN,
+};
+
+enum class DataType {
+    NULL_TYPE,
+    BasicType,
+    ArrayType,
+};
+
+/**
  * @brief 范围表达式
  */
 class PeriodStmt : public BaseStmt {
@@ -226,14 +243,8 @@ public:
 class VarDeclStmt : public BaseStmt {
 public:
     std::vector<std::string> id; // 可能同时声明多个变量
-    enum class VarType {
-        NULL_TYPE,
-        INT,
-        REAL,
-        CHAR,
-        ARRAY,
-    };
-    VarType type;  // 如果是基本类型，这里给予其类型
+    DataType data_type; // 变量的类型,基本类型或者数组类型
+    BasicType basic_type; // 对应的基本类型
     int type_size; // 如果是基本类型，需要指定类型大小
     std::vector<std::unique_ptr<PeriodStmt>> array_range; // 各维度数组定义取值
     void accept(StmtVisitor &visitor) override;
@@ -246,14 +257,7 @@ public:
  */
 class FuncHeadDeclStmt : public BaseStmt {
 public:
-    enum class RetValType{
-        NO_RET,
-        INT,
-        REAL,
-        CHAR,
-        ARRAY
-    };
-    RetValType ret_type; //返回值的类型
+    BasicType ret_type; //返回值的类型
     std::vector<std::unique_ptr<VarDeclStmt>> args; // 函数的参数
     void accept(StmtVisitor &visitor) override;
 };
@@ -335,3 +339,40 @@ public:
 };
 
 /*******************************功能语句******************************************/
+
+/*******************************主函数******************************************/
+
+
+/**
+ * @brief 主函数头部，对应文法的program_head
+ * 
+ */
+class ProgramHeadStmt : public BaseStmt {
+public:
+    std::vector<std::string> id_list;
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 主函数体，对应文法的program_body
+ * 
+ */
+class ProgramBodyStmt : public BaseStmt {
+public:
+    std::unique_ptr<ConstDeclStmt> const_decl;
+    std::vector<std::unique_ptr<VarDeclStmt>> var_decl;
+    std::vector<std::unique_ptr<FuncDeclStmt>> func_decl;
+    std::vector<std::unique_ptr<BaseStmt>> comp_stmt;
+    void accept(StmtVisitor &visitor) override;
+};
+
+
+/**
+ * @brief 主函数
+ */
+class ProgramStmt : public BaseStmt {
+public:
+    std::unique_ptr<ProgramHeadStmt> head;
+    std::unique_ptr<ProgramBodyStmt> body;
+    void accept(StmtVisitor &visitor) override;
+};

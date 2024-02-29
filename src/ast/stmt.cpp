@@ -110,3 +110,18 @@ void WriteFuncStmt::accept(StmtVisitor &visitor)
 {
     visitor.visit(*this);
 }
+
+void ProgramHeadStmt::accept(StmtVisitor &visitor)
+{
+    visitor.visit(*this);
+}
+
+void ProgramBodyStmt::accept(StmtVisitor &visitor)
+{
+    visitor.visit(*this);
+}
+
+void ProgramStmt::accept(StmtVisitor &visitor)
+{
+    visitor.visit(*this);
+}
