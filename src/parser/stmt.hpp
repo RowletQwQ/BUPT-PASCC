@@ -48,7 +48,7 @@ public:
 };
 
 /**
- * @brief 关系表达式
+ * @brief 关系表达式, 即relop
  */
 class RelExprStmt : public BaseStmt {
 public:
@@ -68,6 +68,9 @@ public:
     void accept(StmtVisitor &visitor) override;
 };
 
+/**
+ * @brief 加法类表达式，等同于文法产生式中的addop
+ */
 class AddExprStmt : public BaseStmt {
 public:
     enum class AddExprType {
@@ -82,7 +85,9 @@ public:
     void accept(StmtVisitor &visitor) override;
 };
 
-
+/**
+ * @brief 乘积类表达式，等同于文法产生式中的mulop
+ */
 class MulExprStmt : public BaseStmt {
 public:
     enum class MulExprType {
@@ -99,11 +104,15 @@ public:
     void accept(StmtVisitor &visitor) override;
 };
 
+/**
+ * @brief 一元表达式
+ */
 class UnaryExprStmt : public BaseStmt {
 public:
     enum class UnaryExprType {
         NULL_TYPE, 
         Not, // not
+        Minus, // -
     };
     UnaryExprType type;
     std::unique_ptr<PrimaryExprStmt> primary_expr;
@@ -140,10 +149,13 @@ public:
     void accept(StmtVisitor &visitor) override;
 };
 
+/**
+ * @brief 保存数值类型的值，如char,int,float等
+ */
 class NumberStmt : public BaseStmt {
 public:
-    bool is_real;
-    bool is_signed;
+    bool is_real; // 是否为实数(浮点型)
+    bool is_signed; // 是否为有符号数
     union {
         long long int_val;
         double real_val;
@@ -152,19 +164,28 @@ public:
     void accept(StmtVisitor &visitor) override;
 };
 
+/**
+ * @brief 保存字符串类型的值
+ */
 class StrStmt : public BaseStmt {
 public:
     std::string val;
     void accept(StmtVisitor &visitor) override;
 };
 
+/**
+ * @brief 左值，即可以出现在赋值语句的一边的表达式
+ */
 class LValStmt : public BaseStmt {
 public:
-    std::string id;
+    std::string id; 
     std::vector<std::unique_ptr<ExprStmt>> array_index; // 多维数组的下标  
     void accept(StmtVisitor &visitor) override;
 };
 
+/**
+ * @brief 函数调用
+ */
 class FuncCallStmt : public BaseStmt {
 public:
     std::string id;
@@ -173,3 +194,5 @@ public:
 };
 
 /********************************表达式*******************************************/
+
+
