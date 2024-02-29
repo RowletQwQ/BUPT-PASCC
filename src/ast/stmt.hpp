@@ -1,7 +1,9 @@
 
 
+#include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 class StmtVisitor;
 
@@ -195,4 +197,141 @@ public:
 
 /********************************表达式*******************************************/
 
+/*******************************声明语句******************************************/
 
+/**
+ * @brief 范围表达式
+ */
+class PeriodStmt : public BaseStmt {
+public:
+    int begin;
+    int end;
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 常量声明语句
+ */
+class ConstDeclStmt : public BaseStmt {
+public:
+    typedef std::pair<std::string, NumberStmt> KvPair;
+    std::vector<KvPair> pairs;
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 变量声明语句
+ */
+
+class VarDeclStmt : public BaseStmt {
+public:
+    std::vector<std::string> id; // 可能同时声明多个变量
+    enum class VarType {
+        NULL_TYPE,
+        INT,
+        REAL,
+        CHAR,
+        ARRAY,
+    };
+    VarType type;  // 如果是基本类型，这里给予其类型
+    int type_size; // 如果是基本类型，需要指定类型大小
+    std::vector<std::unique_ptr<PeriodStmt>> array_range; // 各维度数组定义取值
+    void accept(StmtVisitor &visitor) override;
+ };
+
+/**
+ * @brief 函数（function）和过程（procedure）头部声明
+ * 他们俩的区别仅为有无返回值
+ * 
+ */
+class FuncHeadDeclStmt : public BaseStmt {
+public:
+    enum class RetValType{
+        NO_RET,
+        INT,
+        REAL,
+        CHAR,
+        ARRAY
+    };
+    RetValType ret_type; //返回值的类型
+    std::vector<std::unique_ptr<VarDeclStmt>> args; // 函数的参数
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 函数体声明（function/procedure），对应产生式的subprogram_body
+ * 
+ */
+class FuncBodyDeclStmt : public BaseStmt {
+public:
+    std::unique_ptr<ConstDeclStmt> const_decl;          // 常量声明块
+    std::vector<std::unique_ptr<VarDeclStmt>> var_decl; // 变量声明块
+    std::vector<std::unique_ptr<BaseStmt>> comp_stmt;   // 复合声明块，即代码段
+    void accept(StmtVisitor &visitor) override;
+};
+
+class FuncDeclStmt : public BaseStmt {
+public:
+    std::unique_ptr<FuncHeadDeclStmt> header; // 函数的头部
+    std::unique_ptr<FuncBodyDeclStmt> body;   // 函数块
+    void accept(StmtVisitor &visitor) override;
+};
+
+/*******************************声明语句******************************************/
+
+/*******************************功能语句******************************************/
+
+/**
+ * @brief 赋值语句
+ */
+class AssignStmt : public BaseStmt {
+public:
+    bool is_lval_func; //左值是不是函数
+    std::unique_ptr<LValStmt> lval; //左值
+    std::unique_ptr<ExprStmt> expr; //右值/表达式
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 分支语句(If)
+ * 
+ */
+class IfStmt : public BaseStmt {
+public:
+    std::unique_ptr<ExprStmt> expr; // if条件表达式
+    std::vector<std::unique_ptr<BaseStmt>> true_stmt; // if语句块
+    std::vector<std::unique_ptr<BaseStmt>> false_stmt; // else语句块
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 循环语句
+ */
+class ForStmt : public BaseStmt {
+public:
+    std::string id; // 循环变量,只能自增
+    std::unique_ptr<ExprStmt> begin; // 循环开始
+    std::unique_ptr<ExprStmt> end; // 循环结束
+    std::vector<std::unique_ptr<BaseStmt>> stmt; // 循环体
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 输入函数
+ */
+class ReadFuncStmt : public BaseStmt {
+public:
+    std::vector<std::unique_ptr<LValStmt>> lval; // 输入的左值
+    void accept(StmtVisitor &visitor) override;
+};
+
+/**
+ * @brief 输出函数
+ */
+class WriteFuncStmt : public BaseStmt {
+public:
+    std::vector<std::unique_ptr<ExprStmt>> expr; // 输出的表达式
+    void accept(StmtVisitor &visitor) override;
+};
+
+/*******************************功能语句******************************************/
