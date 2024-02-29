@@ -22,6 +22,9 @@ class IfStmt;
 class ForStmt;
 class ReadFuncStmt;
 class WriteFuncStmt;
+class ProgramHeadStmt;
+class ProgramBodyStmt;
+class ProgramStmt;
 
 class StmtVisitor {
 public:
@@ -47,4 +50,7 @@ public:
     virtual void visit(ForStmt &stmt) = 0;
     virtual void visit(ReadFuncStmt &stmt) = 0;
     virtual void visit(WriteFuncStmt &stmt) = 0;
+    virtual void visit(ProgramHeadStmt &stmt) = 0;
+    virtual void visit(ProgramBodyStmt &stmt) = 0;
+    virtual void visit(ProgramStmt &stmt) = 0;
 };
