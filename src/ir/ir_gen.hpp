@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ir/ir.hpp"
-
 #include "ast/visitor.hpp"
 
 #include <vector>
@@ -11,8 +10,10 @@
 
 namespace ir {
 
-
-// 作用域
+/**
+ * @brief 作用域类
+ * 
+*/
 class Scope {
 public:
     // 进入一个新的作用域
@@ -36,7 +37,11 @@ private:
     std::vector<std::map<std::string, Value *>> symbols_;
 };
 
-// 中间代码生成器
+
+/**
+ * @brief 中间代码生成器
+ * 继承 StmtVisitor, 生成中间代码
+*/
 class IRGenerator : public StmtVisitor {
 public:
     // TODO

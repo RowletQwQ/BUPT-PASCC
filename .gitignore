@@ -3,3 +3,4 @@ CMakeFiles/
 .cache/
 tmp/
 bin/
+.vscode/
