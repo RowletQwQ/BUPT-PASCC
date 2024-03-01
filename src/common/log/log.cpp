@@ -47,6 +47,10 @@ void Log::output(const common::LOG_LEVEL level, const char *prefix, const char *
     va_end(args);
     std::cout << prefix_map_[level] << " " <<prefix << " " << buf << "\n";
     pthread_mutex_unlock(&mutex_);
+    if (level == FATAL)
+    {
+        exit(1);
+    }
 }
 
 }; // namespace common
