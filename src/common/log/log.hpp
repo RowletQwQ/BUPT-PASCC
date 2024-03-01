@@ -74,7 +74,7 @@ extern Log *g_log;
         "[%s %s@%s:%u] >> ",                                               \
         time_head,                                                         \
         __FUNCTION__,                                                      \
-        __FILE_NAME__,                                                     \
+        __FILE__,                                                           \
         (int32_t)__LINE__                                                  \
         );                                                                 \
   }                                                                        

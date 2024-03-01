@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <fstream>
-#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <ostream>
