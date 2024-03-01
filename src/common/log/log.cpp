@@ -8,7 +8,7 @@ namespace common {
 
 Log *g_log = nullptr;
 
-Log::Log(const LOG_LEVEL level)
+Log::Log(const LogLevel level)
     : log_level_(level)
 {
     pthread_mutex_init(&mutex_, NULL);
@@ -33,7 +33,7 @@ Log &Log::operator<<(T msg)
     return *this;
 }
 
-void Log::output(const common::LOG_LEVEL level, const char *prefix, const char *f, ...)
+void Log::output(const common::LogLevel level, const char *prefix, const char *f, ...)
 {
     if (level < log_level_)
     {
