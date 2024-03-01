@@ -1,7 +1,7 @@
 #pragma once
 
 namespace ir {
-    class Program;
+    class Module;
 } // namespace ir
 
 namespace opt {
@@ -19,7 +19,7 @@ public:
      * @param program 中间代码
      * @details 接受中间代码，对其进行优化
      */
-    virtual void optimize(ir::Program &program) = 0;
+    virtual void optimize(ir::Module &program) = 0;
 }; // class Optimize
 
 } // namespace opt

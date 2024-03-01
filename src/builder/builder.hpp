@@ -3,7 +3,7 @@
 
 #include <fstream>
 namespace ir {
-    class Program;
+    class Module;
 } // namespace ir
 
 namespace builder {
@@ -18,7 +18,7 @@ public:
      * @param program 中间代码
      * @details 接受中间代码，生成目标代码，并保存在类内部
      */
-    virtual void build(ir::Program &program) = 0;
+    virtual void build(ir::Module &program) = 0;
 
     /**
      * @brief 输出目标代码

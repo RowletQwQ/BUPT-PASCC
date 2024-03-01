@@ -6,7 +6,7 @@ namespace builder {
 
 class CBuilder : public Builder {
 public:
-    void build(ir::Program &program) override;
+    void build(ir::Module &program) override;
     void output(std::ofstream &out) override;
 };
 

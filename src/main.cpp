@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 
     visitor->visit(program_stmt);
 
-    ir::Program ir = visitor->get_ir();
+    ir::Module ir = visitor->get_ir();
 
     LOG_DEBUG("Generating intermediate code done.");
     // 第三步: 优化
