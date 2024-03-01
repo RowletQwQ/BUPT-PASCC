@@ -2,17 +2,21 @@
 #include <fstream>
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 
 
 #include "common/log/log.hpp"
+#include "opt/opt.hpp"
 #include "ast/stmt.hpp"
 #include "ir/ir_gen.hpp"
 #include "common/setting/settings.hpp"
 #include "parser/yacc_pascal.hpp"
+#include "builder/c_builder.hpp"
 
 
 void init_env()
@@ -83,7 +87,12 @@ int main(int argc, char *argv[])
     LOG_DEBUG("Parsing code done.");
     // 第二步: 语义分析 & 生成中间代码
     LOG_DEBUG("Start generating intermediate code...");
-    // TODO
+    
+    std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
+
+    visitor->visit(program_stmt);
+
+    ir::Program ir = visitor->get_ir();
 
     LOG_DEBUG("Generating intermediate code done.");
     // 第三步: 优化
@@ -91,7 +100,12 @@ int main(int argc, char *argv[])
     {
         LOG_DEBUG("Start optimizing intermediate code...");
         // TODO
+        std::vector<opt::Optimize> opts;
 
+        for (auto &opt : opts)
+        {
+            opt.optimize(ir);
+        }
         LOG_DEBUG("Optimizing intermediate code done.");
     }
 
@@ -100,7 +114,9 @@ int main(int argc, char *argv[])
     std::ofstream output_file(G_SETTINGS.output_file);
     // TODO
     LOG_DEBUG("Start generating target code...");
-
+    std::unique_ptr<builder::CBuilder> builder = std::make_unique<builder::CBuilder>();
+    builder->build(ir);
+    builder->output(output_file);
     LOG_DEBUG("Generating target code done.");
 
     return 0;

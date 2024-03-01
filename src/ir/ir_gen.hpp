@@ -1,12 +1,15 @@
 #pragma once
 
-#include "ir.hpp"
-#include "ast/visitor.hpp"  
+#include "ir/ir.hpp"
+#include "ast/visitor.hpp"
+
 #include <vector>
 #include <map>
 #include <string>
 
+
 namespace ir {
+
 /**
  * @brief 作用域类
  * 
@@ -34,12 +37,19 @@ private:
     std::vector<std::map<std::string, Value *>> symbols_;
 };
 
+
 /**
  * @brief 中间代码生成器
  * 继承 StmtVisitor, 生成中间代码
 */
-class IrGenerator : public StmtVisitor {
+class IRGenerator : public StmtVisitor {
 public:
+    // TODO
+    IRGenerator() = default;
+
+    // 生成中间代码
+    Program get_ir();
+    // 语句访问者
     void visit(ExprStmt &stmt) override;
     void visit(RelExprStmt &stmt) override;
     void visit(AddExprStmt &stmt) override;
@@ -66,6 +76,7 @@ public:
     void visit(ProgramBodyStmt &stmt) override;
     void visit(ProgramStmt &stmt) override;
 };
+
 
 
 } // namespace ir

@@ -5,6 +5,9 @@
 #include <vector>
 #include <map>
 
+namespace opt {
+    class Optimize;
+} // namespace optimize
 
 namespace ir {
 class Use;
@@ -154,6 +157,13 @@ public:
  * @brief Value 基类
  * 
 */
+
+
+
+
+
+// 值
+
 class Value {
 public:
     explicit Value(Type *type, const std::string &name) : type_(type), name_(name) {}
@@ -400,6 +410,15 @@ public:
 
 
     std::map<Type *, PointerType *> pointer_map_; // 指针类型映射
+};
+
+
+
+ * @brief 程序
+ * @details 用于表示一个可执行程序，作为中间代码使用
+ */
+class Program {
+    friend class opt::Optimize;
 };
 
 

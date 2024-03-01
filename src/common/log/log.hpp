@@ -16,7 +16,7 @@ typedef enum {
     WARN,
     ERROR,
     FATAL
-} LOG_LEVEL;
+} LogLevel;
 
 class Log{
 public:
@@ -24,7 +24,7 @@ public:
      * @brief 新建一个log对象
      * @param level log的级别
      */
-    Log(const LOG_LEVEL level = LOG_LEVEL::WARN);
+    Log(const LogLevel level = LogLevel::WARN);
 
     ~Log();
 
@@ -37,12 +37,12 @@ public:
      * @param prefix log的前缀
      * @param f log的内容
      */
-    void output(const LOG_LEVEL level, const char *prefix, const char *f, ...);
+    void output(const LogLevel level, const char *prefix, const char *f, ...);
 
 private:
-    const LOG_LEVEL log_level_;
+    const LogLevel log_level_;
     pthread_mutex_t mutex_;
-    std::map<LOG_LEVEL, std::string> prefix_map_;
+    std::map<LogLevel, std::string> prefix_map_;
 
 }; // class Log
 
@@ -89,10 +89,10 @@ extern Log *g_log;
     }                                                                       \
   } while (0)                                                               
 
-#define LOG_DEBUG(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL::DEBUG, fmt, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL::INFO, fmt, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL::WARN, fmt, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL::ERROR, fmt, ##__VA_ARGS__)
-#define LOG_FATAL(fmt, ...) LOG_OUTPUT(common::LOG_LEVEL::FATAL, fmt, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) LOG_OUTPUT(common::LogLevel::DEBUG, fmt, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) LOG_OUTPUT(common::LogLevel::INFO, fmt, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...) LOG_OUTPUT(common::LogLevel::WARN, fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) LOG_OUTPUT(common::LogLevel::ERROR, fmt, ##__VA_ARGS__)
+#define LOG_FATAL(fmt, ...) LOG_OUTPUT(common::LogLevel::FATAL, fmt, ##__VA_ARGS__)
 
 }; // namespace common

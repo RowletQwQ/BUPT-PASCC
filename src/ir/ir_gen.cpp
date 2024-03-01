@@ -1,4 +1,4 @@
-#include "ir_gen.hpp"
+#include "ir/ir_gen.hpp"
 
 namespace ir {
     // ----------------- Scope -----------------
