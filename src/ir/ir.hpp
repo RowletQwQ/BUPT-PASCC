@@ -16,6 +16,7 @@ class Value;
 class Instruction;
 class Module;
 class BasicBlock;
+class Function;
 
 /**
  * @brief Use 类
@@ -300,9 +301,7 @@ public:
 class GlobalIdentifier : public Value {
 public:
     GlobalIdentifier(const std::string &name, Module *m, Type *type, bool is_const, 
-                        Literal *init_val) : Value(m->get_pointer_type(type), name), is_const_(is_const), init_val_(init_val) {
-        m->add_global_identifier(this);
-    }
+                        Literal *init_val);
     virtual std::string print() override;
     bool is_const_; // 是否为常量
     Literal *init_val_; // 初始值
@@ -318,6 +317,7 @@ public:
     explicit Argument(Type *type, const std::string &name, Function *f, unsigned arg_no = 0) : Value(type, name), belong_f_(f), arg_no_(arg_no) {}
     ~Argument() {}
     virtual std::string print() override;
+private:
     Function *belong_f_; // 所属函数
     unsigned arg_no_; // 参数序号
 };
@@ -328,14 +328,7 @@ public:
 */
 class Function : public Value {
 public:
-    Function(FunctionType *type, const std::string &name, Module *m) : Value(type, name), parent_(m), seq_cnt_(0) {
-        m->add_function(this);
-        size_t num_args = type->args_.size();
-        use_ret_cnt = 0;
-        for (size_t i = 0; i < num_args; i++) {
-            args_.push_back(new Argument(type->args_[i], "", this, i));
-        }
-    }
+    Function(FunctionType *type, const std::string &name, Module *m);
     ~Function();
     virtual std::string print() override;
 
@@ -410,15 +403,6 @@ public:
 
 
     std::map<Type *, PointerType *> pointer_map_; // 指针类型映射
-};
-
-
-
- * @brief 程序
- * @details 用于表示一个可执行程序，作为中间代码使用
- */
-class Program {
-    friend class opt::Optimize;
 };
 
 

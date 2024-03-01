@@ -48,7 +48,7 @@ public:
     IRGenerator() = default;
 
     // 生成中间代码
-    Program get_ir();
+    Module get_ir();
     // 语句访问者
     void visit(ExprStmt &stmt) override;
     void visit(RelExprStmt &stmt) override;
