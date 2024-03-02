@@ -1,103 +1,187 @@
-%top{
-/*
-这里的代码会被复制到lex_pascal.cpp的最开始位置
-定义yy_size_t的原因是因为flex生成的代码，会使用yy_size_t与其他类型的数字
-做比较，导致编译报警
-*/
-#define YY_TYPEDEF_YY_SIZE_T
-typedef int yy_size_t;
-
-/* 参考生成的lex_pascal.cpp代码，这个宏定义会放在每次运行yylex()最开始的地方 */
-#define YY_USER_INIT                                         \
-  yycolumn = 0;
-
-/* 参考生成的lex_pascal.cpp代码，这个宏定义会放在解析一个token之后，也可以在网上找到大量的参考资料 */
-/* 我们在这里设置当前解析的token的位置信息，这样在yacc中就可以使用这些信息了 */
-#define YY_USER_ACTION                                       \
-do {                                                         \
-  yylloc->first_line   = yylloc->last_line = yylineno;       \
-  yylloc->first_column = yycolumn;                           \
-  yylloc->last_column  = yylloc->first_column + yyleng - 1;  \
-  yycolumn += yyleng;                                        \
-}                                                            \
-while (0);
-
-}
-
 %{
-#include<cstring>
-#include<cstdio>
+#include <stdio.h>
+#include <stdlib.h>
+#include "../token/token.hpp"
+#define TABSIZE 4
 
-/**
- * flex 代码包含三个部分，使用 %% 分隔
- * 第一个部分的代码是C代码，flex会原样复制到目标文件中
- * 第二个部分是规则部分，使用正则表达式定义一系列规则
- * 第三个部分还是C代码，flex 会复制此段代码
- */
 
-#include "ast/stmt.hpp"
-#include "common/log/log.h"
-#include "yacc_pascal.hpp"
+int lineno = 1;             
+int colno = 1;            
 
-#ifndef register
-#define register 
-#endif // register
-
-extern int atoi();
-extern double atof();
-
-#define RETURN_TOKEN(token) LOG_DEBUG("%s", #token);return token
+void newline();
+void addcolno(int n);
+void countlines(char *s);
+Token token;
 %}
 
-/* Prevent the need for linking with -lfl */
-%option noyywrap
-%option nounput
-%option noinput
-%option bison-bridge
-%option reentrant
-/* 不区分大小写 */
+
 %option case-insensitive
-%option bison-locations
 
-WHITE_SAPCE      [\ \t\b\f]
-DIGIT            [0-9]+
+PROGRAM                 "program"
+CONST                   "const"
+TYPE                    "type"
+RECORD                  "record"
+ARRAY                   "array"
+OF                      "of"
+VAR                     "var"
+FUNCTION                "function"
+PROCEDURE               "procedure"
+BEGINTOKEN                  "begin"
+END                     "end"
+IF                      "if"
+THEN                    "then"
+ELSE                    "else"
+CASE                    "case"
+WHILE                   "while"
+REPEAT                  "repeat"
+UNTIL                   "until"
+FOR                     "for"
+TO                      "to"
+DOWNTO                  "downto"
+DO                      "do"
+READ                    "read"
+READLN                  "readln"
+WRITE                   "write"
+WRITELN                 "writeln"
+NOT                     "not"
+TRUE                    "true"
+FALSE                   "false"
 
-ID               [A-Za-z_]+[A-Za-z0-9_]*
-DOT              \.
-QUOTE            [\'\"]
-%x STR
-/* 规则匹配的优先级：*/
-/* 1. 匹配的规则长的优先 */
-/* 2. 写在最前面的优先 */
+INTEGER_KW                "integer"
+REAL_KW                   "real"
+BOOLEAN_KW                "boolean"
+CHAR_KW                    "char"
 
-/* yylval 就可以认为是 yacc 中 %union 定义的结构体(union 结构) */
+DIGIT                   [0-9]
+INTEGER         {DIGIT}+
+REAL            {DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)?
+
+
+LETTER                  [a-zA-Z]
+IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
+
+CHAR               '\''[^'\n]\''
+STRING          '\''([^'\n]|\\')*\'
+
+PLUS                    "+"
+MINUS                   "-"
+CONSTANTASSIGN           "="
+ASSIGN                  ":="
+RELOP                   ("<>"|"<"|"<="|">"|">=")
+MULOP                   ("*"|"/"|"div"|"mod"|"and")
+ADDOP   "or"
+
+
+COMMA                   ","
+COLON                   ":"
+SEMICOLON               ";"
+DOT                     "."
+DOUBLE_DOT              ".."
+
+LEFT_PARENTHESIS        "("
+RIGHT_PARENTHESIS       ")"
+LEFT_BRACKET            "["
+RIGHT_BRACKET           "]"
+
+ANNO_BIGBRACKET         (\{[^\}]*\})
+ANNO_DOUBLE                (\/\/[^\n]*)
+ANNO_MULTILINE            (\/\*([^*]|\*[^/])*\*\/)
+
+
 %%
-// TODO 此处定义其他TOKEN
-{WHITE_SAPCE}                                        // ignore whitespace
-\n                                                   ;
-{DIGIT}+                           yylval->number=atoi(yytext); RETURN_TOKEN(NUMBER);
-{DIGIT}+{DOT}{DIGIT}+              yylval->floats=(float)(atof(yytext)); RETURN_TOKEN(FLOAT);
-";"                                     RETURN_TOKEN(SEMICOLON);
-{DOT}                                   RETURN_TOKEN(DOT);
-
-"("                                     RETURN_TOKEN(LBRACE);
-")"                                     RETURN_TOKEN(RBRACE);
-
-","                                     RETURN_TOKEN(COMMA);
-"="                                     RETURN_TOKEN(EQ);
-"<="                                    RETURN_TOKEN(LE);
-"<>"                                    RETURN_TOKEN(NE);
-"!="                                    RETURN_TOKEN(NE);
-"<"                                     RETURN_TOKEN(LT);
-">="                                    RETURN_TOKEN(GE);
-">"                                     RETURN_TOKEN(GT);
-":="                                    RETURN_TOKEN(ASSIGN);
-":"                                     RETURN_TOKEN(COLON);
-
-.                                       LOG_DEBUG("Unknown character [%c]",yytext[0]); return yytext[0];
+{ANNO_BIGBRACKET}       { addcolno(yyleng); token.fill(Token::ANNO, yytext, lineno, colno);return 1;}
+{ANNO_DOUBLE}               { addcolno(yyleng); token.fill(Token::ANNO, yytext, lineno, colno);return 1;}
+{ANNO_MULTILINE}        { countlines(yytext); token.fill(Token::ANNO, yytext, lineno, colno);return 1; }
+{PROGRAM}                      { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{CONST}                           { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{TYPE}                             { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{RECORD}                         { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{ARRAY}                          { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{OF}                                 { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{VAR}                               { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{FUNCTION}                    { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{PROCEDURE}                  { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{BEGINTOKEN}                  { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{END}                             { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{IF}                                 { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{THEN}                           { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{ELSE}                           { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{CASE}                           { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{WHILE}                         { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{REPEAT}                       { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{UNTIL}                         { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{FOR}                             { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{TO}                               { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{DOWNTO}                     { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{DO}                               { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{READ}                           { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{READLN}                     { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{WRITE}                         { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{WRITELN}                   { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{CHAR_KW}                   { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{INTEGER_KW}               { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{REAL_KW}                   { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{BOOLEAN_KW}               { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{NOT}                             { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{PLUS}                           { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{MINUS}                         { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{INTEGER}                     { token.fill(Token::INT, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{REAL}                           { token.fill(Token::REAL, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{CHAR}                           { token.fill(Token::CHAR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{TRUE}                           { token.fill(Token::BOOL, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{FALSE}                         { token.fill(Token::BOOL, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{STRING}                      { token.fill(Token::STRING, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{IDENTIFIER}                { token.fill(Token::ID, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{COMMA}                     { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{COLON}                     { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{SEMICOLON}             { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{DOT}                           { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{DOUBLE_DOT}            { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{LEFT_PARENTHESIS}  { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{RIGHT_PARENTHESIS} { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{LEFT_BRACKET}          { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{RIGHT_BRACKET}         { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{CONSTANTASSIGN}    { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{ASSIGN}                  { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{RELOP}                   { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{MULOP}                   { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{ADDOP}                   { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+"\t"                                   { addcolno(TABSIZE); } 
+"\r"                                    {  }
+"\n"                                  { newline(); }
+" "                                    { addcolno(1); }
+.                                  {  printf("Error: Unknown character"); printf( "before %d ",colno);addcolno(yyleng); printf(" at line %d, column %d\n", lineno, colno); }
 %%
 
+/*
+* @brief 新行
+*/
+void newline() {
+    lineno++;
+    colno = 1;
+}
 
-void scan_string(const char *str, yyscan_t scanner) {
-  yy_switch_to_buffer(yy_scan_string(str, scanner), scanner);
+/*
+* @brief 增加列号
+* @param n 增加的列数
+*/
+void addcolno(int n) {
+    colno += n;
+}
+
+/*
+* @brief 计算行数
+* @param s 字符串
+*/
+void countlines(char *s) {
+    int i;
+    for (i = 0; s[i] != '\0'; i++) {
+        if (s[i] == '\n') {
+            newline();
+        }
+    }
+}
+
+int yywrap() {
+    return 0;
 }
