@@ -36,80 +36,80 @@ namespace ir {
 
 
 
-    // ----------------- IrGenerator -----------------
-    void visit(ExprStmt &stmt) {
+    // ----------------- IRGenerator -----------------
+    void IRGenerator::visit(ExprStmt &stmt) {
         
     }
-    void visit(RelExprStmt &stmt) {
+    void IRGenerator::visit(RelExprStmt &stmt) {
         
     }
-    void visit(AddExprStmt &stmt) {
+    void IRGenerator::visit(AddExprStmt &stmt) {
         
     }
-    void visit(MulExprStmt &stmt) {
+    void IRGenerator::visit(MulExprStmt &stmt) {
         
     }
-    void visit(UnaryExprStmt &stmt) {
+    void IRGenerator::visit(UnaryExprStmt &stmt) {
         
     }
-    void visit(PrimaryExprStmt &stmt) {
+    void IRGenerator::visit(PrimaryExprStmt &stmt) {
         
     }
-    void visit(ValueStmt &stmt) {
+    void IRGenerator::visit(ValueStmt &stmt) {
         
     }
-    void visit(NumberStmt &stmt) {
+    void IRGenerator::visit(NumberStmt &stmt) {
         
     }
-    void visit(StrStmt &stmt) {
+    void IRGenerator::visit(StrStmt &stmt) {
         
     }
-    void visit(LValStmt &stmt) {
+    void IRGenerator::visit(LValStmt &stmt) {
         
     }
-    void visit(FuncCallStmt &stmt) {
+    void IRGenerator::visit(FuncCallStmt &stmt) {
         
     }
-    void visit(PeriodStmt &stmt) {
+    void IRGenerator::visit(PeriodStmt &stmt) {
         
     }
-    void visit(ConstDeclStmt &stmt) {
+    void IRGenerator::visit(ConstDeclStmt &stmt) {
         
     }
-    void visit(VarDeclStmt &stmt) {
+    void IRGenerator::visit(VarDeclStmt &stmt) {
         
     }
-    void visit(FuncHeadDeclStmt &stmt) {
+    void IRGenerator::visit(FuncHeadDeclStmt &stmt) {
         
     }
-    void visit(FuncBodyDeclStmt &stmt) {
+    void IRGenerator::visit(FuncBodyDeclStmt &stmt) {
         
     }
-    void visit(FuncDeclStmt &stmt) {
+    void IRGenerator::visit(FuncDeclStmt &stmt) {
         
     }
-    void visit(AssignStmt &stmt) {
+    void IRGenerator::visit(AssignStmt &stmt) {
         
     }
-    void visit(IfStmt &stmt) {
+    void IRGenerator::visit(IfStmt &stmt) {
         
     }
-    void visit(ForStmt &stmt) {
+    void IRGenerator::visit(ForStmt &stmt) {
         
     }
-    void visit(ReadFuncStmt &stmt) {
+    void IRGenerator::visit(ReadFuncStmt &stmt) {
         
     }
-    void visit(WriteFuncStmt &stmt) {
+    void IRGenerator::visit(WriteFuncStmt &stmt) {
         
     }
-    void visit(ProgramHeadStmt &stmt) {
+    void IRGenerator::visit(ProgramHeadStmt &stmt) {
         
     }
-    void visit(ProgramBodyStmt &stmt) {
+    void IRGenerator::visit(ProgramBodyStmt &stmt) {
         
     }
-    void visit(ProgramStmt &stmt) {
+    void IRGenerator::visit(ProgramStmt &stmt) {
         
     }
 } // namespace ir

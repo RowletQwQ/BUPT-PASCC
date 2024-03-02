@@ -16,6 +16,7 @@ class Value;
 class Instruction;
 class Module;
 class BasicBlock;
+class Function;
 
 /**
  * @brief Use 类
@@ -36,6 +37,7 @@ public:
 class Type {
 public:
     enum TID {
+        VoidTID, // 空类型
         IntegerTID,
         RealTID,
         BooleanTID,
@@ -43,8 +45,8 @@ public:
         StringTID,
         ArrayTID,
         FunctionTID,
-        ProcedureTID,
-        PointerTID
+        BlockTID, // 基本块类型
+        PointerTID // TODO: 有没有必要加上指针类型?
         // TODO 扩展
     };
     explicit Type(TID tid) : tid_(tid) {}
@@ -128,19 +130,7 @@ public:
     std::vector<Type *> args_; 
 };
 
-/**
- * @brief 过程类型
- * 只包括参数列表的类型, 不包括返回值类型
-*/
-class ProcedureType : public Type {
-public:
-    explicit ProcedureType(std::vector<Type *> params) : Type(Type::ProcedureTID) {
-        for (Type *p : params) {
-            args_.push_back(p); // 参数列表类型
-        }
-    }
-    std::vector<Type *> args_; 
-};
+
 
 /**
  * @brief 指针类型
@@ -157,13 +147,6 @@ public:
  * @brief Value 基类
  * 
 */
-
-
-
-
-
-// 值
-
 class Value {
 public:
     explicit Value(Type *type, const std::string &name) : type_(type), name_(name) {}
@@ -300,9 +283,7 @@ public:
 class GlobalIdentifier : public Value {
 public:
     GlobalIdentifier(const std::string &name, Module *m, Type *type, bool is_const, 
-                        Literal *init_val) : Value(m->get_pointer_type(type), name), is_const_(is_const), init_val_(init_val) {
-        m->add_global_identifier(this);
-    }
+                        Literal *init_val);
     virtual std::string print() override;
     bool is_const_; // 是否为常量
     Literal *init_val_; // 初始值
@@ -318,6 +299,7 @@ public:
     explicit Argument(Type *type, const std::string &name, Function *f, unsigned arg_no = 0) : Value(type, name), belong_f_(f), arg_no_(arg_no) {}
     ~Argument() {}
     virtual std::string print() override;
+private:
     Function *belong_f_; // 所属函数
     unsigned arg_no_; // 参数序号
 };
@@ -328,14 +310,7 @@ public:
 */
 class Function : public Value {
 public:
-    Function(FunctionType *type, const std::string &name, Module *m) : Value(type, name), parent_(m), seq_cnt_(0) {
-        m->add_function(this);
-        size_t num_args = type->args_.size();
-        use_ret_cnt = 0;
-        for (size_t i = 0; i < num_args; i++) {
-            args_.push_back(new Argument(type->args_[i], "", this, i));
-        }
-    }
+    Function(FunctionType *type, const std::string &name, Module *m);
     ~Function();
     virtual std::string print() override;
 
@@ -344,10 +319,18 @@ public:
      * @param bb 基本块
     */
     void add_basic_block(BasicBlock *bb) { basic_blocks_.push_back(bb); }
+    
+    /**
+     * @brief 得到返回值类型
+     * @return Type*
+    */ 
     Type *get_return_type() const {
         return static_cast<FunctionType *>(type_)->result_;
     }
-    bool is_declaration() { return basic_blocks_.empty(); }
+
+
+
+    // bool is_declaration() { return basic_blocks_.empty(); }
     // void set_instr_name();
 
     /**
@@ -367,10 +350,128 @@ public:
 };
 
 // ----------------------------------------------------------------BasicBlock---------------------------------------------------------------
-class BasicBlock {
+/**
+ * @brief 基本块类
+ * 
+*/
+class BasicBlock : public Value {
+public:
+    explicit BasicBlock(Module *m, const std::string &name, Function *f) 
+        : Value(new Type(Type::BlockTID), name), belong_f_(f) {
+        f->add_basic_block(this); // 将基本块加入到函数的基本块列表中
+    }
+
+    /**
+     * @brief 添加指令
+     *  
+    */
+    void add_instruction(Instruction *i) { instructions_.push_back(i); }
+
+
+
+    Function *belong_f_; // 基本块所属函数
+    std::vector<Instruction *> instructions_; // 指令列表
+    
 };
 
+// ----------------------------------------------------------------Instruction---------------------------------------------------------------
+/**
+ * @brief 指令基类
+ * 
+*/
+class Instruction : public Value {
+public:
+    // 操作码
+    enum OpID {
+        // Function
+        Call, 
+        Ret, 
 
+        // Binary Operation
+        Add, 
+        Sub, 
+        Mul, 
+        Div, 
+        Mod, 
+        And, 
+        Or, 
+
+        // Unary Operation
+        Not,
+        BitReverse,
+        LogicalNot,
+
+        // Compare Operation
+        Eq,
+        Ne,
+        Gt,
+        Ge,
+        Lt,
+        Le,
+        In,
+
+        // Assign Operation
+        Assign,
+
+        // Array Operation
+        Visit, 
+
+        // Other Operation
+        Range, 
+        OrElse,
+        AndThen
+    };
+    explicit Instruction(Type *ty, OpID id, unsigned num_ops, BasicBlock *parent, bool before = false)
+      : Value(ty, ""), op_id_(id), num_ops_(num_ops), parent_(parent) {
+        operands_.resize(num_ops_, nullptr); // 此句不能删去！否则operands_为空时无法用set_operand设置操作数，而只能用push_back设置操作数！
+        use_pos_.resize(num_ops_);
+
+        // TODO: 处理 before
+    }
+
+    /**
+     * @brief 设置操作数
+     * 
+    */
+    void set_operand(unsigned i, Value *val) {
+        operands_[i] = val;
+        use_pos_[i] = val->add_use(this, i);
+    }
+
+    virtual std::string print() = 0;
+    BasicBlock *parent_; // 指令所属基本块
+    OpID op_id_; // 操作码
+    unsigned num_ops_; // 操作数个数
+    std::vector<Value *> operands_; // 操作数
+    std::vector<std::list<Use>::iterator> use_pos_; // 与操作数数组一一对应，是对应的操作数的uselist里面，与当前指令相关的use的迭代器
+    std::vector<std::list<Instruction *>::iterator> pos_in_bb; // 在bb的指令list的位置迭代器,最多只能有一个
+};
+
+/**
+ * @brief 二元指令
+ * 
+*/
+class BinaryInst : public Instruction {
+public:
+    BinaryInst(Type *ty, OpID op, Value *v1, Value *v2, BasicBlock *bb)
+      : Instruction(ty, op, 2, bb) {
+        set_operand(0, v1);
+        set_operand(1, v2);
+    }
+    virtual std::string print() override;
+};
+
+/**
+ * @brief 一元指令
+*/
+class UnaryInst : public Instruction {
+public:
+    UnaryInst(Type *ty, OpID op, Value *val, BasicBlock *bb)
+      : Instruction(ty, op, 1, bb) {
+        set_operand(0, val);
+    }
+    virtual std::string print() override;    
+};
 
 
 // ----------------------------------------------------------------Module---------------------------------------------------------------
@@ -410,15 +511,6 @@ public:
 
 
     std::map<Type *, PointerType *> pointer_map_; // 指针类型映射
-};
-
-
-
- * @brief 程序
- * @details 用于表示一个可执行程序，作为中间代码使用
- */
-class Program {
-    friend class opt::Optimize;
 };
 
 
