@@ -31,6 +31,7 @@
         REAL_KW
         BOOLEAN_KW
         CHAR_KW
+        DOT
 
 %define api.pure full
 %define parse.error verbose
@@ -56,6 +57,7 @@
     DataType                                        var_type;
     BasicType                                       basic_type;
     std::vector<PeriodStmt *> *                     period_list;
+    PeriodStmt *                                    period;
     std::vector<FuncDeclStmt *> *                   func_decl_list;
     FuncDeclStmt *                                  func_decl;
     FuncHeadDeclStmt *                              func_head;
@@ -87,6 +89,7 @@
 
 
 %token <string> ID
+%token <number> NUMBER
 
 // 下面定义非终结符
 %type <program_struct>      programstruct
@@ -100,7 +103,9 @@
 %type <var_decls>           var_declaration
 %type <var_type>            type
 %type <basic_type>          basic_type
-%type <period_list>         period
+%type <period_list>         period_item
+%type <period_list>         period_list
+%type <period>              period
 %type <func_decl_list>      subprogram_declarations
 %type <func_decl>           subprogram
 %type <func_head>           subprogram_head
@@ -164,7 +169,7 @@ var_declaration:
         var_decl->basic_type = $4;
         $$->emplace_back(var_decl);
     }
-    | ID idlist COLON ARRAY LEFT_BRACKET period RIGHT_BRACKET OF basic_type SEMICOLON var_declaration
+    | ID idlist COLON ARRAY LEFT_BRACKET period_item RIGHT_BRACKET OF basic_type SEMICOLON var_declaration
     {
         if ($11) {
             $$ = $11;
@@ -220,6 +225,40 @@ basic_type:
     | CHAR_KW
     {
         $$ = BasicType::CHAR;
+    };
+
+period_item:
+    period period_list
+    {
+        if ($2) {
+            $$ = $2;
+        } else {
+            $$ = new std::vector<PeriodStmt *>();
+        }
+        $$->emplace_back($1);
+    };
+
+period_list:
+    /* empty */
+    {
+        $$ = nullptr;
+    }
+    | COMMA period period_list
+    {
+        if ($3) {
+            $$ = $3;
+        } else {
+            $$ = new std::vector<PeriodStmt *>();
+        }
+        $$->emplace_back($2);
+    };
+
+period:
+    NUMBER DOT DOT NUMBER
+    {
+        $$ = new PeriodStmt();
+        $$->start = $1;
+        $$->end = $4;
     };
 
 
