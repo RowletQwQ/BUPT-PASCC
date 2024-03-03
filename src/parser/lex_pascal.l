@@ -53,15 +53,16 @@ BOOLEAN_KW                "boolean"
 CHAR_KW                    "char"
 
 DIGIT                   [0-9]
-INTEGER         {DIGIT}+
-REAL            {DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)?
+INTEGER                 "-"?{DIGIT}+
+REAL                    "-"?{DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)?
 
 
 LETTER                  [a-zA-Z]
 IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
 
-CHAR               '\''[^'\n]\''
-STRING          '\''([^'\n]|\\')*\'
+CHAR               \'(\\.|[^'\\])\'
+STRING             '\''([^'\n]|\\')*\''
+
 
 PLUS                    "+"
 MINUS                   "-"
@@ -92,6 +93,7 @@ ANNO_MULTILINE            (\/\*([^*]|\*[^/])*\*\/)
 {ANNO_BIGBRACKET}       { addcolno(yyleng); token.fill(Token::ANNO, yytext, lineno, colno);return 1;}
 {ANNO_DOUBLE}               { addcolno(yyleng); token.fill(Token::ANNO, yytext, lineno, colno);return 1;}
 {ANNO_MULTILINE}        { countlines(yytext); token.fill(Token::ANNO, yytext, lineno, colno);return 1; }
+{CHAR}                           { token.fill(Token::CHAR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {PROGRAM}                      { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {CONST}                           { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {TYPE}                             { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
@@ -123,15 +125,13 @@ ANNO_MULTILINE            (\/\*([^*]|\*[^/])*\*\/)
 {REAL_KW}                   { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {BOOLEAN_KW}               { token.fill(Token::KW, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {NOT}                             { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
-{PLUS}                           { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
-{MINUS}                         { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {INTEGER}                     { token.fill(Token::INT, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {REAL}                           { token.fill(Token::REAL, yytext, lineno, colno);addcolno(yyleng); return 1;  }
-{CHAR}                           { token.fill(Token::CHAR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+{PLUS}                           { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng);  return 1; }
+{MINUS}                         { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1; }
 {TRUE}                           { token.fill(Token::BOOL, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {FALSE}                         { token.fill(Token::BOOL, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {STRING}                      { token.fill(Token::STRING, yytext, lineno, colno);addcolno(yyleng); return 1;  }
-{IDENTIFIER}                { token.fill(Token::ID, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {COMMA}                     { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {COLON}                     { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {SEMICOLON}             { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
@@ -142,11 +142,11 @@ ANNO_MULTILINE            (\/\*([^*]|\*[^/])*\*\/)
 {LEFT_BRACKET}          { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {RIGHT_BRACKET}         { token.fill(Token::SEPARATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {CONSTANTASSIGN}    { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
-{ASSIGN}                  { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {RELOP}                   { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {MULOP}                   { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
 {ADDOP}                   { token.fill(Token::OPERATOR, yytext, lineno, colno);addcolno(yyleng); return 1;  }
-"\t"                                   { addcolno(TABSIZE); } 
+{IDENTIFIER}                { token.fill(Token::ID, yytext, lineno, colno);addcolno(yyleng); return 1;  }
+"\t"                                   { addcolno(TABSIZE); }
 "\r"                                    {  }
 "\n"                                  { newline(); }
 " "                                    { addcolno(1); }

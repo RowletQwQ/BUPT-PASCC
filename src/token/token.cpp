@@ -74,7 +74,7 @@ Token::Token(){};
     *   @return token的char类型值
     */
     char Token::get_char(){
-        return this->token_value[0];
+        return this->token_value[1];
     };
 
     /*
