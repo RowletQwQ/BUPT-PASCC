@@ -4,8 +4,9 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <pthread.h>
 #include <sys/time.h>
+#include <pthread.h>
+
 
 namespace common 
 {
