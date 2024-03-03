@@ -27,6 +27,13 @@
 %parse-param { ProgramStmt * program}
 %parse-param { void * scanner }
 
+// 定义token
+%token VAR
+       COLON
+       SEMI
+       ID
+       COMMA
+
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
     ProgramStmt *                                   program_struct;
@@ -38,7 +45,7 @@
     NumberStmt *                                    num_value;
     std::vector<VarDeclStmt *> *                    var_decls;
     VarDeclStmt *                                   var_decl;
-    DataType                                        var_type;
+    VarType                                         var_type;
     BasicType                                       basic_type;
     std::vector<PeriodStmt *>                       period_list;
     std::vector<FuncDeclStmt *> *                   func_decl_list;
@@ -80,7 +87,7 @@
 %type <kv_pair>             const_declaration
 %type <num_value>           const_value
 %type <var_decls>           var_declarations
-%type <var_decl>            var_declaration
+%type <var_decls>           var_declaration
 %type <var_type>            type
 %type <basic_type>          basic_type
 %type <period_list>         period
@@ -113,6 +120,75 @@
 
 %%
 // TODO 此处书写文法规则
+
+
+var_declarations:
+    /* empty */
+    {
+        $$ = nullptr;
+    }
+    | VAR var_declaration
+    {
+        $$ = $2;
+        std::reverse($$->begin(), $$->end());
+    };
+
+var_declaration:
+    idlist COLON type
+    {
+        $$ = new vector<VarDeclStmt *>();
+        if ($1) {
+            VarDeclStmt * var_decl = new VarDeclStmt();
+            var_decl->id = std::move(*$1);
+            std::reverse(var_decl->id.begin(), var_decl->id.end());
+            delete $1;
+        }
+        if ($3) {
+            var_decl->type = $3;
+            delete $3;
+            // TODO 设置基本类型大小,得加相关逻辑进行判断
+            var_decl->type_size = 4;
+        }
+        $$->emplace_back(var_decl);
+    }
+    | var_declaration SEMI idlist COLON type
+    {
+        if ($1) {
+            $$ = $1;
+        } else {
+            $$ = new vector<VarDeclStmt *>();
+        }
+        if ($3) {
+            VarDeclStmt * var_decl = new VarDeclStmt();
+            var_decl->id = std::move(*$3);
+            std::reverse(var_decl->id.begin(), var_decl->id.end());
+            delete $3;
+            var_decl->type = $5;
+            delete $5;
+            // TODO 设置基本类型大小,得加相关逻辑进行判断
+            var_decl->type_size = 4;
+            $$->emplace_back(var_decl);
+        }
+    };
+    ;
+
+idlist:
+    ID
+    {
+        $$ = new std::vector<std::string>();
+        $$->emplace_back($1);
+        delete $1;
+    }
+    | idlist COMMA ID
+    {
+        if ($1) {
+            $$ = $1;
+        } else {
+            $$ = new std::vector<std::string>();
+        }
+        $$->emplace_back($3);
+        delete $3;
+    };
 
 %%
 // 此处书写相关函数，会添加在生成的代码中

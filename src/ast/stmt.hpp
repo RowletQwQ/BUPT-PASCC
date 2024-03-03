@@ -213,10 +213,9 @@ enum class BasicType {
     BOOLEAN,
 };
 
-enum class DataType {
-    NULL_TYPE,
-    BasicType,
-    ArrayType,
+struct VarType {
+    bool is_array; // 是否为数组类型
+    BasicType basic_type; // 基本类型
 };
 
 /**
@@ -246,8 +245,7 @@ public:
 class VarDeclStmt : public BaseStmt {
 public:
     std::vector<std::string> id; // 可能同时声明多个变量
-    DataType data_type; // 变量的类型,基本类型或者数组类型
-    BasicType basic_type; // 对应的基本类型
+    VarType data_type; // 变量的类型,基本类型或者数组类型
     int type_size; // 如果是基本类型，需要指定类型大小
     std::vector<std::unique_ptr<PeriodStmt>> array_range; // 各维度数组定义取值
     void accept(StmtVisitor &visitor) override;
