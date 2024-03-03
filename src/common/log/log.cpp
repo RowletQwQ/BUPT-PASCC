@@ -8,15 +8,23 @@ namespace common {
 
 Log *g_log = nullptr;
 
+enum LOG_COLOR {
+	RED = 31,
+	GREEN = 32,
+	BLUE = 34,
+	GRAY = 90,
+	YELLOW = 93,
+};
+
 Log::Log(const LogLevel level)
     : log_level_(level)
 {
     pthread_mutex_init(&mutex_, NULL);
-    prefix_map_[DEBUG] = "DEBUG";
-    prefix_map_[INFO] = "INFO";
-    prefix_map_[WARN] = "WARN";
-    prefix_map_[ERROR] = "ERROR";
-    prefix_map_[FATAL] = "FATAL";
+    prefix_map_[DEBUG] = "\033[" + std::to_string(GRAY) + "mDEBUG\033[0m";
+    prefix_map_[INFO] = "\033[" + std::to_string(GREEN) + "mINFO\033[0m";
+    prefix_map_[WARN] = "\033[" + std::to_string(YELLOW) + "mWARN\033[0m";
+    prefix_map_[ERROR] = "\033[" + std::to_string(RED) + "mERROR\033[0m";
+    prefix_map_[FATAL] = "\033[" + std::to_string(RED) + "mFATAL\033[0m";
 }
 
 Log::~Log()
