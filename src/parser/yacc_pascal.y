@@ -185,6 +185,7 @@ var_declaration:
         std::reverse(var_decl->id_list.begin(), var_decl->id_list.end()); 
         var_decl->data_type = DataType::ArrayType;
         if ($6) {
+            std::reverse($6->begin(), $6->end());
             for (auto period : *$6) {
                 var_decl->period_list.emplace_back(period);
             }
