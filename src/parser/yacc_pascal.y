@@ -17,6 +17,21 @@
 %}
 
 
+// 定义Token
+
+%token  VAR
+        COLON
+        SEMICOLON
+        COMMA
+        LEFT_BRACKET
+        RIGHT_BRACKET
+        ARRAY
+        OF
+        INTEGER_KW
+        REAL_KW
+        BOOLEAN_KW
+        CHAR_KW
+
 %define api.pure full
 %define parse.error verbose
 /** 启用位置标识 **/
@@ -40,7 +55,7 @@
     VarDeclStmt *                                   var_decl;
     DataType                                        var_type;
     BasicType                                       basic_type;
-    std::vector<PeriodStmt *>                       period_list;
+    std::vector<PeriodStmt *> *                     period_list;
     std::vector<FuncDeclStmt *> *                   func_decl_list;
     FuncDeclStmt *                                  func_decl;
     FuncHeadDeclStmt *                              func_head;
@@ -71,6 +86,8 @@
 }
 
 
+%token <string> ID
+
 // 下面定义非终结符
 %type <program_struct>      programstruct
 %type <program_head>        program_head
@@ -80,7 +97,7 @@
 %type <kv_pair>             const_declaration
 %type <num_value>           const_value
 %type <var_decls>           var_declarations
-%type <var_decl>            var_declaration
+%type <var_decls>           var_declaration
 %type <var_type>            type
 %type <basic_type>          basic_type
 %type <period_list>         period
@@ -113,6 +130,98 @@
 
 %%
 // TODO 此处书写文法规则
+
+var_declarations:
+    /* empty */
+    {
+        $$ = nullptr;
+    }
+    | VAR var_declaration
+    {
+        $$ = $2;
+    };
+
+var_declaration:
+    /* empty */
+    {
+        $$ = nullptr;
+    }
+    | ID idlist COLON basic_type SEMICOLON var_declaration
+    {
+        if ($6) {
+            $$ = $6;
+        } else {
+            $$ = new std::vector<VarDeclStmt *>();
+        }
+        VarDeclStmt * var_decl = new VarDeclStmt();
+        if ($2) {
+            var_decl->id_list = *$2;
+            delete $2;
+        }
+        var_decl->id_list.emplace_back($1);
+        std::reverse(var_decl->id_list.begin(), var_decl->id_list.end()); 
+        var_decl->data_type = DataType::BasicType;
+        var_decl->basic_type = $4;
+        $$->emplace_back(var_decl);
+    }
+    | ID idlist COLON ARRAY LEFT_BRACKET period RIGHT_BRACKET OF basic_type SEMICOLON var_declaration
+    {
+        if ($11) {
+            $$ = $11;
+        } else {
+            $$ = new std::vector<VarDeclStmt *>();
+        }
+        VarDeclStmt * var_decl = new VarDeclStmt();
+        if ($2) {
+            var_decl->id_list = *$2;
+            delete $2;
+        }
+        var_decl->id_list.emplace_back($1);
+        std::reverse(var_decl->id_list.begin(), var_decl->id_list.end()); 
+        var_decl->data_type = DataType::ArrayType;
+        if ($6) {
+            for (auto period : *$6) {
+                var_decl->period_list.emplace_back(period);
+            }
+            delete $6;
+        }
+        var_decl->basic_type = $8;
+        $$->emplace_back(var_decl);
+    };
+
+idlist:
+    /* empty */
+    {
+        $$ = nullptr;
+    }
+    | COMMA ID idlist
+    {
+        if ($3) {
+            $$ = $3;
+        } else {
+            $$ = new std::vector<std::string>();
+        }
+        $$->emplace_back($2);
+    };
+
+basic_type:
+    INTEGER_KW
+    {
+        $$ = BasicType::INT;
+    }
+    | REAL_KW
+    {
+        $$ = BasicType::REAL;
+    }
+    | BOOLEAN_KW
+    {
+        $$ = BasicType::BOOLEAN;
+    }
+    | CHAR_KW
+    {
+        $$ = BasicType::CHAR;
+    };
+
 
 %%
 // 此处书写相关函数，会添加在生成的代码中
