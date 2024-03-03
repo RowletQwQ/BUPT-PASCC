@@ -44,11 +44,6 @@ private:
 */
 class IRGenerator : public StmtVisitor {
 public:
-    // TODO
-    IRGenerator() = default;
-
-    // 生成中间代码
-    Module get_ir();
     // 语句访问者
     void visit(ExprStmt &stmt) override;
     void visit(RelExprStmt &stmt) override;
@@ -75,6 +70,21 @@ public:
     void visit(ProgramHeadStmt &stmt) override;
     void visit(ProgramBodyStmt &stmt) override;
     void visit(ProgramStmt &stmt) override;
+
+    Module get_ir() { return module_; }
+
+    Scope scope_; // 作用域
+    Module module_; // 中间代码
+    
+    IRGenerator() {
+        // TODO: 把 Pascal 的内建函数加入到中间代码中, 如 read, write 等
+
+
+        // 进入全局作用域
+        scope_.enter();
+        // scope_.push("read", .....);
+        // scope_.push("write", .....);
+    }
 };
 
 
