@@ -187,7 +187,7 @@ var_declaration:
         if ($6) {
             std::reverse($6->begin(), $6->end());
             for (auto period : *$6) {
-                var_decl->period_list.emplace_back(period);
+                var_decl->period_list.emplace_back(std::unique_ptr<PeriodStmt>(period));
             }
             delete $6;
         }
