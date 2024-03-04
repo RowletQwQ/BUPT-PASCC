@@ -61,7 +61,7 @@ LETTER                  [a-zA-Z]
 IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
 
 CHAR               \'(\\.|[^'\\])\'
-STRING             '\''([^'\n]|\\')*\''
+STRING             \'([^'\n]|'')*\'
 
 
 PLUS                    "+"

@@ -138,8 +138,15 @@ Token::Token(){};
             return "[Token] " + get_type() + " " + get_char() + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]" ;
             break;
         case STRING:
-            return "[Token] " + get_type() + " " + get_string() + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]" ;
-            break;
+            // 假设字符串总是由两端的引号包围
+            if (this->token_value.length() >= 2) {
+                // 使用substr去除两端的引号，开始于第1个字符并结束于倒数第2个字符
+                std::string unquoted_string = this->token_value.substr(1, this->token_value.length() - 2);
+                return "[Token] " + get_type() + " " + unquoted_string + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]";
+            } else {
+                // 如果字符串长度不足以包含两个引号，则直接返回原始值
+                return "[Token] " + get_type() + " " + this->token_value + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]";
+            }
         case INT:
             return "[Token] " + get_type() + " " + std::to_string(get_int()) + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]" ;
             break;
