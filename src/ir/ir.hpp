@@ -115,9 +115,9 @@ public:
 */
 class ArrayType : public Type {
 public:
-    explicit ArrayType(std::shared_ptr<Type> elem_type, unsigned num_elems) : Type(Type::ArrayTID), elem_type_(elem_type), num_elems_(num_elems) {}
+    explicit ArrayType(std::shared_ptr<Type> elem_type, std::vector<unsigned> dims_elem_num) : Type(Type::ArrayTID), elem_type_(elem_type), dims_elem_num_(dims_elem_num) {}
     std::shared_ptr<Type> elem_type_; // 元素类型
-    unsigned num_elems_; // 元素个数
+    std::vector<unsigned> dims_elem_num_; // 数组各维度元素数量
 };
 
 /**
