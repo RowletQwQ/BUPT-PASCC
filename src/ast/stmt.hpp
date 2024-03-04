@@ -260,6 +260,7 @@ public:
  */
 class FuncHeadDeclStmt : public BaseStmt {
 public:
+    std::string func_name; // 函数名
     BasicType ret_type; //返回值的类型
     std::vector<std::unique_ptr<VarDeclStmt>> args; // 函数的参数
     void accept(StmtVisitor &visitor) override;
