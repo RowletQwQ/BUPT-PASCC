@@ -32,6 +32,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 
 // 定义Token
 
+
 %token INTEGER
     REAL
     IDENTIFIER
@@ -82,7 +83,6 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
     ORELSE
     ANDTHEN
     DOUBLE_DOT
-
 
 %define api.pure full
 %define parse.error verbose
@@ -139,6 +139,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
     double                                          real;
     char                                           charactor;
 }
+
 
 
 %token <string> IDENTIFIER
@@ -323,6 +324,7 @@ relop : '=' { $$ = "="; } | NE { $$ = "<>"; } | '<' { $$ = "<"; } | LE { $$ = "<
 * mulop -> * | / | div | mod | and
 */
 mulop : '*' { $$ = "*"; } | '/' { $$ = "/"; } | DIV { $$ = "div"; } | MOD { $$ = "mod"; } | AND { $$ = "and"; }
+
 
 
 %%
