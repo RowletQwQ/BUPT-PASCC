@@ -1,4 +1,5 @@
 #include "token.hpp"
+#include <string>
 /*
 *   @brief Token类，用于表示词法分析的结果
 */
@@ -52,8 +53,8 @@ Token::Token(){};
     *   @brief 获取token的int类型值
     *   @return token的int类型值
     */
-    int Token::get_int(){
-        return std::stoi(this->token_value);
+    long long Token::get_int(){
+        return std::stoll(this->token_value);
     };
     /*
     *   @brief 获取token的double类型值

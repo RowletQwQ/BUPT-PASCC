@@ -8,13 +8,80 @@
 
 #include "common/log/log.hpp"
 #include "ast/stmt.hpp"
-#include "parser/lex_pascal.hpp"
-#include "parser/yacc_pascal.hpp"
+#include "ast/stmt_test.hpp"
+#include "yacc_pascal.hpp"
+#include "lex_pascal.hpp"
+
+
+void syntax_error(const char *msg){
+    printf("[SYNTAX ERROR] ");
+    printf("%s\n", msg);
+}
+
+
 
 
 // 相关所需的函数，可能包含一些错误处理函数
-
+int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_t scanner, const char *msg)
+{
+    syntax_error(msg);
+    return 0;
+}
 %}
+
+
+// 定义Token
+
+%token INTEGER
+    REAL
+    IDENTIFIER
+    CHAR
+    STRING
+    BOOLEAN
+    CONST
+    PROGRAM
+    CONST
+    TYPE
+    RECORD
+    ARRAY
+    OF
+    VAR
+    FUNCTION
+    PROCEDURE
+    BEGIN_TOKEN
+    END
+    IF
+    THEN
+    ELSE
+    CASE
+    WHILE
+    REPEAT
+    UNTIL
+    FOR
+    TO
+    DOWNTO
+    DO
+    READ
+    READLN
+    WRITE
+    WRITELN
+    CHAR_KW
+    INTEGER_KW
+    REAL_KW
+    BOOLEAN_KW
+    NOT
+    DIV
+    MOD
+    AND
+    OR
+    NE
+    LE
+    GE
+    ASSIGNOP
+    IN
+    ORELSE
+    ANDTHEN
+    DOUBLE_DOT
 
 
 %define api.pure full
@@ -35,12 +102,14 @@
     std::vector<std::string> *                      id_list;
     ConstDeclStmt *                                 const_decls;
     std::pair<std::string, NumberStmt> *            kv_pair;
+    std::vector<std::pair<std::string, NumberStmt>*> * kv_pair_list;
     NumberStmt *                                    num_value;
     std::vector<VarDeclStmt *> *                    var_decls;
     VarDeclStmt *                                   var_decl;
     DataType                                        var_type;
     BasicType                                       basic_type;
-    std::vector<PeriodStmt *>                       period_list;
+    std::vector<PeriodStmt *> *                     period_list;
+    PeriodStmt *                                    period;
     std::vector<FuncDeclStmt *> *                   func_decl_list;
     FuncDeclStmt *                                  func_decl;
     FuncHeadDeclStmt *                              func_head;
@@ -49,8 +118,8 @@
     AssignStmt *                                    assign_stmt;
     IfStmt *                                        if_stmt;
     ForStmt *                                       for_stmt;
-    ReadStmt *                                      read_stmt;
-    WriteStmt *                                     write_stmt;
+    ReadFuncStmt *                                      read_stmt;
+    WriteFuncStmt *                                     write_stmt;
     FuncCallStmt *                                  func_call_stmt;
     std::vector<LValStmt *> *                       lval_list;
     LValStmt *                                      lval;
@@ -68,22 +137,35 @@
     long long                                       number;
     bool                                            boolean;
     double                                          real;
+    char                                           charactor;
 }
 
 
+%token <string> IDENTIFIER
+%token <number> INTEGER
+%token <boolean> BOOLEAN
+%token <real> REAL
+%token <charactor> CHAR
+%token <string> STRING
+
 // 下面定义非终结符
+%type <string> relop
+%type <string> addop
+%type <string> mulop
 %type <program_struct>      programstruct
 %type <program_head>        program_head
 %type <program_body>        program_body
 %type <id_list>             idlist
 %type <const_decls>         const_declarations
-%type <kv_pair>             const_declaration
+%type <kv_pair_list>             const_declaration
 %type <num_value>           const_value
 %type <var_decls>           var_declarations
-%type <var_decl>            var_declaration
+%type <var_decls>           var_declaration
 %type <var_type>            type
 %type <basic_type>          basic_type
-%type <period_list>         period
+%type <period_list>         period_item
+%type <period_list>         period_list
+%type <period>              period
 %type <func_decl_list>      subprogram_declarations
 %type <func_decl>           subprogram
 %type <func_head>           subprogram_head
@@ -114,6 +196,135 @@
 %%
 // TODO 此处书写文法规则
 
+
+/*
+* no : 1.5
+* rule  :  const_declarations -> empty | "const" const_declaration ';' const_declarations
+* node :  ConstDeclStmt * const_decls
+* son  :  std::vector<std::pair<std::string, NumberStmt> *> *
+* error : 常量定义出错 请检查是否符合规范
+*/
+const_declarations : /*empty*/
+    {
+        $$ = nullptr;
+    }
+    | CONST const_declaration ';'
+    {
+        $$ = new ConstDeclStmt();
+        std::vector<std::pair<std::string, NumberStmt> *> kv_pair_list = *$2;
+        for (auto kv_pair : kv_pair_list) {
+            $$->pairs.push_back(*kv_pair);
+            delete kv_pair;
+        }
+        delete $2;
+
+        // DEBUG
+        printf("const_declarations:\n");
+        printf("%s",const_decl_stmt_str(*$$,0).c_str());
+    }
+    |error{
+        syntax_error("常量定义出错 请检查是否符合规范");
+    };
+
+
+/*
+* no : 1.6
+* rule  :  const_declaration -> IDENTIFIER = const_value | const_declaration ; IDENTIFIER = const_value
+* node :  std::vector<std::pair<std::string, NumberStmt> *> * 
+* son  :  char *   NumberStmt *
+*/
+const_declaration : IDENTIFIER '=' const_value
+    {
+        $$ = new std::vector<std::pair<std::string, NumberStmt> *>();
+        $$->push_back(new std::pair<std::string, NumberStmt>($1, *$3));
+        delete $1;
+        delete $3;
+    }
+    | const_declaration ';' IDENTIFIER '=' const_value
+    {
+        $1->push_back(new std::pair<std::string, NumberStmt>($3, *$5));
+        delete $3;
+        delete $5;
+        $$ = $1; // 不需要删除
+    }
+    ;
+
+
+/*
+* no : 1.7
+* rule  :  const_value -> INTEGER | REAL | CHAR | '-' INTEGER | '-' REAL | '+' INTEGER | '+' REAL | ' CHAR '
+* node :  NumberStmt * num_value
+* son  :  long long | double | char
+* error : 常量 请检查是否为合法常量 
+*/
+const_value: INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_signed = true;
+        num_value->int_val = $1;
+        $$ = num_value;
+    }|
+    '+' INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_signed = true;
+        num_value->int_val = $2;
+        $$ = num_value;
+    }
+    | '-' INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_signed = true;
+        num_value->int_val = -$2;
+        $$ = num_value;
+    }
+    | REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_real = true;
+        num_value->real_val = $1;
+        $$ = num_value;
+    }
+    | '+' REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_real = true;
+        num_value->real_val = $2;
+        $$ = num_value;
+    }
+    | '-' REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_real = true;
+        num_value->real_val = -$2;
+        $$ = num_value;
+    }
+    | '\'' CHAR  '\''
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_char = true;
+        num_value->char_val = $2;
+        $$ = num_value;
+    }
+    ;
+
+
+/*
+* addop ->  + | - | or
+*/
+addop : '+' { $$ = "+"; } | '-' { $$ = "-"; } | OR { $$ = "or"; }
+
+/*
+* relop -> = | <> | < | <= | > | >= 
+*/
+relop : '=' { $$ = "="; } | NE { $$ = "<>"; } | '<' { $$ = "<"; } | LE { $$ = "<="; } | '>' { $$ = ">"; } | GE { $$ = ">="; }
+
+/*
+* mulop -> * | / | div | mod | and
+*/
+mulop : '*' { $$ = "*"; } | '/' { $$ = "/"; } | DIV { $$ = "div"; } | MOD { $$ = "mod"; } | AND { $$ = "and"; }
+
+
 %%
 // 此处书写相关函数，会添加在生成的代码中
 extern void scan_string(const char *str, yyscan_t scanner);
@@ -122,7 +333,7 @@ int code_parse(const char * code_str, ProgramStmt * program) {
     yyscan_t scanner;
     yylex_init(&scanner);
     scan_string(code_str, scanner);
-    int ret = yyparse(program, scanner);
+    int ret = yyparse(code_str,program, scanner);
     yylex_destroy(scanner);
     return ret;
 }
