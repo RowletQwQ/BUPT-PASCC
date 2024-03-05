@@ -76,7 +76,7 @@ public:
     *   @brief 获取token的int类型值
     *   @return token的int类型值
     */
-    int get_int();
+    long long get_int();
     /*
     *   @brief 获取token的double类型值
     *   @return token的double类型值
