@@ -63,25 +63,53 @@ program_body : const_declarations var_declarations subprogram_declarations compo
 
 
 /*
-* no : 1.4
-* rule  : id_list -> IDENTIFIER | id_list ',' IDENTIFIER 
-* node :  std::vector<std::string> * 
-* son  :  std::string
-* error : 程序头定义出错 请检查是否符合规范
+* no : 2.8-2.9
+* rule  : subprogram_head -> PROCEDURE IDENTIFIER | PROCEDURE IDENTIFIER '(' parameter_list')' | FUNCTION IDENTIFIER ':' basic_type | FUNCTION IDENTIFIER '(' parameter_list')' ':' basic_type
+* node :  FuncHeadDeclStmt *
+* son  :  VarDeclStmt*
+* error :
+*
+* TODO:unique_ptr
 */
-idlist : IDENTIFIER
-    {
-        $$ = new std::vector<std::string>();
-        $$->push_back($1);
-        delete $1;
-    }
-    | idlist ',' IDENTIFIER
-    {
-        $1->push_back($3);
-        delete $3;
-        $$ = $1;
-    }
-    | error{
-        syntax_error("程序头定义出错 请检查是否符合规范");
-    };
 
+subprogram_head : PROCEDURE IDENTIFIER
+        | PROCEDURE IDENTIFIER '(' parameter_list')'
+        | FUNCTION IDENTIFIER ':' basic_type
+        | FUNCTION IDENTIFIER '(' parameter_list')' ':' basic_type
+
+/*
+* no : 2.2
+* rule  : var_declaration -> idlist ':' type | var_declaration ';' idlist ':' type
+* node :  std::vector<VarDeclStmt *> *
+* son :
+* TODO: data_type中period list； unique_ptr
+*/
+var_declaration: idlist ':' type
+        {
+            $$ = new std::vector<VarDeclStmt *>();
+            VarDeclStmt * var_decl = new VarDeclStmt();
+            var_decl->id = idlist;
+            var_decl->
+        }
+        | var_declaration ';' idlist ':' type
+        {
+        }
+
+
+/*
+* no : 2.3
+* rule  : type -> basic_type | ARRAY '[' period_list ']' OF basic_type
+* node :  DataType
+*
+* TODO: period_list未存储
+*/
+type: basic_type
+        {
+            $$ = DataType::BasicType;
+            printf("%s", data_type_str($$).c_str());
+        }
+        | ARRAY '[' period_list ']' OF basic_type
+        {
+            $$ = DataType::ArrayType;
+            printf("%s", data_type_str($$).c_str());
+        }
