@@ -446,8 +446,14 @@ public:
 
         // Array(Load) Operation
         Visit, 
+
+        // Inner Function Call
+        Read,
+        Write
     };
     explicit Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::shared_ptr<BasicBlock> parent, bool before = false);
+    explicit Instruction(const std::string name, std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::shared_ptr<BasicBlock> parent, bool before = false);
+    
     ~Instruction() = default;
     void init();
 
@@ -590,6 +596,34 @@ public:
         set_operand(1, idx);
     }
     ~LoadInst() = default;
+};
+
+/**
+ * @brief 读指令
+*/
+class ReadInst : public Instruction {
+public:
+    ReadInst(std::vector<std::shared_ptr<Value>> args, std::shared_ptr<BasicBlock> bb)
+      : Instruction("read", std::make_shared<Type>(Type::VoidTID), OpID::Read, args.size(), bb) {
+        for (int i = 0; i < args.size(); i++) {
+            set_operand(i, args[i]);
+        }
+    }
+    ~ReadInst() = default;
+};
+
+/**
+ * @brief 写指令
+*/
+class WriteInst : public Instruction {
+public:
+    WriteInst(std::vector<std::shared_ptr<Value>> args, std::shared_ptr<BasicBlock> bb)
+        : Instruction("write", std::make_shared<Type>(Type::VoidTID), OpID::Read, args.size(), bb) {
+        for (int i = 0; i < args.size(); i++) {
+            set_operand(i, args[i]);
+        }
+    }
+    ~WriteInst() = default;
 };
 
 /**

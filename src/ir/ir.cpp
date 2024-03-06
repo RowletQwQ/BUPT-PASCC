@@ -12,9 +12,13 @@ FunctionType::FunctionType(std::shared_ptr<Type> result, std::vector<std::shared
 
 // 指令类相关函数实现
 Instruction::Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::shared_ptr<BasicBlock> parent, bool before)
-      : Value(ty, ""), op_id_(id), num_ops_(num_ops), parent_(parent) {
+    : Value(ty, ""), op_id_(id), num_ops_(num_ops), parent_(parent) {
         init();        
     }
+Instruction::Instruction(const std::string name, std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::shared_ptr<BasicBlock> parent, bool before) 
+    : Value(ty, name), op_id_(id), num_ops_(num_ops), parent_(parent) {
+        init();
+}
 void Instruction::init() {
     operands_.resize(num_ops_, nullptr); // 此句不能删去！否则operands_为空时无法用set_operand设置操作数，而只能用push_back设置操作数！
     use_pos_.resize(num_ops_);
