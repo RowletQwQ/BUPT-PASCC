@@ -197,6 +197,131 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %%
 // TODO 此处书写文法规则
 
+/*
+* no : 2.10
+* rule  : parameter_list -> parameter | parameter_list ';' parameter
+* node :  std::vector<VarDeclStmt *>*
+* son  :  VarDeclStmt*
+* error :
+*/
+
+parameter_list : parameter
+        {
+            $$ = new std::vector<VarDeclStmt *>();
+            $$->push_back($1);
+            delete $1;
+        }
+        | parameter_list ';' parameter
+        {
+            $1->push_back($3);
+            delete $3;
+            $$ = $1;
+        };
+
+/*
+* no : 3.1 - 3.3
+* rule  : parameter -> VAR idlist ':' basic_type | idlist ':' basic_type
+* node :  VarDeclStmt*
+* son  :  std::vector<std::string> *, BaiscType
+* error :
+*/
+
+parameter: VAR idlist ':' basic_type
+        {
+            VarDeclStmt* var_decl = new VarDeclStmt();
+            var_decl->id.insert(var_decl->id.end(), $2->begin(), $2->end());
+            var_decl-> basic_type = $4;
+            delete $2;
+            printf("parameter: var %s", var_decl_stmt_str($$,0).c_str());
+        }
+        | idlist ':' basic_type
+        {
+            VarDeclStmt* var_decl = new VarDeclStmt();
+            var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
+            var_decl-> basic_type = $3;
+            delete $1;
+            printf("parameter: %s", var_decl_stmt_str($$,0).c_str());
+        };
+
+/*
+* no : 2.4
+* rule  : basic_type -> INTEGER_KW | REAL_KW | BOOLEAN_KW | CHAR_KW
+* node :  BasicType
+*/
+
+basic_type: INTEGER_KW
+        {
+            $$ = BasicType::INT;
+            printf("%s", basic_type_str($$).c_str());
+        }
+        | REAL_KW
+        {
+            $$ = BasicType::REAL;
+        }
+        | BOOLEAN_KW
+        {
+            $$ = BasicType::BOOLEAN;
+        }
+        | CHAR_KW
+        {
+            $$ = BasicType::CHAR;
+        }
+
+
+/*
+* no : 2.5
+* rule  : period_list -> INTEGER '..' INTEGER | period_list ',' INTEGER '..' INTEGER
+* node :  std::vector<PeriodStmt *>*
+* son  :  PeriodStmt *
+* error :
+*/
+
+period_list: INTEGER DOUBLE_DOT INTEGER
+        {
+            $$ = new std::vector<PeriodStmt *>();
+            PeriodStmt * period = new PeriodStmt();
+            period->begin = $1;
+            period->end = $3;
+            $$->push_back(period);
+            // debug
+            printf("%s", period_list_str($$,0).c_str());
+        }
+        | period_list ',' INTEGER DOUBLE_DOT INTEGER
+        {
+            PeriodStmt * period = new PeriodStmt();
+            period->begin = $3;
+            period->end = $5;
+            $1->push_back(period);
+            $$ = $1;
+            // debug
+            printf("%s", period_list_str($$,0).c_str());
+        };
+
+/*
+* no : 1.4
+* rule  :  idlist -> IDENTIFIER | idlist ',' IDENTIFIER
+* node :  std::vector<std::string> * id_list
+* son  :  string
+* error : 标识符定义错误 请检查是否符合规范
+*/
+idlist : IDENTIFIER
+    {
+        $$ = new std::vector<std::string>();
+        $$->push_back($1);
+        delete $1;
+    }
+    | idlist ',' IDENTIFIER
+    {
+        $1->push_back($3);
+        delete $3;
+        $$ = $1;
+         // DEBUG
+        printf("id_list:\n");
+        printf("%s",id_list_str(*$$,0).c_str());
+    }
+    /*| error{
+        syntax_error("标识符定义错误 请检查是否符合规范");
+    };*/
 
 /*
 * no : 1.5
@@ -231,7 +356,7 @@ const_declarations : /*empty*/
 /*
 * no : 1.6
 * rule  :  const_declaration -> IDENTIFIER = const_value | const_declaration ; IDENTIFIER = const_value
-* node :  std::vector<std::pair<std::string, NumberStmt> *> * 
+* node :  std::vector<std::pair<std::string, NumberStmt> *> *
 * son  :  char *   NumberStmt *
 */
 const_declaration : IDENTIFIER '=' const_value
@@ -256,7 +381,7 @@ const_declaration : IDENTIFIER '=' const_value
 * rule  :  const_value -> INTEGER | REAL | CHAR | '-' INTEGER | '-' REAL | '+' INTEGER | '+' REAL | ' CHAR '
 * node :  NumberStmt * num_value
 * son  :  long long | double | char
-* error : 常量 请检查是否为合法常量 
+* error : 常量 请检查是否为合法常量
 */
 const_value: INTEGER
     {
@@ -316,7 +441,7 @@ const_value: INTEGER
 addop : '+' { $$ = "+"; } | '-' { $$ = "-"; } | OR { $$ = "or"; }
 
 /*
-* relop -> = | <> | < | <= | > | >= 
+* relop -> = | <> | < | <= | > | >=
 */
 relop : '=' { $$ = "="; } | NE { $$ = "<>"; } | '<' { $$ = "<"; } | LE { $$ = "<="; } | '>' { $$ = ">"; } | GE { $$ = ">="; }
 
