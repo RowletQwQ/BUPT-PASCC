@@ -1,18 +1,30 @@
 
 #include "ast/stmt_test.hpp"
-
+#define SPACE_NUM 3
 /* 用于语法调试的TEST文件 */
 
 std::string deep_print(int deep) {
     std::string res = "";
     for (int i = 0; i < deep; i++) {
-        res += "  ";
+        for (int j = 0; j < SPACE_NUM; j++) {
+            res += " ";
+        }
+    }
+    return res;
+}
+
+std::string mark_print(int length){
+    std::string res = "";
+    for (int i = 0; i < length; i++) {
+        for(int j = 0; j < SPACE_NUM; j++){
+            res += "-";
+        }
     }
     return res;
 }
 
 std::string number_stmt_str(const NumberStmt stmt, int deep) {
-    std::string res = deep_print(deep) + "[NumberStmt] ";
+    std::string res = deep_print(deep) + "|____[NumberStmt] ";
     
     if (stmt.is_real) {
         res += "real: " + std::to_string(stmt.real_val);
@@ -33,9 +45,209 @@ std::string kv_pair_str(const ConstDeclStmt::KvPair pair, int deep) {
 
 
 std::string const_decl_stmt_str(const ConstDeclStmt stmt,int deep) {
-    std::string res = deep_print(deep) + "[ConstDeclStmt]\n";
+    std::string res = deep_print(deep) + "|____[ConstDeclStmt]\n";
     for (auto &pair : stmt.pairs) {
         res += kv_pair_str(pair, deep + 1) + "\n";
     }
     return res;
 }
+
+std::string expr_stmt_str(const ExprStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[ExprStmt]\n";
+    res += rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
+    return res + "\n";
+};
+
+std::string rel_expr_stmt_str(const RelExprStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[RelExprStmt] "+"\n";
+    if(stmt->type == RelExprStmt::RelExprType::NULL_TYPE){
+        res += add_expr_stmt_str(stmt->add_expr.get(), deep + 1);
+    }else{
+        res += add_expr_stmt_str(stmt->add_expr.get(), deep + 1);
+        res += "\n" + deep_print(deep+1) + "===>[OP]: " + rel_op(stmt->type) + "\n";
+        res += rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string add_expr_stmt_str(const AddExprStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[AddExprStmt]\n";
+    if(stmt->type == AddExprStmt::AddExprType::NULL_TYPE){
+        res += mul_expr_stmt_str(stmt->mul_expr.get(), deep + 1);
+    }else{
+        res += mul_expr_stmt_str(stmt->mul_expr.get(), deep + 1);
+        res += "\n" + deep_print(deep+1) + "===>[OP]: " + add_op(stmt->type) + "\n";
+        res += add_expr_stmt_str(stmt->add_expr.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string mul_expr_stmt_str(const MulExprStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[MulExprStmt]\n";
+    if(stmt->type == MulExprStmt::MulExprType::NULL_TYPE){
+        res += unary_expr_stmt_str(stmt->unary_expr.get(), deep + 1);
+    }else{
+        res += unary_expr_stmt_str(stmt->unary_expr.get(), deep + 1);
+        res += "\n" + deep_print(deep+1) + "===>[OP]: " + mul_op(stmt->type) + "\n";
+        res += mul_expr_stmt_str(stmt->mul_expr.get(), deep + 1);
+    }
+    return res ;
+};
+
+std::string unary_expr_stmt_str(const UnaryExprStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[UnaryExprStmt]\n";
+    if(stmt->type == UnaryExprStmt::UnaryExprType::NULL_TYPE){
+        res += primary_expr_stmt_str(stmt->primary_expr.get(), deep + 1);
+    }else{
+        res += "\n" + deep_print(deep+1) + "===>[OP]: " + unary_op(stmt->type) + "\n";
+        res += primary_expr_stmt_str(stmt->primary_expr.get(), deep + 1);
+    }
+    return res ;
+};
+
+std::string primary_expr_stmt_str(const PrimaryExprStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[PrimaryExprStmt]\n";
+    if(stmt->type == PrimaryExprStmt::PrimaryExprType::Value){
+        res += value_stmt_str(stmt->value.get(), deep + 1);
+    }else{
+        res += value_stmt_str(stmt->value.get(), deep + 1);
+    }
+    res += deep_print(deep+1);
+    return res;
+};
+
+std::string value_stmt_str(const ValueStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[ValueStmt]\n";
+    if(stmt->type == ValueStmt::ValueType::Number){
+        res += number_stmt_str(*stmt->number, deep + 1);
+    }else if(stmt->type == ValueStmt::ValueType::Str){
+        res += str_stmt_str(stmt->str.get(), deep + 1);
+    }else if(stmt->type == ValueStmt::ValueType::LVal){
+        res += lval_stmt_str(stmt->lval.get(), deep + 1);
+    }else if(stmt->type == ValueStmt::ValueType::FuncCall){
+        res += func_call_stmt_str(stmt->func_call.get(), deep + 1);
+    }
+    return res ;
+};
+
+std::string str_stmt_str(const StrStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[StrStmt] " + stmt->val;
+    return res;
+};
+
+std::string lval_stmt_str(const LValStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[LValStmt] \n" ;
+    res += deep_print(deep+1) + "id: " + stmt->id + "\n";
+    for(auto &expr : stmt->array_index){
+        res += expr_stmt_str(expr.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string func_call_stmt_str(const FuncCallStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[FuncCallStmt] \n";
+    res += deep_print(deep+1) + "id: " + stmt->id + "\n";
+    for(auto &expr : stmt->args){
+        res += expr_stmt_str(expr.get(), deep + 1);
+    }
+    return res ;
+};
+
+std::string expr_stmt_list_str(const std::vector<ExprStmt *> *stmts, int deep){
+    if(stmts == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[ExprStmtList]\n";
+    for(auto &stmt : *stmts){
+        res += expr_stmt_str(stmt, deep + 1);
+    }
+    return res;
+};
+
+std::string rel_op(RelExprStmt::RelExprType type){
+    if(type == RelExprStmt::RelExprType::Equal){
+        return "=";
+    }else if(type == RelExprStmt::RelExprType::NotEqual){
+        return "<>";
+    }else if(type == RelExprStmt::RelExprType::Less){
+        return "<";
+    }else if(type == RelExprStmt::RelExprType::LessEqual){
+        return "<=";
+    }else if(type == RelExprStmt::RelExprType::Greater){
+        return ">";
+    }else if(type == RelExprStmt::RelExprType::GreaterEqual){
+        return ">=";
+    }else if(type == RelExprStmt::RelExprType::In){
+        return "in";
+    }else{
+        return "ERROR";
+    }
+};
+
+std::string add_op(AddExprStmt::AddExprType type){
+    if(type == AddExprStmt::AddExprType::Plus){
+        return "+";
+    }else if(type == AddExprStmt::AddExprType::Minus){
+        return "-";
+    }else if(type == AddExprStmt::AddExprType::Or){
+        return "or";
+    }else{
+        return "ERROR";
+    }
+};
+
+std::string mul_op(MulExprStmt::MulExprType type){
+    if(type == MulExprStmt::MulExprType::Mul){
+        return "*";
+    }else if(type == MulExprStmt::MulExprType::Div){
+        return "/";
+    }else if(type == MulExprStmt::MulExprType::Mod){
+        return "mod";
+    }else if(type == MulExprStmt::MulExprType::And){
+        return "and";
+    }else if(type == MulExprStmt::MulExprType::AndThen){
+        return "and then";
+    }else{
+        return "ERROR";
+    }
+};
+
+std::string unary_op(UnaryExprStmt::UnaryExprType type){
+    if(type == UnaryExprStmt::UnaryExprType::Minus){
+        return "-";
+    }else if(type == UnaryExprStmt::UnaryExprType::Not){
+        return "not";
+    }else{
+        return "ERROR";
+    }
+};
