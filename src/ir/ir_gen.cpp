@@ -1,4 +1,5 @@
 #include "ir/ir_gen.hpp"
+#include "assert.h"
 
 namespace ir {
 
@@ -17,6 +18,56 @@ std::shared_ptr<Type> build_basic_type(BasicType type) {
             return std::make_shared<CharType>();
         case BasicType::BOOLEAN:
             return std::make_shared<BooleanType>();
+    }
+}
+Instruction::OpID build_op_id(RelExprStmt::RelExprType type) {
+    switch (type) {
+        case RelExprStmt::RelExprType::Equal:
+            return Instruction::OpID::Eq;
+        case RelExprStmt::RelExprType::NotEqual:
+            return Instruction::OpID::Ne;
+        case RelExprStmt::RelExprType::Less:
+            return Instruction::OpID::Lt;
+        case RelExprStmt::RelExprType::LessEqual:
+            return Instruction::OpID::Le;
+        case RelExprStmt::RelExprType::Greater:
+            return Instruction::OpID::Gt;
+        case RelExprStmt::RelExprType::GreaterEqual:
+            return Instruction::OpID::Ge;
+        case RelExprStmt::RelExprType::In:
+            return Instruction::OpID::In; 
+    }
+}
+Instruction::OpID build_op_id(AddExprStmt::AddExprType type) {
+    switch (type) {
+        case AddExprStmt::AddExprType::Plus:
+            return Instruction::OpID::Add;
+        case AddExprStmt::AddExprType::Minus:
+            return Instruction::OpID::Sub;
+        case AddExprStmt::AddExprType::Or:
+            return Instruction::OpID::Or;
+    }
+}
+Instruction::OpID build_op_id(MulExprStmt::MulExprType type) {
+    switch (type) {
+        case MulExprStmt::MulExprType::Mul:
+            return Instruction::OpID::Mul;
+        case MulExprStmt::MulExprType::Div:
+            return Instruction::OpID::Div;
+        case MulExprStmt::MulExprType::Mod:
+            return Instruction::OpID::Mod;
+        case MulExprStmt::MulExprType::And:
+            return Instruction::OpID::And;
+        case MulExprStmt::MulExprType::AndThen:
+            return Instruction::OpID::AndThen;
+    }
+}
+Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
+    switch (type) {
+        case UnaryExprStmt::UnaryExprType::Minus:
+            return Instruction::OpID::Sub;
+        case UnaryExprStmt::UnaryExprType::Not:
+            return Instruction::OpID::Not;
     }
 }
 
@@ -59,43 +110,99 @@ Value *Scope::find(const std::string &name) {
 
 
 void IRGenerator::visit(ExprStmt &stmt) {
-    
+    if (stmt.rel_expr != nullptr) {
+        stmt.rel_expr->accept(*this);
+    }
 }
 void IRGenerator::visit(RelExprStmt &stmt) {
-    
+    if (stmt.type == RelExprStmt::RelExprType::NULL_TYPE) { // 降级处理
+        stmt.add_expr->accept(*this);
+    } else {
+        Instruction::OpID op = build_op_id(stmt.type); // 操作符
+        stmt.rel_expr->accept(*this);
+        std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        stmt.add_expr->accept(*this);
+        std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        std::shared_ptr<CompareInst> inst = std::make_shared<CompareInst>(op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+    }
 }
 void IRGenerator::visit(AddExprStmt &stmt) {
+    if (stmt.type == AddExprStmt::AddExprType::NULL_TYPE) { // 降级处理
+        stmt.mul_expr->accept(*this);
+    } else {
+        Instruction::OpID op = build_op_id(stmt.type); // 操作符
+        stmt.add_expr->accept(*this);
+        std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        stmt.mul_expr->accept(*this);
+        std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+    }
     
 }
 void IRGenerator::visit(MulExprStmt &stmt) {
+    if (stmt.type == MulExprStmt::MulExprType::NULL_TYPE) { // 降级处理
+        stmt.unary_expr->accept(*this);
+    } else {
+        Instruction::OpID op = build_op_id(stmt.type); // 操作符
+        stmt.mul_expr->accept(*this);
+        std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        stmt.unary_expr->accept(*this);
+        std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+    }
     
 }
 void IRGenerator::visit(UnaryExprStmt &stmt) {
-    
+    if (stmt.type == UnaryExprStmt::UnaryExprType::NULL_TYPE) { // 降级处理
+        stmt.primary_expr->accept(*this);
+    } else {
+        Instruction::OpID op = build_op_id(stmt.type); // 操作符
+        stmt.primary_expr->accept(*this);
+        std::shared_ptr<Value> val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, op, val, this->scope_.current_f_->basic_blocks_.back());
+    }
 }
 void IRGenerator::visit(PrimaryExprStmt &stmt) {
-    
+    if (stmt.type == PrimaryExprStmt::PrimaryExprType::NULL_TYPE || stmt.type == PrimaryExprStmt::PrimaryExprType::Value) { // 降级处理
+        stmt.value->accept(*this);
+    } else {
+        stmt.expr->accept(*this);
+        std::shared_ptr<Value> val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Bracket, val, this->scope_.current_f_->basic_blocks_.back());
+    }
 }
 void IRGenerator::visit(ValueStmt &stmt) {
-    
+    assert(stmt.type != ValueStmt::ValueType::NULL_TYPE);
+    if (stmt.type == ValueStmt::ValueType::LVal) {
+        stmt.lval->accept(*this);
+    } else if (stmt.type == ValueStmt::ValueType::FuncCall) {
+        stmt.func_call->accept(*this);
+    } else if (stmt.type == ValueStmt::ValueType::Number) {
+        stmt.number->accept(*this);
+    } else if (stmt.type == ValueStmt::ValueType::Str) {
+        stmt.str->accept(*this);
+    }
 }
+
 void IRGenerator::visit(NumberStmt &stmt) {
-    
+    std::shared_ptr<Type> type; // 类型
+    std::shared_ptr<Literal> val; // 值
+    if (stmt.is_real) {
+        type = std::make_shared<RealType>(kDefaultRealBitWidth);
+        val = std::make_shared<LiteralDouble>(type, stmt.real_val);
+    } else if (stmt.)
 }
 void IRGenerator::visit(StrStmt &stmt) {
-    
-}
-void IRGenerator::visit(LValStmt &stmt) {
     
 }
 void IRGenerator::visit(FuncCallStmt &stmt) {
     
 }
+
+
 void IRGenerator::visit(PeriodStmt &stmt) {
-    
+    // 不需要处理   
 }
-
-
 void IRGenerator::visit(ConstDeclStmt &stmt) {
     for (const auto &pair : stmt.pairs) {
         std::string name = pair.first; // 常量名
@@ -158,6 +265,9 @@ void IRGenerator::visit(FuncHeadDeclStmt &stmt) {
     std::shared_ptr<Type> ret_type = build_basic_type(stmt.ret_type); // 返回值类型
 
     // 记录参数时, 就要进入一个新的作用域
+    if (!this->scope_.is_global()) { // 如果不是全局作用域, 就先退出当前作用域
+        this->scope_.leave();
+    }
     this->scope_.enter();
     std::vector<std::shared_ptr<Type>> args_type;
     for (const auto &arg : stmt.args) {
@@ -184,6 +294,8 @@ void IRGenerator::visit(FuncBodyDeclStmt &stmt) {
     }
 
     // 函数体
+    // 进入函数体时, 需要新建一个基本块作为初始块
+    std::shared_ptr<BasicBlock> bb = std::make_shared<BasicBlock>("begin_basic_block", this->scope_.current_f_);
     for (const auto &stmt : stmt.comp_stmt) {
         stmt->accept(*this);
     }
@@ -198,11 +310,49 @@ void IRGenerator::visit(FuncDeclStmt &stmt) {
 }
 
 
-
-
-void IRGenerator::visit(AssignStmt &stmt) {
-    
+void IRGenerator::visit(LValStmt &stmt) {
+    Value *val = this->scope_.find(stmt.id); // 符号表寻找对应 value
+    assert (val != nullptr);
+    if (stmt.array_index.size() == 0) { // 如果不是数组
+        std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back());
+    } else {
+        // 处理数组
+        for (int i = 0; i < stmt.array_index.size(); i++) {
+            stmt.array_index[i] -> accept(*this);
+            std::shared_ptr<Value> idx = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+            // 如果 index 是最后一个, 那就将目标类型视作数组元素类型
+            if (i == int(stmt.array_index.size()) - 1) {
+                ArrayType *at = (ArrayType *)val->type_.get();
+                std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(at->elem_type_, val, idx, this->scope_.current_f_->basic_blocks_.back()); 
+            } else {
+                std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(val->type_, val, idx, this->scope_.current_f_->basic_blocks_.back());
+            }
+            val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back().get();
+        }
+    }
 }
+void IRGenerator::visit(AssignStmt &stmt) {
+    std::shared_ptr<Instruction> inst; // 对应的指令
+    if (!stmt.is_lval_func) { // 左值不是函数的情况
+        // 处理左值
+        std::shared_ptr<Value> val;
+        stmt.lval->accept(*this);
+        val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+    
+        // 处理右值
+        std::shared_ptr<Value> ptr;
+        stmt.expr->accept(*this);
+        ptr = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+    
+        // 构建赋值指令
+        inst = std::make_shared<StoreInst>(val, ptr, this->scope_.current_f_->basic_blocks_.back());
+        this->scope_.current_f_->basic_blocks_.back()->add_instruction(inst); 
+
+        // TODO: 改变变量的值
+    }
+}
+
+
 void IRGenerator::visit(IfStmt &stmt) {
     
 }
@@ -212,7 +362,6 @@ void IRGenerator::visit(ForStmt &stmt) {
 void IRGenerator::visit(ReadFuncStmt &stmt) {
     
 }
-
 void IRGenerator::visit(WriteFuncStmt &stmt) {
     
 }

@@ -404,6 +404,9 @@ class Instruction : public Value {
 public:
     // 操作码
     enum OpID {
+        // Null
+        Null,
+
         // Function
         Call, 
         Ret, 
@@ -426,6 +429,8 @@ public:
         Not,
         BitReverse,
         LogicalNot,
+        Bracket,
+        
 
         // Compare Operation
         Eq,
