@@ -63,12 +63,15 @@ extern double atof();
 %option bison-locations
 
 DIGIT                   [0-9]
-INTEGER                 "-"?{DIGIT}+
-REAL                    "-"?{DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)?
+INTEGER         {DIGIT}+
+REAL            {DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)?
 
 LETTER                  [a-zA-Z]
 IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
 
+
+CHAR               '\''[^'\n]\''
+STRING          '\''([^'\n]|\\')*\'
 CHAR               \'(\\.|[^'\\])\'
 STRING             \'([^'\n]|'')*\'
 
@@ -81,7 +84,6 @@ ANNO_MULTILINE            (\/\*([^*]|\*[^/])*\*\/)
 OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 
 %%
-
 "program"                        RETURN_TOKEN(PROGRAM);
 "const"                              RETURN_TOKEN(CONST);
 "type"                                RETURN_TOKEN(TYPE);
@@ -154,7 +156,6 @@ OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 "\r"
 " "
 .                                                /* ignore other characters */
-
 %%
 
 void scan_string(const char *str, yyscan_t scanner) {
