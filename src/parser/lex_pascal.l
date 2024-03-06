@@ -69,8 +69,12 @@ REAL            {DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)?
 LETTER                  [a-zA-Z]
 IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
 
+
 CHAR               '\''[^'\n]\''
 STRING          '\''([^'\n]|\\')*\'
+CHAR               \'(\\.|[^'\\])\'
+STRING             \'([^'\n]|'')*\'
+
 
 ANNO_BIGBRACKET         (\{[^\}]*\})
 ANNO_DOUBLE                (\/\/[^\n]*)

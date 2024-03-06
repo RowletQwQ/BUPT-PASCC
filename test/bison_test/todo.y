@@ -357,3 +357,54 @@ period:
         $$->start = $1;
         $$->end = $4;
     };
+
+* no : 2.8-2.9
+* rule  : subprogram_head -> PROCEDURE IDENTIFIER | PROCEDURE IDENTIFIER '(' parameter_list')' | FUNCTION IDENTIFIER ':' basic_type | FUNCTION IDENTIFIER '(' parameter_list')' ':' basic_type
+* node :  FuncHeadDeclStmt *
+* son  :  VarDeclStmt*
+* error :
+*
+* TODO:unique_ptr
+*/
+
+subprogram_head : PROCEDURE IDENTIFIER
+        | PROCEDURE IDENTIFIER '(' parameter_list')'
+        | FUNCTION IDENTIFIER ':' basic_type
+        | FUNCTION IDENTIFIER '(' parameter_list')' ':' basic_type
+
+/*
+* no : 2.2
+* rule  : var_declaration -> idlist ':' type | var_declaration ';' idlist ':' type
+* node :  std::vector<VarDeclStmt *> *
+* son :
+* TODO: data_type中period list； unique_ptr
+*/
+var_declaration: idlist ':' type
+        {
+            $$ = new std::vector<VarDeclStmt *>();
+            VarDeclStmt * var_decl = new VarDeclStmt();
+            var_decl->id = idlist;
+            var_decl->
+        }
+        | var_declaration ';' idlist ':' type
+        {
+        }
+
+
+/*
+* no : 2.3
+* rule  : type -> basic_type | ARRAY '[' period_list ']' OF basic_type
+* node :  DataType
+*
+* TODO: period_list未存储
+*/
+type: basic_type
+        {
+            $$ = DataType::BasicType;
+            printf("%s", data_type_str($$).c_str());
+        }
+        | ARRAY '[' period_list ']' OF basic_type
+        {
+            $$ = DataType::ArrayType;
+            printf("%s", data_type_str($$).c_str());
+        }

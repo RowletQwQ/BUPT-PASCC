@@ -42,3 +42,15 @@ std::string add_op(AddExprStmt::AddExprType type);
 std::string mul_op(MulExprStmt::MulExprType type);
 
 std::string unary_op(UnaryExprStmt::UnaryExprType type);
+
+std::string id_list_str(const std::vector<std::string>& id_list, int deep);
+
+std::string period_stmt_str(const PeriodStmt* period, int deep);
+
+std::string period_list_str(const std::vector<PeriodStmt*>* period_list, int deep);
+
+std::string basic_type_str(BasicType type);
+
+std::string data_type_str(DataType type);
+
+std::string var_decl_stmt_str(const VarDeclStmt* var_decl, int deep);
