@@ -351,7 +351,7 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
     | PROGRAM IDENTIFIER
     {
         $$ = new ProgramHeadStmt();
-        $$->id_list.push_back($2);
+        $$->id_list.push_back(*$2);
         delete $2;
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER\n");
     }
@@ -371,13 +371,13 @@ program_body : const_declarations var_declarations subprogram_declarations compo
         ProgramBodyStmt* program_body = new ProgramBodyStmt();
         program_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);
         for(auto var_decl : *$2){
-            program_body->var_decl.push_back(var_decl);
+            program_body->var_decl.push_back(std::unique_ptr<VarDeclStmt>(var_decl));
         }
         for(auto func_decl : *$3){
-            program_body->func_decl.push_back(func_decl);
+            program_body->func_decl.push_back(std::unique_ptr<FuncDeclStmt>(func_decl));
         }
         for(auto stmt : *$4){
-            program_body->comp_stmt.push_back(stmt);
+            program_body->comp_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
         }
         $$ = program_body;
         delete $2;
@@ -401,13 +401,13 @@ program_body : const_declarations var_declarations subprogram_declarations compo
 idlist : IDENTIFIER
     {
         $$ = new std::vector<std::string>();
-        $$->push_back($1);
+        $$->push_back(*$1);
         delete $1;
         LOG_DEBUG("DEBUG idlist -> IDENTIFIER\n");
     }
     | idlist ',' IDENTIFIER
     {
-        $1->push_back($3);
+        $1->push_back(*$3);
         delete $3;
         $$ = $1;
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER\n");
