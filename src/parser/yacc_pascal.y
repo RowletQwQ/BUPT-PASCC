@@ -316,7 +316,309 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 
 %%
 // TODO 此处书写文法规则
+/*
+* no : 1.1
+* rule  :  programstruct -> program_head ‘;’ program_body '.'
+* node :  ProgramStmt * program_struct
+* son  :  ProgramHeadStmt * program_head ProgramBodyStmt * program_body
+* error : 程序定义出错 请检查是否符合规范
+*/
+programstruct : program_head  ';'  program_body '.'
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        program_struct->program_head = std::unique_ptr<ProgramHeadStmt>($1);
+        program_struct->program_body = std::unique_ptr<ProgramBodyStmt>($3);
+        LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'\n");
+    }
+    | error{
+        syntax_error("程序定义出错 请检查是否符合规范");
+    };
+/*
+* no : 1.2
+* rule  :  program_head -> "program" IDENTIFIER '(' idlist ')' | "program" IDENTIFIER
+* node :  ProgramHeadStmt * program_head
+* son  :  char * std::vector<std::string>
+* error : 程序头定义出错 请检查是否符合规范
+*/
+program_head : PROGRAM IDENTIFIER '(' idlist ')'
+    {
+        $$ = new ProgramHeadStmt();
+        $$->id_list = *$4;
+        delete $4;
+        LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER '(' idlist ')'\n");
+    }
+    | PROGRAM IDENTIFIER
+    {
+        $$ = new ProgramHeadStmt();
+        $$->id_list.push_back($2);
+        delete $2;
+        LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER\n");
+    }
+    | error{
+        syntax_error("程序头定义出错 请检查是否符合规范");
+    };
 
+/*
+* no : 1.3
+* rule  :  program_body -> const_declarations var_declarations subprogram_declarations compound_statement
+* node :  ProgramBodyStmt * program_body
+* son  :  ConstDeclStmt * const_decl std::vector<VarDeclStmt *> var_decl  std::vector<FuncDeclStmt *>  func_decl  std::vector<BaseStmt *>  comp_stmt
+* error : 程序体定义出错 请检查是否符合规范
+*/
+program_body : const_declarations var_declarations subprogram_declarations compound_statement
+    {
+        ProgramBodyStmt* program_body = new ProgramBodyStmt();
+        program_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);
+        for(auto var_decl : *$2){
+            program_body->var_decl.push_back(var_decl);
+        }
+        for(auto func_decl : *$3){
+            program_body->func_decl.push_back(func_decl);
+        }
+        for(auto stmt : *$4){
+            program_body->comp_stmt.push_back(stmt);
+        }
+        $$ = program_body;
+        delete $2;
+        delete $3;
+        delete $4;
+        LOG_DEBUG("DEBUG program_body -> const_declarations var_declarations subprogram_declarations compound_statement\n");
+    }
+    | error{
+        syntax_error("程序体定义出错 请检查是否符合规范");
+    };
+
+/*
+* no : 1.4
+* rule  :  idlist -> IDENTIFIER | idlist ',' IDENTIFIER
+* node :  std::vector<std::string> * id_list
+* son  :  string
+* error : 标识符定义错误 请检查是否符合规范
+*/
+idlist : IDENTIFIER
+    {
+        $$ = new std::vector<std::string>();
+        $$->push_back($1);
+        delete $1;
+        LOG_DEBUG("DEBUG idlist -> IDENTIFIER\n");
+    }
+    | idlist ',' IDENTIFIER
+    {
+        $1->push_back($3);
+        delete $3;
+        $$ = $1;
+        LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER\n");
+    }
+    | error{
+        syntax_error("标识符定义错误 请检查是否符合规范");
+    };
+
+/*
+* no : 1.5
+* rule  :  const_declarations -> empty | "const" const_declaration ';' const_declarations
+* node :  ConstDeclStmt * const_decls
+* son  :  std::vector<std::pair<std::string, NumberStmt> *> *
+* error : 常量定义出错 请检查是否符合规范
+*/
+const_declarations : /*empty*/
+    {
+        $$ = nullptr;
+        LOG_DEBUG("DEBUG id_varpart -> empty\n");
+    }
+    | '[' expression_list ']'
+    {
+        $$ = $2;
+        LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'\n");
+    }
+    | error
+    {
+        syntax_error("数组下标定义出错 请检查是否符合规范");
+    }
+    ;
+
+
+/*
+* no : 1.6
+* rule  :  const_declaration -> IDENTIFIER = const_value | const_declaration ; IDENTIFIER = const_value
+* node :  std::vector<std::pair<std::string, NumberStmt> *> *
+* son  :  char *   NumberStmt *
+*/
+const_declaration : IDENTIFIER '=' const_value
+    {
+        $$ = new std::vector<std::pair<std::string, NumberStmt> *>();
+        $$->push_back(new std::pair<std::string, NumberStmt>($1, *$3));
+        delete $1;
+        delete $3;
+    }
+    | const_declaration ';' IDENTIFIER '=' const_value
+    {
+        $1->push_back(new std::pair<std::string, NumberStmt>($3, *$5));
+        delete $3;
+        delete $5;
+        $$ = $1; // 不需要删除
+    }
+    ;
+
+
+/*
+* no : 1.7
+* rule  :  const_value -> INTEGER | REAL | CHAR | '-' INTEGER | '-' REAL | '+' INTEGER | '+' REAL | ' CHAR '
+* node :  NumberStmt * num_value
+* son  :  long long | double | char
+* error : 常量 请检查是否为合法常量
+*/
+const_value: INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_signed = true;
+        num_value->int_val = $1;
+        $$ = num_value;
+    }|
+    '+' INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_signed = true;
+        num_value->int_val = $2;
+        $$ = num_value;
+    }
+    | '-' INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_signed = true;
+        num_value->int_val = -$2;
+        $$ = num_value;
+    }
+    | REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_real = true;
+        num_value->real_val = $1;
+        $$ = num_value;
+    }
+    | '+' REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_real = true;
+        num_value->real_val = $2;
+        $$ = num_value;
+    }
+    | '-' REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_real = true;
+        num_value->real_val = -$2;
+        $$ = num_value;
+    }
+    | '\'' CHAR  '\''
+    {
+        NumberStmt * num_value = new NumberStmt();
+        num_value->is_char = true;
+        num_value->char_val = $2;
+        $$ = num_value;
+    }
+    ;
+
+
+
+
+/*
+* no : 2.4
+* rule  : basic_type -> INTEGER_KW | REAL_KW | BOOLEAN_KW | CHAR_KW
+* node :  BasicType
+*/
+basic_type: INTEGER_KW
+        {
+            $$ = BasicType::INT;
+            printf("%s", basic_type_str($$).c_str());
+        }
+        | REAL_KW
+        {
+            $$ = BasicType::REAL;
+        }
+        | BOOLEAN_KW
+        {
+            $$ = BasicType::BOOLEAN;
+        }
+        | CHAR_KW
+        {
+            $$ = BasicType::CHAR;
+        }
+
+
+/*
+* no : 2.5
+* rule  : period_list -> INTEGER '..' INTEGER | period_list ',' INTEGER '..' INTEGER
+* node :  std::vector<PeriodStmt *>*
+* son  :  PeriodStmt *
+* error :
+*/
+period_list: INTEGER DOUBLE_DOT INTEGER
+        {
+            $$ = new std::vector<PeriodStmt *>();
+            PeriodStmt * period = new PeriodStmt();
+            period->begin = $1;
+            period->end = $3;
+            $$->push_back(period);
+            // debug
+            printf("%s", period_list_str($$,0).c_str());
+        }
+        | period_list ',' INTEGER DOUBLE_DOT INTEGER
+        {
+            PeriodStmt * period = new PeriodStmt();
+            period->begin = $3;
+            period->end = $5;
+            $1->push_back(period);
+            $$ = $1;
+            // debug
+            printf("%s", period_list_str($$,0).c_str());
+        };
+
+/*
+* no : 2.10
+* rule  : parameter_list -> parameter | parameter_list ';' parameter
+* node :  std::vector<VarDeclStmt *>*
+* son  :  VarDeclStmt*
+* error :
+*/
+parameter_list : parameter
+        {
+            $$ = new std::vector<VarDeclStmt *>();
+            $$->push_back($1);
+            delete $1;
+        }
+        | parameter_list ';' parameter
+        {
+            $1->push_back($3);
+            delete $3;
+            $$ = $1;
+        };
+
+
+
+
+/*
+* no : 3.1 - 3.3
+* rule  : parameter -> VAR idlist ':' basic_type | idlist ':' basic_type
+* node :  VarDeclStmt*
+* son  :  std::vector<std::string> *, BaiscType
+* error :
+*/
+parameter: VAR idlist ':' basic_type
+        {
+            VarDeclStmt* var_decl = new VarDeclStmt();
+            var_decl->id.insert(var_decl->id.end(), $2->begin(), $2->end());
+            var_decl-> basic_type = $4;
+            delete $2;
+            printf("parameter: var %s", var_decl_stmt_str($$,0).c_str());
+        }
+        | idlist ':' basic_type
+        {
+            VarDeclStmt* var_decl = new VarDeclStmt();
+            var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
+            var_decl-> basic_type = $3;
+            delete $1;
+            printf("parameter: %s", var_decl_stmt_str($$,0).c_str());
+        };
 
 /*
 * no : 4.1
@@ -455,142 +757,8 @@ variable : IDENTIFIER id_varpart
 * error : 数组下标定义出错 请检查是否符合规范
 */
 id_varpart : /*empty*/
-/*
-* no : 2.10
-* rule  : parameter_list -> parameter | parameter_list ';' parameter
-* node :  std::vector<VarDeclStmt *>*
-* son  :  VarDeclStmt*
-* error :
-*/
-
-parameter_list : parameter
-        {
-            $$ = new std::vector<VarDeclStmt *>();
-            $$->push_back($1);
-            delete $1;
-        }
-        | parameter_list ';' parameter
-        {
-            $1->push_back($3);
-            delete $3;
-            $$ = $1;
-        };
-
-/*
-* no : 3.1 - 3.3
-* rule  : parameter -> VAR idlist ':' basic_type | idlist ':' basic_type
-* node :  VarDeclStmt*
-* son  :  std::vector<std::string> *, BaiscType
-* error :
-*/
-
-parameter: VAR idlist ':' basic_type
-        {
-            VarDeclStmt* var_decl = new VarDeclStmt();
-            var_decl->id.insert(var_decl->id.end(), $2->begin(), $2->end());
-            var_decl-> basic_type = $4;
-            delete $2;
-            printf("parameter: var %s", var_decl_stmt_str($$,0).c_str());
-        }
-        | idlist ':' basic_type
-        {
-            VarDeclStmt* var_decl = new VarDeclStmt();
-            var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
-            var_decl-> basic_type = $3;
-            delete $1;
-            printf("parameter: %s", var_decl_stmt_str($$,0).c_str());
-        };
-
-/*
-* no : 2.4
-* rule  : basic_type -> INTEGER_KW | REAL_KW | BOOLEAN_KW | CHAR_KW
-* node :  BasicType
-*/
-
-basic_type: INTEGER_KW
-        {
-            $$ = BasicType::INT;
-            printf("%s", basic_type_str($$).c_str());
-        }
-        | REAL_KW
-        {
-            $$ = BasicType::REAL;
-        }
-        | BOOLEAN_KW
-        {
-            $$ = BasicType::BOOLEAN;
-        }
-        | CHAR_KW
-        {
-            $$ = BasicType::CHAR;
-        }
-
-
-/*
-* no : 2.5
-* rule  : period_list -> INTEGER '..' INTEGER | period_list ',' INTEGER '..' INTEGER
-* node :  std::vector<PeriodStmt *>*
-* son  :  PeriodStmt *
-* error :
-*/
-
-period_list: INTEGER DOUBLE_DOT INTEGER
-        {
-            $$ = new std::vector<PeriodStmt *>();
-            PeriodStmt * period = new PeriodStmt();
-            period->begin = $1;
-            period->end = $3;
-            $$->push_back(period);
-            // debug
-            printf("%s", period_list_str($$,0).c_str());
-        }
-        | period_list ',' INTEGER DOUBLE_DOT INTEGER
-        {
-            PeriodStmt * period = new PeriodStmt();
-            period->begin = $3;
-            period->end = $5;
-            $1->push_back(period);
-            $$ = $1;
-            // debug
-            printf("%s", period_list_str($$,0).c_str());
-        };
-
-/*
-* no : 1.4
-* rule  :  idlist -> IDENTIFIER | idlist ',' IDENTIFIER
-* node :  std::vector<std::string> * id_list
-* son  :  string
-* error : 标识符定义错误 请检查是否符合规范
-*/
-idlist : IDENTIFIER
     {
-        $$ = new std::vector<std::string>();
-        $$->push_back($1);
-        delete $1;
-    }
-    | idlist ',' IDENTIFIER
-    {
-        $1->push_back($3);
-        delete $3;
-        $$ = $1;
-         // DEBUG
-        printf("id_list:\n");
-        printf("%s",id_list_str(*$$,0).c_str());
-    }
-    /*| error{
-        syntax_error("标识符定义错误 请检查是否符合规范");
-    };*/
-
-/*
-* no : 1.5
-* rule  :  const_declarations -> empty | "const" const_declaration ';' const_declarations
-* node :  ConstDeclStmt * const_decls
-* son  :  std::vector<std::pair<std::string, NumberStmt> *> *
-* error : 常量定义出错 请检查是否符合规范
-*/
-const_declarations : /*empty*/
-    {
-        $$ = nullptr;
+        $$ = new std::vector<ExprStmt *>();
         LOG_DEBUG("DEBUG id_varpart -> empty\n");
     }
     | '[' expression_list ']'
@@ -603,9 +771,6 @@ const_declarations : /*empty*/
         syntax_error("数组下标定义出错 请检查是否符合规范");
     }
     ;
-
-
-
 
 /*
 * no : 5.1 
@@ -870,105 +1035,13 @@ factor : INTEGER
     | error
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
-    | CONST const_declaration ';'
-    {
-        $$ = new ConstDeclStmt();
-        std::vector<std::pair<std::string, NumberStmt> *> kv_pair_list = *$2;
-        for (auto kv_pair : kv_pair_list) {
-            $$->pairs.push_back(*kv_pair);
-            delete kv_pair;
-        }
-        delete $2;
-
-        // DEBUG
-        printf("const_declarations:\n");
-        printf("%s",const_decl_stmt_str(*$$,0).c_str());
     }
-    |error{
-        syntax_error("常量定义出错 请检查是否符合规范");
-    };
 
 
-/*
-* no : 1.6
-* rule  :  const_declaration -> IDENTIFIER = const_value | const_declaration ; IDENTIFIER = const_value
-* node :  std::vector<std::pair<std::string, NumberStmt> *> *
-* son  :  char *   NumberStmt *
-*/
-const_declaration : IDENTIFIER '=' const_value
-    {
-        $$ = new std::vector<std::pair<std::string, NumberStmt> *>();
-        $$->push_back(new std::pair<std::string, NumberStmt>($1, *$3));
-        delete $1;
-        delete $3;
-    }
-    | const_declaration ';' IDENTIFIER '=' const_value
-    {
-        $1->push_back(new std::pair<std::string, NumberStmt>($3, *$5));
-        delete $3;
-        delete $5;
-        $$ = $1; // 不需要删除
-    }
-    ;
 
 
-/*
-* no : 1.7
-* rule  :  const_value -> INTEGER | REAL | CHAR | '-' INTEGER | '-' REAL | '+' INTEGER | '+' REAL | ' CHAR '
-* node :  NumberStmt * num_value
-* son  :  long long | double | char
-* error : 常量 请检查是否为合法常量
-*/
-const_value: INTEGER
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_signed = true;
-        num_value->int_val = $1;
-        $$ = num_value;
-    }|
-    '+' INTEGER
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_signed = true;
-        num_value->int_val = $2;
-        $$ = num_value;
-    }
-    | '-' INTEGER
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_signed = true;
-        num_value->int_val = -$2;
-        $$ = num_value;
-    }
-    | REAL
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_real = true;
-        num_value->real_val = $1;
-        $$ = num_value;
-    }
-    | '+' REAL
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_real = true;
-        num_value->real_val = $2;
-        $$ = num_value;
-    }
-    | '-' REAL
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_real = true;
-        num_value->real_val = -$2;
-        $$ = num_value;
-    }
-    | '\'' CHAR  '\''
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_char = true;
-        num_value->char_val = $2;
-        $$ = num_value;
-    }
-    ;
+
+
 
 
 /*
