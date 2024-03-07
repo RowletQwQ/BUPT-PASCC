@@ -388,6 +388,8 @@ program_body : const_declarations var_declarations subprogram_declarations compo
         syntax_error("程序体定义出错 请检查是否符合规范");
     };
 
+    
+
 /*
 * no : 1.4
 * rule  :  idlist -> IDENTIFIER | idlist ',' IDENTIFIER
