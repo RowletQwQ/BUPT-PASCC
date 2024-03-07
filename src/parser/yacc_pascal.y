@@ -292,6 +292,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <func_decl>           subprogram
 %type <func_head>           subprogram_head
 %type <var_decls>           parameter_list
+%type <var_decls>           formal_parameter
 %type <var_decl>            parameter
 %type <func_body>           subprogram_body
 %type <stmt_list>           compound_statement
@@ -306,13 +307,13 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <lval_list>           variable_list
 %type <lval>                variable
 %type <expr_list>           id_varpart
-
 %type <expr_list>           expression_list
 %type <expr>                expression   
 %type <add_expr>            simple_expression
 %type <mul_expr>            term
 %type <unary_expr>          factor
 %type <primary_expr>        unary_expression
+%type<var_decl>             type
 
 %%
 // TODO 此处书写文法规则
@@ -521,6 +522,98 @@ const_value: INTEGER
     ;
 
 
+/*
+* no : 2.1
+* rule : var_declarations -> empty | "var" var_declaration ';' 
+* node : std::vector<VarDeclStmt *> * var_decls
+* son  : VarDeclStmt *
+* error : 变量定义出错 请检查是否符合规范
+*/
+var_declarations : /*empty*/
+    {
+        $$ = nullptr;
+        LOG_DEBUG("DEBUG var_declarations -> empty\n");
+    }
+    | VAR var_declaration ';'
+    {
+        std::vector<VarDeclStmt *> * var_decls = new std::vector<VarDeclStmt *>();
+        var_decls->push_back($2);
+        $$ = var_decls;
+        LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'\n");
+    }
+    | error
+    {
+        syntax_error("变量定义出错 请检查是否符合规范");
+    }
+    ;
+
+/*
+* no : 2.2
+* rule  : var_declaration -> idlist ':' type | var_declaration ';' idlist ':' type
+* node :  std::vector<VarDeclStmt *> * var_decls
+* son  :  VarDeclStmt *
+* error : 变量定义出错 请检查是否符合规范
+*/
+var_declaration : idlist ':' type
+    {
+        std::vector<VarDeclStmt *> * var_decls = new std::vector<VarDeclStmt *>();
+        VarDeclStmt * var_decl = new VarDeclStmt();
+        var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
+        // deal with type
+        var_decl->basic_type = $3->basic_type;
+        var_decl->data_type = $3->data_type;
+        var_decl->array_range = std::move($3->array_range);
+        delete $1;
+        delete $3;
+        $$ = var_decl;
+        LOG_DEBUG("DEBUG var_declaration -> idlist ':' type\n");
+    }
+    | var_declaration ';' idlist ':' type
+    {
+        $1->id.insert($1->id.end(), $3->begin(), $3->end());
+        $1->basic_type = $5->basic_type;
+        $1->data_type = $5->data_type;
+        $1->array_range = std::move($5->array_range);
+        delete $3;
+        delete $5;
+        $$ = $1;
+        LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type\n");
+    }
+    | error
+    {
+        syntax_error("变量定义出错 请检查是否符合规范");
+    }
+    ;
+/*
+* no : 2.3
+* rule  : type -> basic_type | ARRAY '[' period_list ']' OF basic_type 
+* node : VarDeclStmt * type_stmt
+* son  : BasicType | DataType
+* error : 类型定义出错 请检查是否符合规范
+*/
+type : basic_type
+    {
+        VarDeclStmt * type_stmt = new VarDeclStmt();
+        // TODO 处理type_size
+        type_stmt->data_type = DataType::BasicType;
+        type_stmt->basic_type = $1;
+        $$ = type_stmt;
+        LOG_DEBUG("DEBUG type -> basic_type\n");
+    }
+    | ARRAY '[' period_list ']' OF basic_type
+    {
+        VarDeclStmt * type_stmt = new VarDeclStmt();
+        type_stmt->data_type = DataType::ArrayType;
+        type_stmt->basic_type = $6;
+        type_stmt->array_range = std::unique_ptr<std::vector<PeriodStmt *>>($3);
+        $$ = type_stmt;
+        LOG_DEBUG("DEBUG type -> ARRAY '[' period_list ']' OF basic_type\n");
+    }
+    | error
+    {
+        syntax_error("类型定义出错 请检查是否符合规范");
+    }
+    ;
 
 
 /*
@@ -574,6 +667,42 @@ period_list: INTEGER DOUBLE_DOT INTEGER
             // debug
             printf("%s", period_list_str($$,0).c_str());
         };
+/*
+* no : 2.6
+* rule  :  subprogram_declarations -> empty | subprogram_declarations subprogram ';'
+* node :  std::vector<FuncDeclStmt *> * func_decl_list
+* son  :  FuncDeclStmt *
+* error : 子函数定义出错 请检查是否符合规范
+*/
+
+
+
+/*
+* no : 2.7
+* rule  :  subprogram -> subprogram_head ';' subprogram_body
+* node :  FuncDeclStmt * func_decl
+* son  :  FuncHeadDeclStmt * func_head FuncBodyDeclStmt * func_body
+* error : 子函数定义出错 请检查是否符合规范
+*/
+
+
+/*
+* no : 2.8
+* rule  :  subprogram_head -> PROGRAM IDENTIFIER formal_parameter | FUNCTION IDENTIFIER formal_parameter ':' basic_type
+* node :  FuncHeadDeclStmt * func_head
+* son  :  std::string func_name;  BasicType ret_type; std::vector<std::unique_ptr<VarDeclStmt>> args;
+* error : 子函数头定义出错 请检查是否符合规范
+*/
+
+/*
+* no : 2.9
+* rule  :  formal_parameter -> empty | '(' parameter_list ')'
+* node :  std::vector<VarDeclStmt *>*
+* son  :  VarDeclStmt *
+* error : 参数定义出错 请检查是否符合规范
+*/
+
+
 
 /*
 * no : 2.10
@@ -595,15 +724,12 @@ parameter_list : parameter
             $$ = $1;
         };
 
-
-
-
 /*
 * no : 3.1 - 3.3
 * rule  : parameter -> VAR idlist ':' basic_type | idlist ':' basic_type
 * node :  VarDeclStmt*
 * son  :  std::vector<std::string> *, BaiscType
-* error :
+* error : 
 */
 parameter: VAR idlist ':' basic_type
         {
@@ -621,6 +747,13 @@ parameter: VAR idlist ':' basic_type
             delete $1;
             printf("parameter: %s", var_decl_stmt_str($$,0).c_str());
         };
+
+
+
+
+
+
+
 
 /*
 * no : 4.1
