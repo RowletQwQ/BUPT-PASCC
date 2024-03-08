@@ -80,13 +80,8 @@ public:
     Module module_; // 中间代码
     
     IRGenerator() {
-        // TODO: 把 Pascal 的内建函数加入到中间代码中, 如 read, write 等
-
-
         // 进入全局作用域
         scope_.enter();
-        // scope_.push("read", .....);
-        // scope_.push("write", .....);
     }
 };
 
