@@ -19,6 +19,7 @@ std::shared_ptr<Type> build_basic_type(BasicType type) {
         case BasicType::BOOLEAN:
             return std::make_shared<BooleanType>();
     }
+    return nullptr;
 }
 Instruction::OpID build_op_id(RelExprStmt::RelExprType type) {
     switch (type) {
@@ -37,6 +38,7 @@ Instruction::OpID build_op_id(RelExprStmt::RelExprType type) {
         case RelExprStmt::RelExprType::In:
             return Instruction::OpID::In; 
     }
+    return Instruction::OpID::Null;
 }
 Instruction::OpID build_op_id(AddExprStmt::AddExprType type) {
     switch (type) {
@@ -47,6 +49,7 @@ Instruction::OpID build_op_id(AddExprStmt::AddExprType type) {
         case AddExprStmt::AddExprType::Or:
             return Instruction::OpID::Or;
     }
+    return Instruction::OpID::Null;
 }
 Instruction::OpID build_op_id(MulExprStmt::MulExprType type) {
     switch (type) {
@@ -61,6 +64,7 @@ Instruction::OpID build_op_id(MulExprStmt::MulExprType type) {
         case MulExprStmt::MulExprType::AndThen:
             return Instruction::OpID::AndThen;
     }
+    return Instruction::OpID::Null;
 }
 Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
     switch (type) {
@@ -69,6 +73,7 @@ Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
         case UnaryExprStmt::UnaryExprType::Not:
             return Instruction::OpID::Not;
     }
+    return Instruction::OpID::Null;
 }
 
 // ------------------------------------------------------Scope------------------------------------------------------
