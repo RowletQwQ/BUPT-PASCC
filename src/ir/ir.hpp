@@ -383,16 +383,16 @@ public:
      * @brief 添加前驱基本块
      * 
     */
-    void add_pre_bb(std::shared_ptr<BasicBlock> bb) { pre_bbs_.push_back(bb); }
+    void add_pre_bb(std::weak_ptr<BasicBlock> bb) { pre_bbs_.push_back(bb); }
     /**
      * @brief 添加后继基本块
     */
-    void add_succ_bb(std::shared_ptr<BasicBlock> bb) { succ_bbs_.push_back(bb); }
+    void add_succ_bb(std::weak_ptr<BasicBlock> bb) { succ_bbs_.push_back(bb); }
 
     std::weak_ptr<Function> belong_f_; // 基本块所属函数
     std::vector<std::shared_ptr<Instruction> > instructions_; // 指令列表
-    std::vector<std::shared_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
-    std::vector<std::shared_ptr<BasicBlock> > succ_bbs_; // 后继基本块
+    std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
+    std::vector<std::weak_ptr<BasicBlock> > succ_bbs_; // 后继基本块
 };
 
 // ----------------------------------------------------------------Instruction---------------------------------------------------------------
@@ -404,8 +404,7 @@ class Instruction : public Value {
 public:
     // 操作码
     enum OpID {
-        // Null
-        Null,
+        
 
         // Function
         Call, 
@@ -430,6 +429,7 @@ public:
         BitReverse,
         LogicalNot,
         Bracket,
+        Null, // 这个一元运算就是当做本身
         
 
         // Compare Operation
@@ -682,7 +682,7 @@ public:
      * @param bb 所属基本块
      * @details 用于分支跳转
      */
-    BranchInst(std::shared_ptr<Value> cond, std::shared_ptr<BasicBlock> then_bb, std::shared_ptr<BasicBlock> else_bb, std::shared_ptr<BasicBlock> bb)
+    BranchInst(std::shared_ptr<Value> cond, std::shared_ptr<BasicBlock> then_bb, std::shared_ptr<BasicBlock> else_bb, std::shared_ptr<BasicBlock> bb, bool is_loop_cond = false)
       : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Br, 3, bb) {
         then_bb->add_pre_bb(bb);
         else_bb->add_pre_bb(bb);
@@ -691,9 +691,10 @@ public:
         set_operand(0, cond);
         set_operand(1, then_bb);
         set_operand(2, else_bb);
+        is_loop_cond_ = is_loop_cond;
     }
     ~BranchInst() = default;
-
+    bool is_loop_cond_; // 是否为循环条件
 };
 
 

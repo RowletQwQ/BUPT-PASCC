@@ -31,7 +31,7 @@ GlobalIdentifier::GlobalIdentifier(std::shared_ptr<Type> type, const std::string
     : Value(type, name), is_const_(is_const), init_val_(init_val), parent_(m) {
         init();
     }
-void GlobalIdentifier::init(){
+void GlobalIdentifier::init() {
     parent_.lock()->add_global_identifier(std::static_pointer_cast<GlobalIdentifier>(get_this()));
 }
 

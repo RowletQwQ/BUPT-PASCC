@@ -71,30 +71,34 @@ Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
     }
 }
 
-
-
-// ----------------- Scope -----------------
-// 进入一个新的作用域
+// ------------------------------------------------------Scope------------------------------------------------------
+/**
+ * @brief 进入一个新的作用域
+*/
 void Scope::enter() {
     symbols_.push_back(std::map<std::string, Value *>());
 }
-
-// 离开一个作用域
+/**
+ * @brief 离开一个作用域
+*/
 void Scope::leave() {
     symbols_.pop_back();
 }
-
-// 检测是否在全局作用域
+/**
+ * @brief 检测是否在全局作用域
+*/
 bool Scope::is_global() {
     return symbols_.size() == 1;
 }
-
-// 加入一个符号
+/**
+ * @brief 向符号表加入一个符号
+*/
 bool Scope::push(const std::string &name, Value *value) {
     return symbols_.back().insert({name, value}).second;
 }
-
-// 查找一个符号
+/**
+ * @brief 从符号表中查找一个符号
+*/
 Value *Scope::find(const std::string &name) {
     // 从栈顶开始查找
     for (auto it = symbols_.rbegin(); it != symbols_.rend(); ++it) {
@@ -106,9 +110,7 @@ Value *Scope::find(const std::string &name) {
     return nullptr;
 }
 
-
-
-
+// ------------------------------------------------------IRGenerator------------------------------------------------------
 void IRGenerator::visit(ExprStmt &stmt) {
     if (stmt.rel_expr != nullptr) {
         stmt.rel_expr->accept(*this);
@@ -137,7 +139,6 @@ void IRGenerator::visit(AddExprStmt &stmt) {
         std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
         std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(lhs->type_, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
     }
-    
 }
 void IRGenerator::visit(MulExprStmt &stmt) {
     if (stmt.type == MulExprStmt::MulExprType::NULL_TYPE) { // 降级处理
@@ -218,8 +219,6 @@ void IRGenerator::visit(FuncCallStmt &stmt) {
     // 构建函数调用指令
     std::shared_ptr<CallInst> inst = std::make_shared<CallInst>(std::make_shared<Function>(*val), args, this->scope_.current_f_->basic_blocks_.back());
 }
-
-
 void IRGenerator::visit(PeriodStmt &stmt) {
     // 不需要处理   
 }
@@ -278,8 +277,6 @@ void IRGenerator::visit(VarDeclStmt &stmt) {
 
     }
 }
-
-
 void IRGenerator::visit(FuncHeadDeclStmt &stmt) {
     std::string func_name = stmt.func_name; // 函数名 
     std::shared_ptr<Type> ret_type = build_basic_type(stmt.ret_type); // 返回值类型
@@ -329,12 +326,10 @@ void IRGenerator::visit(FuncDeclStmt &stmt) {
         stmt.body->accept(*this);
     }
 }
-
-
 void IRGenerator::visit(LValStmt &stmt) {
     Value *val = this->scope_.find(stmt.id); // 符号表寻找对应 value
     assert (val != nullptr);
-    if (stmt.array_index.size() == 0) { // 如果不是数组
+    if (stmt.array_index.size() == 0) { // 如果不是数组, 就说明是一个普通变量, 如 a、b 等, 当成一个 Null 的一元指令
         std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Null, std::make_shared<Value>(*val), this->scope_.current_f_->basic_blocks_.back());
     } else {
         // 处理数组
@@ -380,10 +375,6 @@ void IRGenerator::visit(AssignStmt &stmt) {
         // TODO: 改变变量的值？？？需要吗？？？
     }
 }
-
-
-
-
 void IRGenerator::visit(IfStmt &stmt) {
     // 得到 if 的条件
     stmt.expr->accept(*this);
@@ -434,9 +425,8 @@ void IRGenerator::visit(ForStmt &stmt) {
     std::shared_ptr<BasicBlock> nxt_bb = std::make_shared<BasicBlock>("nxt_basic_block", this->scope_.current_f_);
 
     // 补充上面的 if 指令
-    std::shared_ptr<BranchInst> branch_inst = std::make_shared<BranchInst>(cond_inst, body_bb, nxt_bb, cond_bb);
+    std::shared_ptr<BranchInst> branch_inst = std::make_shared<BranchInst>(cond_inst, body_bb, nxt_bb, cond_bb, true);
 }
-
 void IRGenerator::visit(ReadFuncStmt &stmt) {
     // 构建参数
     std::vector<std::shared_ptr<Value>> args;
@@ -455,8 +445,6 @@ void IRGenerator::visit(WriteFuncStmt &stmt) {
     }
     std::shared_ptr<WriteInst> inst = std::make_shared<WriteInst>(args, this->scope_.current_f_->basic_blocks_.back());
 }
-
-
 void IRGenerator::visit(ProgramHeadStmt &stmt) {
     // 暂时不需要处理
 }
@@ -477,6 +465,16 @@ void IRGenerator::visit(ProgramBodyStmt &stmt) {
     }
 
     // 主函数体
+    if (!this->scope_.is_global()) {
+        this->scope_.leave();
+    }
+    std::vector<std::shared_ptr<Type>> main_args_type;
+    std::shared_ptr<FunctionType> main_func_type = std::make_shared<FunctionType>(std::make_shared<IntegerType>(kDefaultIntegerBitWidth), main_args_type);
+    std::shared_ptr<Function> main_f = std::make_shared<Function>(main_func_type, "main", std::make_shared<Module>(this->module_));
+    this->scope_.current_f_ = main_f; // 记录当前作用域的函数
+    this->scope_.push("main", main_f.get()); // 记录函数到全局作用域中
+    this->scope_.enter(); // 进入一个新的作用域
+    std::shared_ptr<BasicBlock> bb = std::make_shared<BasicBlock>("main_begin_basic_block", this->scope_.current_f_);
     for (const auto &stmt : stmt.comp_stmt) {
         stmt->accept(*this);
     }
