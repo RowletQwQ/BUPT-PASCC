@@ -294,6 +294,8 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <var_decls>           parameter_list
 %type <var_decls>           formal_parameter
 %type <var_decl>            parameter
+%type <var_decl>            var_parameter
+%type <var_decl>            value_parameter
 %type <func_body>           subprogram_body
 %type <stmt_list>           compound_statement
 %type <stmt_list>           statement_list
@@ -674,7 +676,15 @@ period_list: INTEGER DOUBLE_DOT INTEGER
 * son  :  FuncDeclStmt *
 * error : 子函数定义出错 请检查是否符合规范
 */
-
+subprogram_declarations : /*empty*/
+        {
+            $$ = new std::vector<FuncDeclStmt *>();
+        }
+        | subprogram_declarations subprogram ';'
+        {
+            $1->push_back($2);
+            $$ = $1;
+        };
 
 
 /*
@@ -684,6 +694,13 @@ period_list: INTEGER DOUBLE_DOT INTEGER
 * son  :  FuncHeadDeclStmt * func_head FuncBodyDeclStmt * func_body
 * error : 子函数定义出错 请检查是否符合规范
 */
+subprogram : subprogram_head ';' subprogram_body
+        {
+            FuncDeclStmt * subprogram = new FuncDeclStmt();
+            subprogram->header = std::unique_ptr<FuncHeadDeclStmt>($1);
+            subprogram->body = std::unique_ptr<FuncBodyDeclStmt>($3);
+            $$ = subprogram;
+        };
 
 
 /*
@@ -693,6 +710,27 @@ period_list: INTEGER DOUBLE_DOT INTEGER
 * son  :  std::string func_name;  BasicType ret_type; std::vector<std::unique_ptr<VarDeclStmt>> args;
 * error : 子函数头定义出错 请检查是否符合规范
 */
+subprogram_head: PROGRAM IDENTIFIER formal_parameter
+        {
+            FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
+            sub_head->func_name = $2;
+            for(auto formal_parameter : *$3){
+                sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+            }
+            delete $3;
+            $$ = sub_head;
+        }
+        | FUNCTION IDENTIFIER formal_parameter ':' basic_type
+        {
+            FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
+            sub_head->func_name = $2;
+            sub_head->ret_type = $5;
+            for(auto formal_parameter : *$3){
+                sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+            }
+            delete $3;
+            $$ = sub_head;
+        }
 
 /*
 * no : 2.9
@@ -701,6 +739,14 @@ period_list: INTEGER DOUBLE_DOT INTEGER
 * son  :  VarDeclStmt *
 * error : 参数定义出错 请检查是否符合规范
 */
+ formal_parameter: /*empty*/
+        {
+            $$ = new std::vector<VarDeclStmt *>();
+        }
+        | '(' parameter_list ')'
+        {
+            $$ = $2;
+        };
 
 
 
@@ -725,33 +771,52 @@ parameter_list : parameter
         };
 
 /*
-* no : 3.1 - 3.3
-* rule  : parameter -> VAR idlist ':' basic_type | idlist ':' basic_type
+* no : 3.1
+* rule  : parameter -> var_parameter | value_parameter
 * node :  VarDeclStmt*
-* son  :  std::vector<std::string> *, BaiscType
+* son  :  VarDeclStmt*
 * error : 
 */
-parameter: VAR idlist ':' basic_type
+parameter: var_parameter
         {
-            VarDeclStmt* var_decl = new VarDeclStmt();
-            var_decl->id.insert(var_decl->id.end(), $2->begin(), $2->end());
-            var_decl-> basic_type = $4;
-            delete $2;
-            printf("parameter: var %s", var_decl_stmt_str($$,0).c_str());
+            $$ = new VarDeclStmt();
+            $$ = $1;
         }
-        | idlist ':' basic_type
+        | value_parameter
+        {
+            $$ = new VarDeclStmt();
+            $$ = $1;
+        }
+        ;
+/*
+* no : 3.2
+* rule  : var_parameter -> VAR value_parameter
+* node :  VarDeclStmt*
+* son  :  VarDeclStmt*
+* error :
+*/
+var_parameter: VAR value_parameter
+        {
+            $$ = new VarDeclStmt();
+            $$ = $1;
+        }
+        ;
+
+/*
+* no : 3.3
+* rule  : value_parameter -> idlist ':' basic_type
+* node :  VarDeclStmt*
+* son  :  std::vector<std::string> *, BasicType
+* error :
+*/
+value_parameter: idlist ':' basic_type
         {
             VarDeclStmt* var_decl = new VarDeclStmt();
             var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
             var_decl-> basic_type = $3;
             delete $1;
-            printf("parameter: %s", var_decl_stmt_str($$,0).c_str());
+            $$ = var_decl;
         };
-
-
-
-
-
 
 
 
