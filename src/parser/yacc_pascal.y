@@ -747,13 +747,73 @@ parameter: VAR idlist ':' basic_type
             delete $1;
             printf("parameter: %s", var_decl_stmt_str($$,0).c_str());
         };
-
-
-
-
-
-
-
+/*
+* no : 3.4
+* rule  :  subprogram_body -> const_declarations var_declarations compound_statement
+* node :  FuncBodyDeclStmt * func_body
+* son  :  std::unique_ptr<ConstDeclStmt> const_decl; std::vector<std::unique_ptr<VarDeclStmt>> var_decl;  std::vector<std::unique_ptr<BaseStmt>> comp_stmt;   
+* error : 子函数体定义出错 请检查是否符合规范
+*/
+subprogram_body : const_declarations var_declarations compound_statement
+    {
+        FuncBodyDeclStmt * func_body = new FuncBodyDeclStmt();
+        func_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);
+        for(auto var_decl : *$2){
+            func_body->var_decl.push_back(std::unique_ptr<VarDeclStmt>(var_decl));
+        }
+        for(auto stmt : *$3){
+            func_body->comp_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+        }
+        $$ = func_body;
+        delete $2;
+        delete $3;
+        LOG_DEBUG("DEBUG subprogram_body -> const_declarations var_declarations compound_statement\n");
+    }
+    | error
+    {
+        syntax_error("子函数体定义出错 请检查是否符合规范");
+    };
+/*
+* no : 3.5
+* rule  :  compound_statement -> BEGIN_TOKEN statement_list END
+* node :  std::vector<BaseStmt *> * stmt_list
+* son  :  BaseStmt *
+* error : 复合语句定义出错 请检查是否符合规范
+*/
+compound_statement : BEGIN_TOKEN statement_list END
+    {
+        $$ = $2;
+        LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END\n");
+    }
+    | error
+    {
+        syntax_error("复合语句定义出错 请检查是否符合规范");
+    };
+/*
+* no : 3.6
+* rule  :  statement_list -> statement | statement_list ';' statement
+* node :  std::vector<BaseStmt *> * stmt_list
+* son  :  BaseStmt *
+* error : 语句定义出错 请检查是否符合规范
+*/
+statement_list : statement
+    {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        stmt_list->push_back($1);
+        $$ = stmt_list;
+        LOG_DEBUG("DEBUG statement_list -> statement\n");
+    }
+    | statement_list ';' statement
+    {
+        $1->push_back($3);
+        $$ = $1;
+        LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement\n");
+    }
+    | error
+    {
+        syntax_error("语句定义出错 请检查是否符合规范");
+    }
+    ;
 
 /*
 * no : 4.1
@@ -1171,14 +1231,6 @@ factor : INTEGER
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
     }
-
-
-
-
-
-
-
-
 /*
 * addop ->  + | - | or
 */
