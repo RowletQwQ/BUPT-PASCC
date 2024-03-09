@@ -70,10 +70,8 @@ LETTER                  [a-zA-Z]
 IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
 
 
-CHAR               '\''[^'\n]\''
+CHAR               LETTER
 STRING          '\''([^'\n]|\\')*\'
-CHAR               \'(\\.|[^'\\])\'
-STRING             \'([^'\n]|'')*\'
 
 
 ANNO_BIGBRACKET         (\{[^\}]*\})

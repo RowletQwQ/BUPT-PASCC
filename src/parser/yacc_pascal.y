@@ -156,12 +156,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 
 // 定义Token
 
-%token INTEGER
-    REAL
-    IDENTIFIER
-    CHAR
-    STRING
-    BOOLEAN
+%token 
     CONST
     PROGRAM
     TYPE
@@ -283,11 +278,9 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <num_value>           const_value
 %type <var_decls>           var_declarations
 %type <var_decls>           var_declaration
-%type <var_type>            type
+%type <var_decl>            type
 %type <basic_type>          basic_type
-%type <period_list>         period_item
 %type <period_list>         period_list
-%type <period>              period
 %type <func_decl_list>      subprogram_declarations
 %type <func_decl>           subprogram
 %type <func_head>           subprogram_head
@@ -300,12 +293,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <stmt_list>           compound_statement
 %type <stmt_list>           statement_list
 %type <stmt>                statement
-%type <assign_stmt>         assignment
-%type <if_stmt>             if_clause
-%type <for_stmt>            for_clause
 %type <func_call_stmt>      procedure_call
-%type <read_stmt>           read_clause
-%type <write_stmt>          write_clause
 %type <lval_list>           variable_list
 %type <lval>                variable
 %type <expr_list>           id_varpart
@@ -314,8 +302,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <add_expr>            simple_expression
 %type <mul_expr>            term
 %type <unary_expr>          factor
-%type <primary_expr>        unary_expression
-%type<var_decl>             type
+%type <stmt>        else_part
 
 %%
 // TODO 此处书写文法规则
@@ -329,8 +316,8 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 programstruct : program_head  ';'  program_body '.'
     {
         ProgramStmt * program_struct = new ProgramStmt();
-        program_struct->program_head = std::unique_ptr<ProgramHeadStmt>($1);
-        program_struct->program_body = std::unique_ptr<ProgramBodyStmt>($3);
+        program_struct->head = std::unique_ptr<ProgramHeadStmt>($1);
+        program_struct->body = std::unique_ptr<ProgramBodyStmt>($3);
         LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'\n");
     }
     | error{
@@ -353,8 +340,7 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
     | PROGRAM IDENTIFIER
     {
         $$ = new ProgramHeadStmt();
-        $$->id_list.push_back(*$2);
-        delete $2;
+        $$->id_list.push_back(std::string($2));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER\n");
     }
     | error{
@@ -403,14 +389,12 @@ program_body : const_declarations var_declarations subprogram_declarations compo
 idlist : IDENTIFIER
     {
         $$ = new std::vector<std::string>();
-        $$->push_back(*$1);
-        delete $1;
+        $$->push_back(std::string($1));
         LOG_DEBUG("DEBUG idlist -> IDENTIFIER\n");
     }
     | idlist ',' IDENTIFIER
     {
-        $1->push_back(*$3);
-        delete $3;
+        $1->push_back(std::string($3));
         $$ = $1;
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER\n");
     }
@@ -430,16 +414,23 @@ const_declarations : /*empty*/
         $$ = nullptr;
         LOG_DEBUG("DEBUG id_varpart -> empty\n");
     }
-    | '[' expression_list ']'
+    | CONST const_declaration ';' const_declarations
     {
-        $$ = $2;
-        LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'\n");
+        $$ = new ConstDeclStmt();
+        std::vector<std::pair<std::string, NumberStmt> *> kv_pair_list = *$2;
+        for (auto kv_pair : kv_pair_list) {
+            $$->pairs.push_back(*kv_pair);
+            delete kv_pair;
+        }
+        delete $2;
+        // DEBUG
+        printf("%s",const_decl_stmt_str(*$$,0).c_str());
+        LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations\n");
     }
     | error
     {
-        syntax_error("数组下标定义出错 请检查是否符合规范");
-    }
-    ;
+        syntax_error("常量定义出错 请检查是否符合规范");
+    };
 
 
 /*
@@ -538,9 +529,7 @@ var_declarations : /*empty*/
     }
     | VAR var_declaration ';'
     {
-        std::vector<VarDeclStmt *> * var_decls = new std::vector<VarDeclStmt *>();
-        var_decls->push_back($2);
-        $$ = var_decls;
+        $$ = $2;
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'\n");
     }
     | error
@@ -567,17 +556,21 @@ var_declaration : idlist ':' type
         var_decl->array_range = std::move($3->array_range);
         delete $1;
         delete $3;
-        $$ = var_decl;
+        var_decls->push_back(var_decl);
+        $$ = var_decls;
         LOG_DEBUG("DEBUG var_declaration -> idlist ':' type\n");
     }
     | var_declaration ';' idlist ':' type
     {
-        $1->id.insert($1->id.end(), $3->begin(), $3->end());
-        $1->basic_type = $5->basic_type;
-        $1->data_type = $5->data_type;
-        $1->array_range = std::move($5->array_range);
+        VarDeclStmt * var_decl = new VarDeclStmt();
+        var_decl->id.insert(var_decl->id.end(), $3->begin(), $3->end());
+        // deal with type
+        var_decl->basic_type = $5->basic_type;
+        var_decl->data_type = $5->data_type;
+        var_decl->array_range = std::move($5->array_range);
         delete $3;
         delete $5;
+        $1->push_back(var_decl);
         $$ = $1;
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type\n");
     }
@@ -607,7 +600,10 @@ type : basic_type
         VarDeclStmt * type_stmt = new VarDeclStmt();
         type_stmt->data_type = DataType::ArrayType;
         type_stmt->basic_type = $6;
-        type_stmt->array_range = std::unique_ptr<std::vector<PeriodStmt *>>($3);
+        for(auto period : *$3){
+            type_stmt->array_range.push_back(std::unique_ptr<PeriodStmt>(period));
+        }
+        delete $3;
         $$ = type_stmt;
         LOG_DEBUG("DEBUG type -> ARRAY '[' period_list ']' OF basic_type\n");
     }
@@ -798,7 +794,7 @@ parameter: var_parameter
 var_parameter: VAR value_parameter
         {
             $$ = new VarDeclStmt();
-            $$ = $1;
+            $$ = $2;
         }
         ;
 
@@ -934,8 +930,8 @@ statement : /*empty*/
     {
         IfStmt * if_stmt = new IfStmt();
         if_stmt->expr = std::unique_ptr<ExprStmt>($2);
-        if_stmt->then_stmt = std::unique_ptr<Stmt>($4);
-        if_stmt->else_stmt = std::unique_ptr<Stmt>($5);
+        if_stmt->then_stmt = std::unique_ptr<BaseStmt>($4);
+        if_stmt->false_stmt = std::unique_ptr<BaseStmt>($5);
         $$ = if_stmt;
         LOG_DEBUG("DEBUG statement -> IF expression THEN statement else_part\n");
     }
