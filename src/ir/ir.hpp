@@ -50,6 +50,8 @@ public:
     };
     explicit Type(TID tid) : tid_(tid) {}
     ~Type() = default;
+    virtual std::string print();
+    virtual std::string placeholder();
 
     TID tid_;
 };
@@ -60,6 +62,7 @@ public:
 class VoidType : public Type {
 public:
     explicit VoidType() : Type(Type::VoidTID) {}
+    virtual std::string print() override { return "void"; }
 };
 
 /**
@@ -70,6 +73,12 @@ class IntegerType : public Type {
 public:
     explicit IntegerType(unsigned num_bits) : Type(Type::IntegerTID), num_bits_(num_bits) {}
     unsigned num_bits_; // 位数: 32 or 64, int or long long 
+    virtual std::string print() override {
+        return num_bits_ == 32 ? "int" : "long long";
+    }
+    virtual std::string placeholder() override {
+        return num_bits_ == 32 ? "%d" : "%lld";
+    }
 };
 
 /**
@@ -80,6 +89,12 @@ class RealType : public Type {
 public:
     explicit RealType(unsigned num_bits) : Type(Type::RealTID), num_bits_(num_bits) {}
     unsigned num_bits_; // 位数: 32 or 64, float or double
+    virtual std::string print() override {
+        return num_bits_ == 32 ? "float" : "double";
+    }
+    virtual std::string placeholder() override {
+        return num_bits_ == 32 ? "%f" : "%lf";
+    }
 };
 
 /**
@@ -89,6 +104,7 @@ public:
 class BooleanType : public Type {
 public:
     explicit BooleanType() : Type(Type::BooleanTID) {}
+    virtual std::string print() override { return "bool"; }
 };
 
 /**
@@ -98,6 +114,8 @@ public:
 class CharType : public Type {
 public:
     explicit CharType() : Type(Type::CharTID) {}
+    virtual std::string print() override { return "char"; }
+    virtual std::string placeholder() override { return "%c"; }
 };
 
 /**
@@ -107,6 +125,8 @@ public:
 class StringType : public Type {
 public:
     explicit StringType() : Type(Type::StringTID) {}
+    virtual std::string print() override { return "string"; }
+    virtual std::string placeholder() override { return "%s"; }
 };
 
 /**
@@ -116,6 +136,15 @@ public:
 class ArrayType : public Type {
 public:
     explicit ArrayType(std::shared_ptr<Type> elem_type, std::vector<unsigned> dims_elem_num) : Type(Type::ArrayTID), elem_type_(elem_type), dims_elem_num_(dims_elem_num) {}
+    virtual std::string print() override {
+        std::string type_str = elem_type_->print();
+        type_str = type_str + " ";
+        for (unsigned i = 0; i < dims_elem_num_.size(); i++) {
+            type_str = type_str + "[" + std::to_string(dims_elem_num_[i]) + "]";
+        }
+        return type_str;
+    }
+
     std::shared_ptr<Type> elem_type_; // 元素类型
     std::vector<unsigned> dims_elem_num_; // 数组各维度元素数量
 };
@@ -151,6 +180,7 @@ public:
     std::shared_ptr<Value> get_this() { return shared_from_this(); }
     explicit Value(std::shared_ptr<Type> type, const std::string name = "") : type_(type), name_(name) {}
     ~Value() = default;
+    virtual std::string print();
 
     /**
      * @brief 移除所有某个值的所有引用
@@ -207,6 +237,7 @@ class LiteraltInt : public Literal {
 public:
     LiteraltInt(std::shared_ptr<Type> type, int val) : Literal(type), val_(val) {}
     int val_;
+    virtual std::string print() override { return std::to_string(val_); }
 };
 
 
@@ -218,6 +249,7 @@ class LiteralLong : public Literal {
 public:
     LiteralLong(std::shared_ptr<Type> type, long long val) : Literal(type), val_(val) {}
     long long val_;
+    virtual std::string print() override { return std::to_string(val_); }
 };
 
 /**
@@ -228,6 +260,7 @@ class LiteralFloat : public Literal {
 public:
     LiteralFloat(std::shared_ptr<Type> type, float val) : Literal(type), val_(val) {}
     float val_;
+    virtual std::string print() override { return std::to_string(val_); }
 };
 
 /**
@@ -238,6 +271,7 @@ class LiteralDouble : public Literal {
 public:
     LiteralDouble(std::shared_ptr<Type> type, double val) : Literal(type), val_(val) {}
     double val_;
+    virtual std::string print() override { return std::to_string(val_); }
 };
 
 /**
@@ -248,6 +282,7 @@ class LiteralBool : public Literal {
 public:
     LiteralBool(std::shared_ptr<Type> type, bool val) : Literal(type), val_(val) {}
     bool val_;
+    virtual std::string print() override { return val_ ? "true" : "false"; }
 };
 
 /**
@@ -258,6 +293,7 @@ class LiteralChar : public Literal {
 public:
     LiteralChar(std::shared_ptr<Type> type, char val) : Literal(type), val_(val) {}
     char val_;
+    virtual std::string print() override { return "'" + std::string(1, val_) + "'";}
 };
 
 /**
@@ -268,6 +304,7 @@ class LiteralString : public Literal {
 public:
     LiteralString(std::shared_ptr<Type> type, const std::string val) : Literal(type), val_(val) {}
     std::string val_;
+    virtual std::string print() override { return "\"" + val_ + "\"";}
 };
 
 /**
@@ -297,6 +334,9 @@ public:
      */
     GlobalIdentifier(std::shared_ptr<Type> type, const std::string name, std::shared_ptr<Module> m, bool is_const, std::shared_ptr<Literal> init_val);
     ~GlobalIdentifier() = default;
+    virtual std::string print() override {
+        return "const" + type_->print() + " " + name_ + " = " + init_val_.lock()->print();
+    }
 
     void init();
     std::weak_ptr<Module> parent_; 
@@ -309,6 +349,15 @@ class LocalIdentifier : public Value {
 public:
     LocalIdentifier(std::shared_ptr<Type> type, const std::string name, std::shared_ptr<Function> f, bool is_const, std::shared_ptr<Literal> init_val);  
     ~LocalIdentifier() = default;
+    virtual std::string print() override {
+        std::string type_str = type_->print();
+        int ps = type_str.find(" ");
+        if (ps == std::string::npos) {
+            return type_str + " " + name_;
+        } else {
+            return type_str.substr(0, ps) + " " + name_ + type_str.substr(ps + 1);
+        }
+    }
 
     void init();
     std::weak_ptr<Function> parent_;
@@ -339,6 +388,19 @@ class Function : public Value {
 public:
     Function(std::shared_ptr<FunctionType> type, const std::string name, std::shared_ptr<Module> m);
     ~Function();
+    virtual std::string print() override {
+        std::string type_str = func_type_.lock()->result_->print();
+        std::string ret = type_str + " " + name_ + "(";
+        for (int i = 0; i < args_.size(); i++) {
+            ret = ret + args_[i]->type_->print() + " " + args_[i]->name_;
+            if (i != args_.size() - 1) {
+                ret = ret + ", ";
+            }
+        }
+        ret = ret + ")";
+        return ret;
+    }
+
     void init();
 
     /**
@@ -404,8 +466,6 @@ class Instruction : public Value {
 public:
     // 操作码
     enum OpID {
-        
-
         // Function
         Call, 
         Ret, 
@@ -430,6 +490,7 @@ public:
         LogicalNot,
         Bracket,
         Null, // 这个一元运算就是当做本身
+        Inc, // ++a
         
 
         // Compare Operation
@@ -451,6 +512,7 @@ public:
         Read,
         Write
     };
+    static std::map<Instruction::OpID, std::string> op2str_;
     explicit Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::shared_ptr<BasicBlock> parent, bool before = false);
     explicit Instruction(const std::string name, std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::shared_ptr<BasicBlock> parent, bool before = false);
     
@@ -506,6 +568,9 @@ public:
         set_operand(1, v2);
     }
     ~BinaryInst() = default;
+    virtual std::string print() override {
+        return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
+    }
 };
 
 /**
@@ -527,6 +592,15 @@ public:
         set_operand(0, val);
     }
     ~UnaryInst() = default;
+    virtual std::string print() override {
+        if (op_id_ == Instruction::Bracket) {
+            return "(" + operands_[0]->print() + ")"; 
+        } else if (op_id_ == Instruction::Null) {
+            return operands_[0]->print();
+        } else {
+            return Instruction::op2str_[op_id_] + operands_[0]->print();
+        }
+    }
 };
 
 /**
@@ -550,6 +624,9 @@ public:
         set_operand(1, v2);
     }
     ~CompareInst() = default;
+    virtual std::string print() override {
+        return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
+    }
 }; 
 
 
@@ -574,6 +651,9 @@ public:
         set_operand(1, ptr);
     }
     ~StoreInst() = default;
+    virtual std::string print() override {
+        return operands_[0]->print() + " = " + operands_[1]->print();
+    }
 };
 
 /**
@@ -596,6 +676,9 @@ public:
         set_operand(1, idx);
     }
     ~LoadInst() = default;
+    virtual std::string print() override {
+        return "*" + operands_[0]->print() + "[" + operands_[1]->print() + "]";
+    }
 };
 
 /**
@@ -610,6 +693,25 @@ public:
         }
     }
     ~ReadInst() = default;
+    virtual std::string print() override {
+        std::string ans = "scanf(\"";
+        for (int i = 0; i < operands_.size(); i++) {
+            std::string placeholder = operands_[i]->type_->placeholder();
+            ans = ans + placeholder;
+            if (i != operands_.size() - 1) {
+                ans = ans + ", ";
+            }
+        }
+        ans = ans + "\", ";
+        for (int i = 0; i < operands_.size(); i++) {
+            ans = ans + "&" + operands_[i]->name_;
+            if (i != operands_.size() - 1) {
+                ans = ans + ", ";
+            }
+        }
+        ans = ans + ")";
+        return ans;
+    }
 };
 
 /**
@@ -624,6 +726,22 @@ public:
         }
     }
     ~WriteInst() = default;
+    virtual std::string print() override {
+        std::string ans = "printf(\"";
+        for (int i = 0; i < operands_.size(); i++) {
+            std::string placeholder = operands_[i]->type_->placeholder();
+            ans = ans + placeholder;
+        }
+        ans = ans + "\", ";
+        for (int i = 0; i < operands_.size(); i++) {
+            ans = ans + operands_[i]->print();
+            if (i != operands_.size() - 1) {
+                ans = ans + ", ";
+            }
+        }
+        ans = ans + ")";
+        return ans;
+    }
 };
 
 /**
@@ -649,6 +767,18 @@ public:
         set_operand(num_ops - 1, func);
     }
     ~CallInst() = default;
+    virtual std::string print() override {
+        std::string ret = operands_[num_ops_ - 1]->name_;
+        ret += "(";
+        for (int i = 0; i < num_ops_ - 1; i++) {
+            ret = ret + operands_[i]->print();
+            if (i != num_ops_ - 2) {
+                ret = ret + ", ";
+            }
+        }
+        ret += ")";
+        return ret;
+    }
 };
 
 /**
@@ -668,6 +798,9 @@ public:
         set_operand(0, val);
     }
     ~ReturnInst() = default;
+    virtual std::string print() override {
+        return "return " + operands_[0]->print();
+    }
 };
 
 // 分支跳转指令
@@ -695,6 +828,13 @@ public:
     }
     ~BranchInst() = default;
     bool is_loop_cond_; // 是否为循环条件
+    virtual std::string print() override {
+        if (!is_loop_cond_) {
+            return "if (" + operands_[0]->print() + ")";
+        } else {
+            return "while (" + operands_[0]->print() + ")";
+        }
+    }
 };
 
 

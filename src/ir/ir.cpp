@@ -11,6 +11,38 @@ FunctionType::FunctionType(std::shared_ptr<Type> result, std::vector<std::shared
 }
 
 // 指令类相关函数实现
+std::map<Instruction::OpID, std::string> Instruction::op2str_ = {
+    {Instruction::OpID::Call, "call"},
+    {Instruction::OpID::Ret, "ret"},
+    {Instruction::OpID::Br, "br"},
+    {Instruction::OpID::Add, "+"},
+    {Instruction::OpID::Sub, "-"},
+    {Instruction::OpID::Mul, "*"},
+    {Instruction::OpID::Div, "/"},
+    {Instruction::OpID::Mod, "%"},
+    {Instruction::OpID::And, "&&"},
+    {Instruction::OpID::Or, "||"},
+    {Instruction::OpID::OrElse, "OrElse"},
+    {Instruction::OpID::AndThen, "AndThen"},
+    {Instruction::OpID::Not, "!"},
+    {Instruction::OpID::BitReverse, "~"},
+    {Instruction::OpID::LogicalNot, "LogicalNot"},
+    {Instruction::OpID::Bracket, "()"},
+    {Instruction::OpID::Null, ""},
+    {Instruction::OpID::Inc, "++"},
+    {Instruction::OpID::Eq, "=="},
+    {Instruction::OpID::Ne, "!="},
+    {Instruction::OpID::Gt, ">"},
+    {Instruction::OpID::Ge, ">="},
+    {Instruction::OpID::Lt, "<"},
+    {Instruction::OpID::Le, "<="},
+    {Instruction::OpID::In, "In"},
+    {Instruction::OpID::Assign, "="},
+    {Instruction::OpID::Visit, "Visit"},
+    {Instruction::OpID::Read, "Read"},
+    {Instruction::OpID::Write, "Write"}
+};
+
 Instruction::Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::shared_ptr<BasicBlock> parent, bool before)
     : Value(ty, ""), op_id_(id), num_ops_(num_ops), parent_(parent) {
         init();        
@@ -57,5 +89,7 @@ void Function::init() {
     }
     parent_.lock()->add_function(std::static_pointer_cast<Function>(get_this()));
 }
+
+
 
 } // namespace ir
