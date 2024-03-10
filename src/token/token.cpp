@@ -1,4 +1,5 @@
 #include "token.hpp"
+#include <string>
 /*
 *   @brief Token类，用于表示词法分析的结果
 */
@@ -52,8 +53,8 @@ Token::Token(){};
     *   @brief 获取token的int类型值
     *   @return token的int类型值
     */
-    int Token::get_int(){
-        return std::stoi(this->token_value);
+    long long Token::get_int(){
+        return std::stoll(this->token_value);
     };
     /*
     *   @brief 获取token的double类型值
@@ -74,7 +75,7 @@ Token::Token(){};
     *   @return token的char类型值
     */
     char Token::get_char(){
-        return this->token_value[0];
+        return this->token_value[1];
     };
 
     /*
@@ -138,8 +139,15 @@ Token::Token(){};
             return "[Token] " + get_type() + " " + get_char() + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]" ;
             break;
         case STRING:
-            return "[Token] " + get_type() + " " + get_string() + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]" ;
-            break;
+            // 假设字符串总是由两端的引号包围
+            if (this->token_value.length() >= 2) {
+                // 使用substr去除两端的引号，开始于第1个字符并结束于倒数第2个字符
+                std::string unquoted_string = this->token_value.substr(1, this->token_value.length() - 2);
+                return "[Token] " + get_type() + " " + unquoted_string + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]";
+            } else {
+                // 如果字符串长度不足以包含两个引号，则直接返回原始值
+                return "[Token] " + get_type() + " " + this->token_value + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]";
+            }
         case INT:
             return "[Token] " + get_type() + " " + std::to_string(get_int()) + " " + "[" + std::to_string(lineno) + "," + std::to_string(colno) + "]" ;
             break;

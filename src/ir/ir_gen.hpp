@@ -2,6 +2,7 @@
 
 #include "ir/ir.hpp"
 #include "ast/visitor.hpp"
+#include "ast/stmt.hpp"
 
 #include <vector>
 #include <map>
@@ -31,6 +32,8 @@ public:
     // 查找一个符号
     Value *find(const std::string &name);
 
+    // 当前作用域的函数
+    std::shared_ptr<Function> current_f_ = nullptr;
 private:
     // 栈式存储分配
     // 是一个 vector, 每个元素相当于作用域 map, 作用域 map 中存储了当前作用域的符号
@@ -44,11 +47,6 @@ private:
 */
 class IRGenerator : public StmtVisitor {
 public:
-    // TODO
-    IRGenerator() = default;
-
-    // 生成中间代码
-    Module get_ir();
     // 语句访问者
     void visit(ExprStmt &stmt) override;
     void visit(RelExprStmt &stmt) override;
@@ -75,6 +73,16 @@ public:
     void visit(ProgramHeadStmt &stmt) override;
     void visit(ProgramBodyStmt &stmt) override;
     void visit(ProgramStmt &stmt) override;
+
+    Module get_ir() { return module_; }
+
+    Scope scope_; // 作用域
+    Module module_; // 中间代码
+    
+    IRGenerator() {
+        // 进入全局作用域
+        scope_.enter();
+    }
 };
 
 

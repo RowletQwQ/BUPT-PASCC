@@ -161,10 +161,13 @@ class NumberStmt : public BaseStmt {
 public:
     bool is_real; // 是否为实数(浮点型)
     bool is_signed; // 是否为有符号数
+    bool is_char; // 是否为字符
+    bool is_unsigned; // 是否为无符号数
     union {
         long long int_val;
         double real_val;
         unsigned long long uint_val;
+        char char_val;
     };
     void accept(StmtVisitor &visitor) override;
 };
@@ -260,6 +263,7 @@ public:
  */
 class FuncHeadDeclStmt : public BaseStmt {
 public:
+    std::string func_name; // 函数名
     BasicType ret_type; //返回值的类型
     std::vector<std::unique_ptr<VarDeclStmt>> args; // 函数的参数
     void accept(StmtVisitor &visitor) override;
