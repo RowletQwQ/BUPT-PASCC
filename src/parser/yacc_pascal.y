@@ -1334,7 +1334,7 @@ factor : INTEGER
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
         unary_expr->primary_expr->value->type =ValueStmt::ValueType::FuncCall;
         unary_expr->primary_expr->value->func_call = std::make_unique<FuncCallStmt>();
-        unary_expr->primary_expr->value->func_call->id = $1;
+        unary_expr->primary_expr->value->func_call->id = std::string($1);
         for(auto expr : *$3){
             unary_expr->primary_expr->value->func_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
         }
@@ -1342,6 +1342,19 @@ factor : INTEGER
         delete $3;
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' expression_list ')'");
+    }
+    | IDENTIFIER '(' ')'
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
+        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
+        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
+        unary_expr->primary_expr->value->type =ValueStmt::ValueType::FuncCall;
+        unary_expr->primary_expr->value->func_call = std::make_unique<FuncCallStmt>();
+        unary_expr->primary_expr->value->func_call->id = std::string($1);
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' ')'");
     }
     | '-' factor
     {
