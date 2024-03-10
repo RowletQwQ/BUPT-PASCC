@@ -53,7 +53,7 @@ void batch_test(int beginIndex,const std::string folderPath , std::vector<std::s
 
 
 int main() {
-  common::g_log = new common::Log(common::FATAL);
+  
   const std::string folderPath = "../../../open_set"; 
   std::vector<std::string> files;
   DIR *dir;
@@ -80,8 +80,9 @@ int main() {
       }
   }
     // 
-    batch_test(0,folderPath,files);
-    // single_point_test(folderPath,files);
+    common::g_log = new common::Log(common::DEBUG);
+    // batch_test(0,folderPath,files);
+    single_point_test(folderPath,files);
   
   return 0;
 }

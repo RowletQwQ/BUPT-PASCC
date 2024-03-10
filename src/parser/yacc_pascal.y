@@ -774,7 +774,12 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
 * son  :  VarDeclStmt*
 * error :
 */
-parameter_list : parameter
+parameter_list : 
+    {
+        $$ = nullptr;
+        LOG_DEBUG("DEBUG parameter_list -> empty");
+    }
+    |parameter
         {
             $$ = new std::vector<VarDeclStmt *>();
             $$->push_back($1);
@@ -966,8 +971,10 @@ statement : /*empty*/
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         IfStmt * if_stmt = new IfStmt();
         if_stmt->expr = std::unique_ptr<ExprStmt>($2);
-        for(auto stmt : *$4){
-            if_stmt->true_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+        if($4 != nullptr){
+            for(auto stmt : *$4){
+                if_stmt->true_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
         }
         if($5 != nullptr){
             for(auto stmt : *$5){
@@ -1013,10 +1020,12 @@ statement : /*empty*/
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         WriteFuncStmt * write_stmt = new WriteFuncStmt();
-        for(auto expr : *$3){
-            write_stmt->expr.push_back(std::unique_ptr<ExprStmt>(expr));
+        if($3 != nullptr){
+            for(auto expr : *$3){
+                write_stmt->expr.push_back(std::unique_ptr<ExprStmt>(expr));
+            }
+            delete $3;
         }
-        delete $3;
         stmt_list->push_back(write_stmt);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'");
@@ -1097,7 +1106,7 @@ id_varpart : /*empty*/
 
 /*
 * no : 5.1 
-* rule  :  procedure_call -> IDENTIFIER | IDENTIFIER '(' expression_list ')'
+* rule  :  procedure_call -> IDENTIFIER | IDENTIFIER '(' expression_list ')' 
 * node :   FuncCallStmt * proc_call
 * son :  std::string id  std::vector<ExprStmt *> * args
 * error : 过程调用定义出错 请检查是否符合规范
@@ -1113,10 +1122,12 @@ procedure_call : IDENTIFIER
     {
         FuncCallStmt * proc_call = new FuncCallStmt();
         proc_call->id = std::string($1);
-        for(auto expr : *$3){
-            proc_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
+        if($3 != nullptr){
+            for(auto expr : *$3){
+                proc_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
+            }
+            delete $3;
         }
-        delete $3;
         $$ = proc_call;
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'");
     }
@@ -1303,6 +1314,33 @@ factor : INTEGER
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> REAL");
     }
+    | BOOLEAN
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
+        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
+        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
+        unary_expr->primary_expr->value->type =ValueStmt::ValueType::Number;
+        unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
+        long long int val = $1 == true ? 1 : 0;
+        fill_number_stmt(unary_expr->primary_expr->value->number,val);
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> BOOLEAN");
+    }
+    | CHAR
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
+        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
+        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
+        unary_expr->primary_expr->value->type =ValueStmt::ValueType::Number;
+        unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(unary_expr->primary_expr->value->number,$1);
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> CHAR");
+    }
     | variable
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -1335,26 +1373,32 @@ factor : INTEGER
         unary_expr->primary_expr->value->type =ValueStmt::ValueType::FuncCall;
         unary_expr->primary_expr->value->func_call = std::make_unique<FuncCallStmt>();
         unary_expr->primary_expr->value->func_call->id = std::string($1);
-        for(auto expr : *$3){
-            unary_expr->primary_expr->value->func_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
+        if($3 != nullptr){
+            for(auto expr : *$3){
+                unary_expr->primary_expr->value->func_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
+            }
+            delete $3;
         }
-        delete $1;
-        delete $3;
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' expression_list ')'");
     }
-    | IDENTIFIER '(' ')'
+    | NOT factor
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::Not;
+        unary_expr->primary_expr = std::move($2->primary_expr);
+        delete $2;
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> NOT factor");
+    }
+    | '+' factor
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
-        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
-        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
-        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
-        unary_expr->primary_expr->value->type =ValueStmt::ValueType::FuncCall;
-        unary_expr->primary_expr->value->func_call = std::make_unique<FuncCallStmt>();
-        unary_expr->primary_expr->value->func_call->id = std::string($1);
+        unary_expr->primary_expr = std::move($2->primary_expr);
+        delete $2;
         $$ = unary_expr;
-        LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' ')'");
+        LOG_DEBUG("DEBUG factor -> '+' factor");
     }
     | '-' factor
     {
