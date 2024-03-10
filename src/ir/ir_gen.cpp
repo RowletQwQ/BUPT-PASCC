@@ -266,7 +266,7 @@ void IRGenerator::visit(VarDeclStmt &stmt) {
     } else if (stmt.data_type == DataType::ArrayType) { // 处理数组类型
         std::vector<unsigned> dims_elem_num;
         for (const auto &range : stmt.array_range) {
-            dims_elem_num.push_back(range->end - range->begin + 1);
+            dims_elem_num.push_back(range->end + 1);
         }
         std::shared_ptr<ArrayType> array_type = std::make_shared<ArrayType>(type, dims_elem_num); // 数组类型
         for (const auto &name : stmt.id) {
@@ -424,6 +424,8 @@ void IRGenerator::visit(ForStmt &stmt) {
     for (const auto &stmt : stmt.stmt) {
         stmt->accept(*this);
     }
+    // 循环体的最后一条指令是循环变量加 1
+    std::shared_ptr<UnaryInst> inc_inst = std::make_shared<UnaryInst>(id->type_, Instruction::OpID::Inc, std::make_shared<Value>(*id), body_bb);
     body_bb->add_succ_bb(cond_bb);
 
     // 最后新建一个循环外的基本块
