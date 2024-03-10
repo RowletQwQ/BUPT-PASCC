@@ -327,6 +327,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %type <mul_expr>            term
 %type <unary_expr>          factor
 %type <stmt_list>        else_part
+%type <expr_list>      id_random
 
 %%
 // TODO 此处书写文法规则
@@ -443,7 +444,7 @@ idlist : IDENTIFIER
 const_declarations : /*empty*/
     {
         $$ = nullptr;
-        LOG_DEBUG("DEBUG id_varpart -> empty");
+        LOG_DEBUG("DEBUG const_declarations -> empty");
     }
     | CONST const_declaration ';' 
     {
@@ -1075,6 +1076,18 @@ variable : IDENTIFIER id_varpart
         }
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart");
     }
+    |IDENTIFIER id_random
+    {
+        $$ = new LValStmt();
+        $$->id = std::string($1);
+        if($2 != nullptr){
+            for(auto expr : *$2){
+                $$->array_index.push_back(std::unique_ptr<ExprStmt>(expr));
+            }
+            delete $2;
+        }
+        LOG_DEBUG("DEBUG variable -> IDENTIFIER id_random");
+    }
     | error
     {
         syntax_error("变量定义出错 请检查是否符合规范");
@@ -1095,7 +1108,11 @@ id_varpart : /*empty*/
     }
     | '[' expression_list ']'
     {
-        $$ = $2;
+        if($2 != nullptr){
+            $$ = $2;    
+        }else{
+            syntax_error("数组下标定义出错 请检查是否符合规范");
+        }
         LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'");
     }
     | error
@@ -1103,6 +1120,39 @@ id_varpart : /*empty*/
         syntax_error("数组下标定义出错 请检查是否符合规范");
     }
     ;
+
+/*
+* no : 4.5
+* rule  :  id_random -> id_random '[' expression ']' | '[' expression ']'
+* node :   std::vector<ExprStmt *> * expr_list
+* son :  ExprStmt *
+* error : 随机存取数组定义出错 请检查是否符合规范
+*/
+id_random : id_random '[' expression ']'
+    {
+        if($1 != nullptr){
+            $1->push_back($3);
+            $$ = $1;
+        }else{
+            syntax_error("随机存取数组定义出错 请检查是否符合规范");
+        }
+        LOG_DEBUG("DEBUG id_random -> id_random '[' expression ']'");
+    }
+    | '[' expression ']'
+    {
+        std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
+        expr_list->push_back($2);
+        $$ = expr_list;
+        LOG_DEBUG("DEBUG id_random -> '[' expression ']'");
+    }
+    | error
+    {
+        syntax_error("随机存取数组定义出错 请检查是否符合规范");
+    }
+    ;
+
+
+
 
 /*
 * no : 5.1 
@@ -1164,12 +1214,16 @@ else_part : /*empty*/
 
 /*
 * no : 5.3
-* rule  :  expression_list -> expression | expression_list  ','  expression
+* rule  :  expression_list ->empty | expression | expression_list  ','  expression
 * node :   std::vector<ExprStmt *> * expr_list
 * son : ExprStmt *
 * error : 表达式定义出错 请检查是否符合规范
 */
-expression_list : expression
+expression_list : {
+        $$ = nullptr;
+        LOG_DEBUG("DEBUG expression_list -> empty");
+    }
+    | expression
     {
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
         expr_list->push_back($1);
