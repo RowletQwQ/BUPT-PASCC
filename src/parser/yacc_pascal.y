@@ -139,6 +139,29 @@ void fill_number_stmt(std::unique_ptr<NumberStmt> & num_value, char char_val){
     num_value->char_val = char_val;
 }
 
+void fill_number_stmt(NumberStmt* num_value, long long int_val){
+    num_value->is_signed = true;
+    num_value->is_real = false;
+    num_value->is_char = false;
+    num_value->is_unsigned = false;
+    num_value->int_val = int_val;
+}
+
+void fill_number_stmt(NumberStmt* num_value, double real_val){
+    num_value->is_signed = true;
+    num_value->is_real = true;
+    num_value->is_char = false;
+    num_value->is_unsigned = false;
+    num_value->real_val = real_val;
+}
+
+void fill_number_stmt(NumberStmt* num_value, char char_val){
+    num_value->is_signed = true;
+    num_value->is_real = false;
+    num_value->is_char = true;
+    num_value->is_unsigned = false;
+    num_value->char_val = char_val;
+}
 
 void syntax_error(const char *msg){
     printf("[SYNTAX ERROR] ");
@@ -146,7 +169,7 @@ void syntax_error(const char *msg){
 }
 
 // 相关所需的函数，可能包含一些错误处理函数
-int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_t scanner, const char *msg)
+int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan_t scanner, const char *msg)
 {
     syntax_error(msg);
     return 0;
@@ -156,12 +179,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 
 // 定义Token
 
-%token INTEGER
-    REAL
-    IDENTIFIER
-    CHAR
-    STRING
-    BOOLEAN
+%token 
     CONST
     PROGRAM
     TYPE
@@ -213,7 +231,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %lex-param { yyscan_t scanner }
 /** 这些定义了在yyparse函数中的参数 **/
 %parse-param { const char * code_str }
-%parse-param { ProgramStmt * program}
+%parse-param { ProgramStmt ** program}
 %parse-param { void * scanner }
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
@@ -283,11 +301,9 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <num_value>           const_value
 %type <var_decls>           var_declarations
 %type <var_decls>           var_declaration
-%type <var_type>            type
+%type <var_decl>            type
 %type <basic_type>          basic_type
-%type <period_list>         period_item
 %type <period_list>         period_list
-%type <period>              period
 %type <func_decl_list>      subprogram_declarations
 %type <func_decl>           subprogram
 %type <func_head>           subprogram_head
@@ -299,13 +315,8 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <func_body>           subprogram_body
 %type <stmt_list>           compound_statement
 %type <stmt_list>           statement_list
-%type <stmt>                statement
-%type <assign_stmt>         assignment
-%type <if_stmt>             if_clause
-%type <for_stmt>            for_clause
+%type <stmt_list>                statement
 %type <func_call_stmt>      procedure_call
-%type <read_stmt>           read_clause
-%type <write_stmt>          write_clause
 %type <lval_list>           variable_list
 %type <lval>                variable
 %type <expr_list>           id_varpart
@@ -314,8 +325,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 %type <add_expr>            simple_expression
 %type <mul_expr>            term
 %type <unary_expr>          factor
-%type <primary_expr>        unary_expression
-%type<var_decl>             type
+%type <stmt_list>        else_part
 
 %%
 // TODO 此处书写文法规则
@@ -329,9 +339,10 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt * program, yyscan_
 programstruct : program_head  ';'  program_body '.'
     {
         ProgramStmt * program_struct = new ProgramStmt();
-        program_struct->program_head = std::unique_ptr<ProgramHeadStmt>($1);
-        program_struct->program_body = std::unique_ptr<ProgramBodyStmt>($3);
+        program_struct->head = std::unique_ptr<ProgramHeadStmt>($1);
+        program_struct->body = std::unique_ptr<ProgramBodyStmt>($3);
         LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'\n");
+        *program = program_struct;
     }
     | error{
         syntax_error("程序定义出错 请检查是否符合规范");
@@ -353,8 +364,7 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
     | PROGRAM IDENTIFIER
     {
         $$ = new ProgramHeadStmt();
-        $$->id_list.push_back(*$2);
-        delete $2;
+        $$->id_list.push_back(std::string($2));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER\n");
     }
     | error{
@@ -371,21 +381,27 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
 program_body : const_declarations var_declarations subprogram_declarations compound_statement
     {
         ProgramBodyStmt* program_body = new ProgramBodyStmt();
-        program_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);
-        for(auto var_decl : *$2){
-            program_body->var_decl.push_back(std::unique_ptr<VarDeclStmt>(var_decl));
+        if($1 != nullptr) {program_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);}
+        if($2 != nullptr){
+            for(auto var_decl : *$2){
+                program_body->var_decl.push_back(std::unique_ptr<VarDeclStmt>(var_decl));
+            }
+            delete $2;
         }
-        for(auto func_decl : *$3){
-            program_body->func_decl.push_back(std::unique_ptr<FuncDeclStmt>(func_decl));
+        if($3 != nullptr){
+            for(auto func_decl : *$3){
+                program_body->func_decl.push_back(std::unique_ptr<FuncDeclStmt>(func_decl));
+            }
+            delete $3;
         }
-        for(auto stmt : *$4){
-            program_body->comp_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+        if($4 != nullptr){
+            for(auto stmt : *$4){
+                program_body->comp_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
+            delete $4;
         }
         $$ = program_body;
-        delete $2;
-        delete $3;
-        delete $4;
-        LOG_DEBUG("DEBUG program_body -> const_declarations var_declarations subprogram_declarations compound_statement\n");
+        LOG_DEBUG("DEBUG program_body -> const_declarations var_declarations subprogram_declarations compound_statement");
     }
     | error{
         syntax_error("程序体定义出错 请检查是否符合规范");
@@ -403,16 +419,14 @@ program_body : const_declarations var_declarations subprogram_declarations compo
 idlist : IDENTIFIER
     {
         $$ = new std::vector<std::string>();
-        $$->push_back(*$1);
-        delete $1;
-        LOG_DEBUG("DEBUG idlist -> IDENTIFIER\n");
+        $$->push_back(std::string($1));
+        LOG_DEBUG("DEBUG idlist -> IDENTIFIER");
     }
     | idlist ',' IDENTIFIER
     {
-        $1->push_back(*$3);
-        delete $3;
+        $1->push_back(std::string($3));
         $$ = $1;
-        LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER\n");
+        LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER");
     }
     | error{
         syntax_error("标识符定义错误 请检查是否符合规范");
@@ -428,18 +442,23 @@ idlist : IDENTIFIER
 const_declarations : /*empty*/
     {
         $$ = nullptr;
-        LOG_DEBUG("DEBUG id_varpart -> empty\n");
+        LOG_DEBUG("DEBUG id_varpart -> empty");
     }
-    | '[' expression_list ']'
+    | CONST const_declaration ';' 
     {
-        $$ = $2;
-        LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'\n");
+        ConstDeclStmt * const_decls = new ConstDeclStmt();
+        for(auto kv_pair : *$2){
+            const_decls->pairs.push_back(*kv_pair);
+            delete kv_pair;
+        }
+        // 疑似内存泄漏
+        delete $2;
+        LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
     }
     | error
     {
-        syntax_error("数组下标定义出错 请检查是否符合规范");
-    }
-    ;
+        syntax_error("常量定义出错 请检查是否符合规范");
+    };
 
 
 /*
@@ -450,10 +469,13 @@ const_declarations : /*empty*/
 */
 const_declaration : IDENTIFIER '=' const_value
     {
-        $$ = new std::vector<std::pair<std::string, NumberStmt> *>();
-        $$->push_back(new std::pair<std::string, NumberStmt>($1, *$3));
+        std::vector<std::pair<std::string, NumberStmt> *> * const_decls = new std::vector<std::pair<std::string, NumberStmt> *>();
+        std::pair<std::string, NumberStmt> * kv_pair = new std::pair<std::string, NumberStmt>($1, *$3);
+        const_decls->push_back(kv_pair);
         delete $1;
         delete $3;
+        // 疑似内存泄漏
+        $$ = const_decls;
     }
     | const_declaration ';' IDENTIFIER '=' const_value
     {
@@ -475,50 +497,19 @@ const_declaration : IDENTIFIER '=' const_value
 const_value: INTEGER
     {
         NumberStmt * num_value = new NumberStmt();
-        num_value->is_signed = true;
-        num_value->int_val = $1;
-        $$ = num_value;
-    }|
-    '+' INTEGER
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_signed = true;
-        num_value->int_val = $2;
-        $$ = num_value;
-    }
-    | '-' INTEGER
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_signed = true;
-        num_value->int_val = -$2;
+        fill_number_stmt(num_value, $1);
         $$ = num_value;
     }
     | REAL
     {
         NumberStmt * num_value = new NumberStmt();
-        num_value->is_real = true;
-        num_value->real_val = $1;
+        fill_number_stmt(num_value, $1);
         $$ = num_value;
     }
-    | '+' REAL
+    | CHAR
     {
         NumberStmt * num_value = new NumberStmt();
-        num_value->is_real = true;
-        num_value->real_val = $2;
-        $$ = num_value;
-    }
-    | '-' REAL
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_real = true;
-        num_value->real_val = -$2;
-        $$ = num_value;
-    }
-    | '\'' CHAR  '\''
-    {
-        NumberStmt * num_value = new NumberStmt();
-        num_value->is_char = true;
-        num_value->char_val = $2;
+        fill_number_stmt(num_value, $1);
         $$ = num_value;
     }
     ;
@@ -534,14 +525,12 @@ const_value: INTEGER
 var_declarations : /*empty*/
     {
         $$ = nullptr;
-        LOG_DEBUG("DEBUG var_declarations -> empty\n");
+        LOG_DEBUG("DEBUG var_declarations -> empty");
     }
     | VAR var_declaration ';'
     {
-        std::vector<VarDeclStmt *> * var_decls = new std::vector<VarDeclStmt *>();
-        var_decls->push_back($2);
-        $$ = var_decls;
-        LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'\n");
+        $$ = $2;
+        LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
     }
     | error
     {
@@ -567,17 +556,21 @@ var_declaration : idlist ':' type
         var_decl->array_range = std::move($3->array_range);
         delete $1;
         delete $3;
-        $$ = var_decl;
-        LOG_DEBUG("DEBUG var_declaration -> idlist ':' type\n");
+        var_decls->push_back(var_decl);
+        $$ = var_decls;
+        LOG_DEBUG("DEBUG var_declaration -> idlist ':' type");
     }
     | var_declaration ';' idlist ':' type
     {
-        $1->id.insert($1->id.end(), $3->begin(), $3->end());
-        $1->basic_type = $5->basic_type;
-        $1->data_type = $5->data_type;
-        $1->array_range = std::move($5->array_range);
+        VarDeclStmt * var_decl = new VarDeclStmt();
+        var_decl->id.insert(var_decl->id.end(), $3->begin(), $3->end());
+        // deal with type
+        var_decl->basic_type = $5->basic_type;
+        var_decl->data_type = $5->data_type;
+        var_decl->array_range = std::move($5->array_range);
         delete $3;
         delete $5;
+        $1->push_back(var_decl);
         $$ = $1;
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type\n");
     }
@@ -600,16 +593,19 @@ type : basic_type
         type_stmt->data_type = DataType::BasicType;
         type_stmt->basic_type = $1;
         $$ = type_stmt;
-        LOG_DEBUG("DEBUG type -> basic_type\n");
+        LOG_DEBUG("DEBUG type -> basic_type");
     }
     | ARRAY '[' period_list ']' OF basic_type
     {
         VarDeclStmt * type_stmt = new VarDeclStmt();
         type_stmt->data_type = DataType::ArrayType;
         type_stmt->basic_type = $6;
-        type_stmt->array_range = std::unique_ptr<std::vector<PeriodStmt *>>($3);
+        for(auto period : *$3){
+            type_stmt->array_range.push_back(std::unique_ptr<PeriodStmt>(period));
+        }
+        delete $3;
         $$ = type_stmt;
-        LOG_DEBUG("DEBUG type -> ARRAY '[' period_list ']' OF basic_type\n");
+        LOG_DEBUG("DEBUG type -> ARRAY '[' period_list ']' OF basic_type");
     }
     | error
     {
@@ -626,19 +622,22 @@ type : basic_type
 basic_type: INTEGER_KW
         {
             $$ = BasicType::INT;
-            printf("%s", basic_type_str($$).c_str());
+            LOG_DEBUG("DEBUG basic_type -> INTEGER_KW\n");
         }
         | REAL_KW
         {
             $$ = BasicType::REAL;
+            LOG_DEBUG("DEBUG basic_type -> REAL_KW\n");
         }
         | BOOLEAN_KW
         {
             $$ = BasicType::BOOLEAN;
+            LOG_DEBUG("DEBUG basic_type -> BOOLEAN_KW\n");
         }
         | CHAR_KW
         {
             $$ = BasicType::CHAR;
+            LOG_DEBUG("DEBUG basic_type -> CHAR_KW\n");
         }
 
 
@@ -657,7 +656,7 @@ period_list: INTEGER DOUBLE_DOT INTEGER
             period->end = $3;
             $$->push_back(period);
             // debug
-            printf("%s", period_list_str($$,0).c_str());
+            LOG_DEBUG("DEBUG period_list -> INTEGER '..' INTEGER\n");
         }
         | period_list ',' INTEGER DOUBLE_DOT INTEGER
         {
@@ -667,7 +666,7 @@ period_list: INTEGER DOUBLE_DOT INTEGER
             $1->push_back(period);
             $$ = $1;
             // debug
-            printf("%s", period_list_str($$,0).c_str());
+            LOG_DEBUG("DEBUG period_list -> period_list ',' INTEGER '..' INTEGER\n");
         };
 /*
 * no : 2.6
@@ -678,12 +677,20 @@ period_list: INTEGER DOUBLE_DOT INTEGER
 */
 subprogram_declarations : /*empty*/
         {
-            $$ = new std::vector<FuncDeclStmt *>();
+            $$ = nullptr;
+            LOG_DEBUG("DEBUG subprogram_declarations -> empty");
         }
         | subprogram_declarations subprogram ';'
         {
-            $1->push_back($2);
-            $$ = $1;
+            if($1 == nullptr){
+                std::vector<FuncDeclStmt *> * func_decl_list = new std::vector<FuncDeclStmt *>();
+                func_decl_list->push_back($2);    
+                $$ = func_decl_list;
+            }else{
+                $1->push_back($2);
+                $$ = $1;
+            }
+            LOG_DEBUG("DEBUG subprogram_declarations -> subprogram_declarations subprogram ';'");
         };
 
 
@@ -700,36 +707,43 @@ subprogram : subprogram_head ';' subprogram_body
             subprogram->header = std::unique_ptr<FuncHeadDeclStmt>($1);
             subprogram->body = std::unique_ptr<FuncBodyDeclStmt>($3);
             $$ = subprogram;
+            LOG_DEBUG("DEBUG subprogram -> subprogram_head ';' subprogram_body");
         };
 
 
 /*
 * no : 2.8
-* rule  :  subprogram_head -> PROGRAM IDENTIFIER formal_parameter | FUNCTION IDENTIFIER formal_parameter ':' basic_type
+* rule  :  subprogram_head -> PROCEDURE IDENTIFIER formal_parameter | FUNCTION IDENTIFIER formal_parameter ':' basic_type
 * node :  FuncHeadDeclStmt * func_head
 * son  :  std::string func_name;  BasicType ret_type; std::vector<std::unique_ptr<VarDeclStmt>> args;
 * error : 子函数头定义出错 请检查是否符合规范
 */
-subprogram_head: PROGRAM IDENTIFIER formal_parameter
+subprogram_head: PROCEDURE IDENTIFIER formal_parameter
         {
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
-            sub_head->func_name = $2;
-            for(auto formal_parameter : *$3){
-                sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+            sub_head->func_name = std::string($2);
+            if($3 != nullptr){
+                for(auto formal_parameter : *$3){
+                    sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+                }
+                delete $3;
             }
-            delete $3;
             $$ = sub_head;
+            LOG_DEBUG("DEBUG subprogram_head -> PROGRAM IDENTIFIER formal_parameter\n");
         }
         | FUNCTION IDENTIFIER formal_parameter ':' basic_type
         {
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
-            sub_head->func_name = $2;
+            sub_head->func_name = std::string($2);
             sub_head->ret_type = $5;
-            for(auto formal_parameter : *$3){
-                sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+            if($3 != nullptr){
+                for(auto formal_parameter : *$3){
+                    sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+                }
+                delete $3;
             }
-            delete $3;
             $$ = sub_head;
+            LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type\n");
         }
 
 /*
@@ -741,11 +755,13 @@ subprogram_head: PROGRAM IDENTIFIER formal_parameter
 */
  formal_parameter: /*empty*/
         {
-            $$ = new std::vector<VarDeclStmt *>();
+            $$ = nullptr;
+            LOG_DEBUG("DEBUG formal_parameter -> empty\n");
         }
         | '(' parameter_list ')'
         {
             $$ = $2;
+            LOG_DEBUG("DEBUG formal_parameter -> '(' parameter_list ')'\n");
         };
 
 
@@ -761,13 +777,13 @@ parameter_list : parameter
         {
             $$ = new std::vector<VarDeclStmt *>();
             $$->push_back($1);
-            delete $1;
+            LOG_DEBUG("DEBUG parameter_list -> parameter\n");
         }
         | parameter_list ';' parameter
         {
             $1->push_back($3);
-            delete $3;
             $$ = $1;
+            LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter\n");
         };
 
 /*
@@ -779,13 +795,13 @@ parameter_list : parameter
 */
 parameter: var_parameter
         {
-            $$ = new VarDeclStmt();
             $$ = $1;
+            LOG_DEBUG("DEBUG parameter -> var_parameter\n");
         }
         | value_parameter
         {
-            $$ = new VarDeclStmt();
             $$ = $1;
+            LOG_DEBUG("DEBUG parameter -> value_parameter\n");
         }
         ;
 /*
@@ -797,8 +813,8 @@ parameter: var_parameter
 */
 var_parameter: VAR value_parameter
         {
-            $$ = new VarDeclStmt();
-            $$ = $1;
+            $$ = $2;
+            LOG_DEBUG("DEBUG var_parameter -> VAR value_parameter\n");
         }
         ;
 
@@ -814,11 +830,85 @@ value_parameter: idlist ':' basic_type
             VarDeclStmt* var_decl = new VarDeclStmt();
             var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
             var_decl-> basic_type = $3;
+            // 疑似内存泄漏
             delete $1;
             $$ = var_decl;
+            LOG_DEBUG("DEBUG value_parameter -> idlist ':' basic_type\n");
         };
-
-
+/*
+* no : 3.4
+* rule  :  subprogram_body -> const_declarations var_declarations compound_statement
+* node :  FuncBodyDeclStmt * func_body
+* son  :  std::unique_ptr<ConstDeclStmt> const_decl; std::vector<std::unique_ptr<VarDeclStmt>> var_decl;  std::vector<std::unique_ptr<BaseStmt>> comp_stmt;   
+* error : 子函数体定义出错 请检查是否符合规范
+*/
+subprogram_body : const_declarations var_declarations compound_statement
+    {
+        FuncBodyDeclStmt * func_body = new FuncBodyDeclStmt();
+        if($1 != nullptr) func_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);
+        if($2 != nullptr){
+            for(auto var_decl : *$2){
+                func_body->var_decl.push_back(std::unique_ptr<VarDeclStmt>(var_decl));
+            }
+            delete $2;
+        }
+        if($3 != nullptr){
+            for(auto stmt : *$3){
+                func_body->comp_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
+            delete $3;
+        }
+        $$ = func_body;
+        LOG_DEBUG("DEBUG subprogram_body -> const_declarations var_declarations compound_statement\n");
+    }
+    | error
+    {
+        syntax_error("子函数体定义出错 请检查是否符合规范");
+    };
+/*
+* no : 3.5
+* rule  :  compound_statement -> BEGIN_TOKEN statement_list END
+* node :  std::vector<BaseStmt *> * stmt_list
+* son  :  BaseStmt *
+* error : 复合语句定义出错 请检查是否符合规范
+*/
+compound_statement : BEGIN_TOKEN statement_list END
+    {
+        $$ = $2;
+        LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END\n");
+    }
+    | error
+    {
+        syntax_error("复合语句定义出错 请检查是否符合规范");
+    };
+/*
+* no : 3.6
+* rule  :  statement_list -> statement | statement_list ';' statement
+* node :  std::vector<BaseStmt *> * stmt_list
+* son  :  BaseStmt *
+* error : 语句定义出错 请检查是否符合规范
+*/
+statement_list : statement
+    {
+        $$ = $1;
+        LOG_DEBUG("DEBUG statement_list -> statement\n");
+    }
+    | statement_list ';' statement
+    {
+        // copy the vector
+        if($3 != nullptr){
+            for(auto stmt : *$3){
+                $1->push_back(stmt);
+            }
+        }
+        $$ = $1;
+        LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement\n");
+    }
+    | error
+    {
+        syntax_error("语句定义出错 请检查是否符合规范");
+    }
+    ;
 
 /*
 * no : 4.1
@@ -826,7 +916,7 @@ value_parameter: idlist ':' basic_type
 * IDENTIFIER ASSIGNOP expression | procedure_call | compound_statement | 
 * IF expression THEN statement else_part | FOR IDENTIFIER ASSIGNOP expression TO expression DO statement | 
 * READ '(' variable_list ')' | WRITE '(' expression_list ')' 
-* node :   BaseStmt *  stmt
+* node :   std::vector<BaseStmt *> *
 * son :  Stmt *
 * error : 函数体定义出错 请检查是否符合规范
 */
@@ -837,27 +927,32 @@ statement : /*empty*/
     }
     | variable ASSIGNOP expression
     {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         AssignStmt * assign_stmt = new AssignStmt();
         assign_stmt->lval = std::unique_ptr<LValStmt>($1);
         assign_stmt->expr = std::unique_ptr<ExprStmt>($3);
-        $$ = assign_stmt;
+        stmt_list->push_back(assign_stmt);
+        $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> variable ASSIGNOP expression\n");
     }
     | IDENTIFIER ASSIGNOP expression
     {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         AssignStmt * assign_stmt = new AssignStmt();
         assign_stmt->lval = std::make_unique<LValStmt>();
-        assign_stmt->lval->id = $1;
+        assign_stmt->lval->id = std::string($1);
         // how to deal with array_index
         // assign_stmt->lval->array_index = std::vector<std::unique_ptr<ExprStmt>>();
         assign_stmt->expr = std::unique_ptr<ExprStmt>($3);
-        delete $1;
-        $$ = assign_stmt;
+        stmt_list->push_back(assign_stmt);
+        $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> IDENTIFIER ASSIGNOP expression\n");
     }
     | procedure_call
     {
-        $$ = $1;
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        stmt_list->push_back($1);
+        $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> procedure_call\n");
     }
     | compound_statement
@@ -867,36 +962,60 @@ statement : /*empty*/
     }
     | IF expression THEN statement else_part
     {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         IfStmt * if_stmt = new IfStmt();
         if_stmt->expr = std::unique_ptr<ExprStmt>($2);
-        if_stmt->then_stmt = std::unique_ptr<Stmt>($4);
-        if_stmt->else_stmt = std::unique_ptr<Stmt>($5);
-        $$ = if_stmt;
+        for(auto stmt : *$4){
+            if_stmt->true_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+        }
+        if($5 != nullptr){
+            for(auto stmt : *$5){
+                if_stmt->false_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
+        }
+        delete $4;
+        delete $5;
+        stmt_list->push_back(if_stmt);
+        $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> IF expression THEN statement else_part\n");
     }
     | FOR IDENTIFIER ASSIGNOP expression TO expression DO statement
     {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         ForStmt * for_stmt = new ForStmt();
-        for_stmt->id = $2;
-        for_stmt->start_expr = std::unique_ptr<ExprStmt>($4);
-        for_stmt->end_expr = std::unique_ptr<ExprStmt>($6);
-        for_stmt->stmt = std::unique_ptr<Stmt>($8);
-        delete $2;
-        $$ = for_stmt;
+        for_stmt->id = std::string($2);
+        for_stmt->begin = std::unique_ptr<ExprStmt>($4);
+        for_stmt->end = std::unique_ptr<ExprStmt>($6);
+        for(auto stmt : *$8){
+            for_stmt->stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+        }
+        delete $8;
+        stmt_list->push_back(for_stmt);
+        $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> FOR IDENTIFIER ASSIGNOP expression TO expression DO statement\n");
     }
     | READ '(' variable_list ')'
     {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         ReadFuncStmt * read_stmt = new ReadFuncStmt();
-        read_stmt->lval_list = std::unique_ptr<std::vector<LValStmt *>>($3);
-        $$ = read_stmt;
+        for(auto lval : *$3){
+            read_stmt->lval.push_back(std::unique_ptr<LValStmt>(lval));
+        }
+        delete $3;
+        stmt_list->push_back(read_stmt);
+        $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> READ '(' variable_list ')'\n");
     }
     | WRITE '(' expression_list ')'
     {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         WriteFuncStmt * write_stmt = new WriteFuncStmt();
-        write_stmt->expr_list = std::unique_ptr<std::vector<ExprStmt *>>($3);
-        $$ = write_stmt;
+        for(auto expr : *$3){
+            write_stmt->expr.push_back(std::unique_ptr<ExprStmt>(expr));
+        }
+        delete $3;
+        stmt_list->push_back(write_stmt);
+        $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'\n");
     }
 
@@ -935,12 +1054,13 @@ variable_list : variable
 variable : IDENTIFIER id_varpart
     {
         $$ = new LValStmt();
-        $$->id = $1;
-        for(auto expr : *$2){
-            $$->array_index.push_back(std::unique_ptr<ExprStmt>(expr));
+        $$->id = std::string($1);
+        if($2 != nullptr){
+            for(auto expr : *$2){
+                $$->array_index.push_back(std::unique_ptr<ExprStmt>(expr));
+            }
+            delete $2;
         }
-        delete $1;
-        delete $2;
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart\n");
     }
     | error
@@ -958,7 +1078,7 @@ variable : IDENTIFIER id_varpart
 */
 id_varpart : /*empty*/
     {
-        $$ = new std::vector<ExprStmt *>();
+        $$ = nullptr;
         LOG_DEBUG("DEBUG id_varpart -> empty\n");
     }
     | '[' expression_list ']'
@@ -982,19 +1102,17 @@ id_varpart : /*empty*/
 procedure_call : IDENTIFIER
     {
         FuncCallStmt * proc_call = new FuncCallStmt();
-        proc_call->id = $1;
+        proc_call->id = std::string($1);
         $$ = proc_call;
-        delete $1;
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER\n");
     }
     | IDENTIFIER '(' expression_list ')'
     {
         FuncCallStmt * proc_call = new FuncCallStmt();
-        proc_call->id = $1;
+        proc_call->id = std::string($1);
         for(auto expr : *$3){
             proc_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
         }
-        delete $1;
         delete $3;
         $$ = proc_call;
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'\n");
@@ -1009,7 +1127,7 @@ procedure_call : IDENTIFIER
 /*
 * no : 5.2
 * rule  :  else_part -> empty | ELSE statement
-* node :   Stmt * stmt
+* node :   std::vector<BaseStmt *> * stmt 
 * son :  Stmt * 
 * error : else 语法定义出错 请检查是否符合规范
 */
@@ -1020,6 +1138,7 @@ else_part : /*empty*/
     }
     | ELSE statement
     {
+        // 强行取第一个
         $$ = $2;
         LOG_DEBUG("DEBUG else_part -> ELSE statement\n");
     }
@@ -1042,14 +1161,12 @@ expression_list : expression
         expr_list->push_back($1);
         $$ = expr_list;
         LOG_DEBUG("DEBUG expression_list -> expression\n");
-        printf("%s",expr_stmt_list_str($$,0).c_str());
     }
     | expression_list ',' expression
     {
         $1->push_back($3);
         $$ = $1;
         LOG_DEBUG("DEBUG expression_list -> expression_list ',' expression\n");
-        printf("%s",expr_stmt_list_str($$,0).c_str());
     }
     | error
     {
@@ -1236,14 +1353,6 @@ factor : INTEGER
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
     }
-
-
-
-
-
-
-
-
 /*
 * addop ->  + | - | or
 */
@@ -1264,11 +1373,13 @@ mulop : '*' { $$ = 0; } | '/' { $$ = 1; } | DIV { $$ = 2; } | MOD { $$ = 3; } | 
 // 此处书写相关函数，会添加在生成的代码中
 extern void scan_string(const char *str, yyscan_t scanner);
 
-int code_parse(const char * code_str, ProgramStmt * program) {
+int code_parse(const char * code_str, ProgramStmt ** program) {
     yyscan_t scanner;
     yylex_init(&scanner);
     scan_string(code_str, scanner);
+
     int ret = yyparse(code_str,program, scanner);
+
     yylex_destroy(scanner);
     return ret;
 }
