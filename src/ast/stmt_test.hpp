@@ -11,7 +11,7 @@ std::string number_stmt_str(const NumberStmt stmt, int deep);
 
 std::string kv_pair_str(const ConstDeclStmt::KvPair pair, int deep);
 
-std::string const_decl_stmt_str(const ConstDeclStmt stmt,int deep);
+std::string const_decl_stmt_str(const ConstDeclStmt* stmt,int deep);
 
 std::string expr_stmt_str(const ExprStmt* stmt, int deep);
 
@@ -78,3 +78,5 @@ std::string program_head_stmt_str(const ProgramHeadStmt* program_head, int deep)
 std::string program_body_stmt_str(const ProgramBodyStmt* program_body, int deep);
 
 std::string program_stmt_str(const ProgramStmt* program, int deep);
+
+std::string base_stmt_str(const BaseStmt* stmt, int deep);

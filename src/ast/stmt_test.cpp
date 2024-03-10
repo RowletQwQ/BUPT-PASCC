@@ -43,10 +43,12 @@ std::string kv_pair_str(const ConstDeclStmt::KvPair pair, int deep) {
 }
 
 
-std::string const_decl_stmt_str(const ConstDeclStmt stmt,int deep) {
+std::string const_decl_stmt_str(const ConstDeclStmt* stmt,int deep) {
+    if(stmt == nullptr){
+        return "";
+    }
     std::string res = deep_print(deep) + "|____[ConstDeclStmt]\n";
-
-    for (auto &pair : stmt.pairs) {
+    for(auto &pair : stmt->pairs){
         res += kv_pair_str(pair, deep + 1) + "\n";
     }
     return res;
@@ -295,13 +297,15 @@ std::string func_body_decl_stmt_str(const FuncBodyDeclStmt* func_body, int deep)
         return "";
     }
     std::string res = deep_print(deep) + "|____[FuncBodyDeclStmt]\n";
-    res += const_decl_stmt_str(*func_body->const_decl, deep + 1);
+    res += const_decl_stmt_str(func_body->const_decl.get(), deep + 1);
     for(auto &var_decl : func_body->var_decl){
         res += var_decl_stmt_str(var_decl.get(), deep + 1);
     }
+    int i = 0;
+    // std::string res1 = "";
     for(auto &stmt : func_body->comp_stmt){
-        // 强制转换为ExprStmt
-        res += expr_stmt_str((const ExprStmt *)(stmt.get()), deep + 1);
+        // 根据 BaseStmt 类型的子类，调用对应的函数
+        res += base_stmt_str(stmt.get(), deep + 1);
     }
     return res;
 };
@@ -325,11 +329,11 @@ std::string if_stmt_str(const IfStmt* if_stmt, int deep){
     res += expr_stmt_str(if_stmt->expr.get(), deep + 1);
     res += deep_print(deep+1) + "true_stmt:\n";
     for(auto &stmt : if_stmt->true_stmt){
-        res += expr_stmt_str((const ExprStmt *)(stmt.get()), deep + 1);
+        res += base_stmt_str(stmt.get(), deep + 1);
     }
     res += deep_print(deep+1) + "false_stmt:\n";
     for(auto &stmt : if_stmt->false_stmt){
-        res += expr_stmt_str((const ExprStmt *)(stmt.get()), deep + 1);
+        res += base_stmt_str(stmt.get(), deep + 1);
     }
     return res;
 };
@@ -343,7 +347,7 @@ std::string for_stmt_str(const ForStmt* for_stmt, int deep){
     res += expr_stmt_str(for_stmt->begin.get(), deep + 1);
     res += expr_stmt_str(for_stmt->end.get(), deep + 1);
     for(auto &stmt : for_stmt->stmt){
-        res += expr_stmt_str((const ExprStmt *)(stmt.get()), deep + 1);
+        res += base_stmt_str(stmt.get(), deep + 1);
     }
     return res;
 };
@@ -365,9 +369,11 @@ std::string write_func_stmt_str(const WriteFuncStmt* write_func, int deep){
         return "";
     }
     std::string res = deep_print(deep) + "|____[WriteFuncStmt]\n";
-    for(auto &expr : write_func->expr){
+    printf("debug - write %d\n",deep);
+    for(auto &expr : write_func->expr){    
         res += expr_stmt_str(expr.get(), deep + 1);
     }
+    
     return res;
 };
 
@@ -375,6 +381,7 @@ std::string expr_stmt_str(const ExprStmt* stmt, int deep){
     if(stmt == nullptr){
         return "";
     }
+    printf("debug - expr %d\n",deep);
     std::string res = deep_print(deep) + "|____[ExprStmt]\n";
     res += rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
     return res + "\n";
@@ -397,7 +404,7 @@ std::string program_body_stmt_str(const ProgramBodyStmt* program_body, int deep)
         return "";
     }
     std::string res = deep_print(deep) + "|____[ProgramBodyStmt]\n";
-    res += const_decl_stmt_str(*program_body->const_decl, deep + 1);
+    res += const_decl_stmt_str(program_body->const_decl.get(), deep + 1);
     for(auto &var_decl : program_body->var_decl){
         res += var_decl_stmt_str(var_decl.get(), deep + 1);
     }
@@ -405,7 +412,7 @@ std::string program_body_stmt_str(const ProgramBodyStmt* program_body, int deep)
         res += func_stmt_str(func_decl.get(), deep + 1);
     }
     for(auto &stmt : program_body->comp_stmt){
-        res += expr_stmt_str((const ExprStmt *)(stmt.get()), deep + 1);
+        res += base_stmt_str(stmt.get(), deep + 1);
     }
     return res;
 };
@@ -477,6 +484,34 @@ std::string unary_op(UnaryExprStmt::UnaryExprType type){
     }else if(type == UnaryExprStmt::UnaryExprType::Not){
         return "not";
     }else{
+        return "ERROR";
+    }
+};
+
+std::string base_stmt_str(const BaseStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    // 根据 BaseStmt 类型的子类，调用对应的函数
+    if (typeid(*stmt) == typeid(AssignStmt)){
+        printf("assign\n");
+        return assign_stmt_str((const AssignStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(IfStmt)){
+        printf("if\n");
+        return if_stmt_str((const IfStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(ForStmt)){
+        printf("for\n");
+        return for_stmt_str((const ForStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(ReadFuncStmt)){
+        printf("read\n");
+        return read_func_stmt_str((const ReadFuncStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(WriteFuncStmt)){
+        printf("write\n");
+        return write_func_stmt_str((const WriteFuncStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(FuncCallStmt)){
+        printf("func\n");
+        return func_call_stmt_str((const FuncCallStmt *)stmt, deep);
+    }else {
         return "ERROR";
     }
 };

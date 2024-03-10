@@ -166,6 +166,7 @@ void fill_number_stmt(NumberStmt* num_value, char char_val){
 void syntax_error(const char *msg){
     printf("[SYNTAX ERROR] ");
     printf("%s\n", msg);
+    exit(1);
 }
 
 // 相关所需的函数，可能包含一些错误处理函数
@@ -341,7 +342,7 @@ programstruct : program_head  ';'  program_body '.'
         ProgramStmt * program_struct = new ProgramStmt();
         program_struct->head = std::unique_ptr<ProgramHeadStmt>($1);
         program_struct->body = std::unique_ptr<ProgramBodyStmt>($3);
-        LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'\n");
+        LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'");
         *program = program_struct;
     }
     | error{
@@ -359,13 +360,13 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
         $$ = new ProgramHeadStmt();
         $$->id_list = *$4;
         delete $4;
-        LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER '(' idlist ')'\n");
+        LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER '(' idlist ')'");
     }
     | PROGRAM IDENTIFIER
     {
         $$ = new ProgramHeadStmt();
         $$->id_list.push_back(std::string($2));
-        LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER\n");
+        LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
     }
     | error{
         syntax_error("程序头定义出错 请检查是否符合规范");
@@ -572,7 +573,7 @@ var_declaration : idlist ':' type
         delete $5;
         $1->push_back(var_decl);
         $$ = $1;
-        LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type\n");
+        LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type");
     }
     | error
     {
@@ -622,22 +623,22 @@ type : basic_type
 basic_type: INTEGER_KW
         {
             $$ = BasicType::INT;
-            LOG_DEBUG("DEBUG basic_type -> INTEGER_KW\n");
+            LOG_DEBUG("DEBUG basic_type -> INTEGER_KW");
         }
         | REAL_KW
         {
             $$ = BasicType::REAL;
-            LOG_DEBUG("DEBUG basic_type -> REAL_KW\n");
+            LOG_DEBUG("DEBUG basic_type -> REAL_KW");
         }
         | BOOLEAN_KW
         {
             $$ = BasicType::BOOLEAN;
-            LOG_DEBUG("DEBUG basic_type -> BOOLEAN_KW\n");
+            LOG_DEBUG("DEBUG basic_type -> BOOLEAN_KW");
         }
         | CHAR_KW
         {
             $$ = BasicType::CHAR;
-            LOG_DEBUG("DEBUG basic_type -> CHAR_KW\n");
+            LOG_DEBUG("DEBUG basic_type -> CHAR_KW");
         }
 
 
@@ -656,7 +657,7 @@ period_list: INTEGER DOUBLE_DOT INTEGER
             period->end = $3;
             $$->push_back(period);
             // debug
-            LOG_DEBUG("DEBUG period_list -> INTEGER '..' INTEGER\n");
+            LOG_DEBUG("DEBUG period_list -> INTEGER '..' INTEGER");
         }
         | period_list ',' INTEGER DOUBLE_DOT INTEGER
         {
@@ -666,7 +667,7 @@ period_list: INTEGER DOUBLE_DOT INTEGER
             $1->push_back(period);
             $$ = $1;
             // debug
-            LOG_DEBUG("DEBUG period_list -> period_list ',' INTEGER '..' INTEGER\n");
+            LOG_DEBUG("DEBUG period_list -> period_list ',' INTEGER '..' INTEGER");
         };
 /*
 * no : 2.6
@@ -729,7 +730,7 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
                 delete $3;
             }
             $$ = sub_head;
-            LOG_DEBUG("DEBUG subprogram_head -> PROGRAM IDENTIFIER formal_parameter\n");
+            LOG_DEBUG("DEBUG subprogram_head -> PROGRAM IDENTIFIER formal_parameter");
         }
         | FUNCTION IDENTIFIER formal_parameter ':' basic_type
         {
@@ -743,7 +744,7 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
                 delete $3;
             }
             $$ = sub_head;
-            LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type\n");
+            LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type");
         }
 
 /*
@@ -756,12 +757,12 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
  formal_parameter: /*empty*/
         {
             $$ = nullptr;
-            LOG_DEBUG("DEBUG formal_parameter -> empty\n");
+            LOG_DEBUG("DEBUG formal_parameter -> empty");
         }
         | '(' parameter_list ')'
         {
             $$ = $2;
-            LOG_DEBUG("DEBUG formal_parameter -> '(' parameter_list ')'\n");
+            LOG_DEBUG("DEBUG formal_parameter -> '(' parameter_list ')'");
         };
 
 
@@ -777,13 +778,13 @@ parameter_list : parameter
         {
             $$ = new std::vector<VarDeclStmt *>();
             $$->push_back($1);
-            LOG_DEBUG("DEBUG parameter_list -> parameter\n");
+            LOG_DEBUG("DEBUG parameter_list -> parameter");
         }
         | parameter_list ';' parameter
         {
             $1->push_back($3);
             $$ = $1;
-            LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter\n");
+            LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
         };
 
 /*
@@ -796,12 +797,12 @@ parameter_list : parameter
 parameter: var_parameter
         {
             $$ = $1;
-            LOG_DEBUG("DEBUG parameter -> var_parameter\n");
+            LOG_DEBUG("DEBUG parameter -> var_parameter");
         }
         | value_parameter
         {
             $$ = $1;
-            LOG_DEBUG("DEBUG parameter -> value_parameter\n");
+            LOG_DEBUG("DEBUG parameter -> value_parameter");
         }
         ;
 /*
@@ -814,7 +815,7 @@ parameter: var_parameter
 var_parameter: VAR value_parameter
         {
             $$ = $2;
-            LOG_DEBUG("DEBUG var_parameter -> VAR value_parameter\n");
+            LOG_DEBUG("DEBUG var_parameter -> VAR value_parameter");
         }
         ;
 
@@ -833,7 +834,7 @@ value_parameter: idlist ':' basic_type
             // 疑似内存泄漏
             delete $1;
             $$ = var_decl;
-            LOG_DEBUG("DEBUG value_parameter -> idlist ':' basic_type\n");
+            LOG_DEBUG("DEBUG value_parameter -> idlist ':' basic_type");
         };
 /*
 * no : 3.4
@@ -859,7 +860,7 @@ subprogram_body : const_declarations var_declarations compound_statement
             delete $3;
         }
         $$ = func_body;
-        LOG_DEBUG("DEBUG subprogram_body -> const_declarations var_declarations compound_statement\n");
+        LOG_DEBUG("DEBUG subprogram_body -> const_declarations var_declarations compound_statement");
     }
     | error
     {
@@ -875,7 +876,7 @@ subprogram_body : const_declarations var_declarations compound_statement
 compound_statement : BEGIN_TOKEN statement_list END
     {
         $$ = $2;
-        LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END\n");
+        LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
     }
     | error
     {
@@ -891,7 +892,7 @@ compound_statement : BEGIN_TOKEN statement_list END
 statement_list : statement
     {
         $$ = $1;
-        LOG_DEBUG("DEBUG statement_list -> statement\n");
+        LOG_DEBUG("DEBUG statement_list -> statement");
     }
     | statement_list ';' statement
     {
@@ -902,7 +903,7 @@ statement_list : statement
             }
         }
         $$ = $1;
-        LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement\n");
+        LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
     }
     | error
     {
@@ -923,7 +924,7 @@ statement_list : statement
 statement : /*empty*/
     {
         $$ = nullptr;
-        LOG_DEBUG("DEBUG statement -> empty\n");
+        LOG_DEBUG("DEBUG statement -> empty");
     }
     | variable ASSIGNOP expression
     {
@@ -933,7 +934,7 @@ statement : /*empty*/
         assign_stmt->expr = std::unique_ptr<ExprStmt>($3);
         stmt_list->push_back(assign_stmt);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> variable ASSIGNOP expression\n");
+        LOG_DEBUG("DEBUG statement -> variable ASSIGNOP expression");
     }
     | IDENTIFIER ASSIGNOP expression
     {
@@ -946,19 +947,19 @@ statement : /*empty*/
         assign_stmt->expr = std::unique_ptr<ExprStmt>($3);
         stmt_list->push_back(assign_stmt);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> IDENTIFIER ASSIGNOP expression\n");
+        LOG_DEBUG("DEBUG statement -> IDENTIFIER ASSIGNOP expression");
     }
     | procedure_call
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         stmt_list->push_back($1);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> procedure_call\n");
+        LOG_DEBUG("DEBUG statement -> procedure_call");
     }
     | compound_statement
     {
         $$ = $1;
-        LOG_DEBUG("DEBUG statement -> compound_statement\n");
+        LOG_DEBUG("DEBUG statement -> compound_statement");
     }
     | IF expression THEN statement else_part
     {
@@ -977,7 +978,7 @@ statement : /*empty*/
         delete $5;
         stmt_list->push_back(if_stmt);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> IF expression THEN statement else_part\n");
+        LOG_DEBUG("DEBUG statement -> IF expression THEN statement else_part");
     }
     | FOR IDENTIFIER ASSIGNOP expression TO expression DO statement
     {
@@ -986,13 +987,15 @@ statement : /*empty*/
         for_stmt->id = std::string($2);
         for_stmt->begin = std::unique_ptr<ExprStmt>($4);
         for_stmt->end = std::unique_ptr<ExprStmt>($6);
-        for(auto stmt : *$8){
-            for_stmt->stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+        if($8 != nullptr){
+            for(auto stmt : *$8){
+                for_stmt->stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
+            delete $8;
         }
-        delete $8;
         stmt_list->push_back(for_stmt);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> FOR IDENTIFIER ASSIGNOP expression TO expression DO statement\n");
+        LOG_DEBUG("DEBUG statement -> FOR IDENTIFIER ASSIGNOP expression TO expression DO statement");
     }
     | READ '(' variable_list ')'
     {
@@ -1004,7 +1007,7 @@ statement : /*empty*/
         delete $3;
         stmt_list->push_back(read_stmt);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> READ '(' variable_list ')'\n");
+        LOG_DEBUG("DEBUG statement -> READ '(' variable_list ')'");
     }
     | WRITE '(' expression_list ')'
     {
@@ -1016,7 +1019,7 @@ statement : /*empty*/
         delete $3;
         stmt_list->push_back(write_stmt);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'\n");
+        LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'");
     }
 
 /*
@@ -1031,13 +1034,13 @@ variable_list : variable
         std::vector<LValStmt *> * lval_list = new std::vector<LValStmt *>();
         lval_list->push_back($1);
         $$ = lval_list;
-        LOG_DEBUG("DEBUG variable_list -> variable\n");
+        LOG_DEBUG("DEBUG variable_list -> variable");
     }
     | variable_list ',' variable
     {
         $1->push_back($3);
         $$ = $1;
-        LOG_DEBUG("DEBUG variable_list -> variable_list ',' variable\n");
+        LOG_DEBUG("DEBUG variable_list -> variable_list ',' variable");
     }
     | error
     {
@@ -1061,7 +1064,7 @@ variable : IDENTIFIER id_varpart
             }
             delete $2;
         }
-        LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart\n");
+        LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart");
     }
     | error
     {
@@ -1079,12 +1082,12 @@ variable : IDENTIFIER id_varpart
 id_varpart : /*empty*/
     {
         $$ = nullptr;
-        LOG_DEBUG("DEBUG id_varpart -> empty\n");
+        LOG_DEBUG("DEBUG id_varpart -> empty");
     }
     | '[' expression_list ']'
     {
         $$ = $2;
-        LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'\n");
+        LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'");
     }
     | error
     {
@@ -1104,7 +1107,7 @@ procedure_call : IDENTIFIER
         FuncCallStmt * proc_call = new FuncCallStmt();
         proc_call->id = std::string($1);
         $$ = proc_call;
-        LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER\n");
+        LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER");
     }
     | IDENTIFIER '(' expression_list ')'
     {
@@ -1115,7 +1118,7 @@ procedure_call : IDENTIFIER
         }
         delete $3;
         $$ = proc_call;
-        LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'\n");
+        LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'");
     }
     | error
     {
@@ -1134,13 +1137,13 @@ procedure_call : IDENTIFIER
 else_part : /*empty*/
     {
         $$ = nullptr;
-        LOG_DEBUG("DEBUG else_part -> empty\n");
+        LOG_DEBUG("DEBUG else_part -> empty");
     }
     | ELSE statement
     {
         // 强行取第一个
         $$ = $2;
-        LOG_DEBUG("DEBUG else_part -> ELSE statement\n");
+        LOG_DEBUG("DEBUG else_part -> ELSE statement");
     }
     | error
     {
@@ -1160,13 +1163,13 @@ expression_list : expression
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
         expr_list->push_back($1);
         $$ = expr_list;
-        LOG_DEBUG("DEBUG expression_list -> expression\n");
+        LOG_DEBUG("DEBUG expression_list -> expression");
     }
     | expression_list ',' expression
     {
         $1->push_back($3);
         $$ = $1;
-        LOG_DEBUG("DEBUG expression_list -> expression_list ',' expression\n");
+        LOG_DEBUG("DEBUG expression_list -> expression_list ',' expression");
     }
     | error
     {
@@ -1187,7 +1190,7 @@ expression : simple_expression
         expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
         expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($1);
         $$ = expr;
-        LOG_DEBUG("DEBUG expression -> simple_expression\n");
+        LOG_DEBUG("DEBUG expression -> simple_expression");
     }
     | simple_expression relop simple_expression
     {
@@ -1198,7 +1201,7 @@ expression : simple_expression
         expr->rel_expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($1);
         expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($3);
         $$ = expr;
-        LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression\n");
+        LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression");
     }
     | error
     {
@@ -1220,7 +1223,7 @@ simple_expression : term
         add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
         add_expr->mul_expr = std::unique_ptr<MulExprStmt>($1);
         $$ = add_expr;
-        LOG_DEBUG("DEBUG simple_expression -> term\n");
+        LOG_DEBUG("DEBUG simple_expression -> term");
     }
     | simple_expression addop term
     {
@@ -1250,7 +1253,7 @@ term : factor
         mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
         mul_expr->unary_expr = std::unique_ptr<UnaryExprStmt>($1);
         $$ = mul_expr;
-        LOG_DEBUG("DEBUG term -> factor\n");
+        LOG_DEBUG("DEBUG term -> factor");
     }
     | term mulop factor
     {
@@ -1259,7 +1262,7 @@ term : factor
         mul_expr->mul_expr = std::unique_ptr<MulExprStmt>($1);
         mul_expr->unary_expr = std::unique_ptr<UnaryExprStmt>($3);
         $$ = mul_expr;
-        LOG_DEBUG("DEBUG term -> term mulop factor\n");
+        LOG_DEBUG("DEBUG term -> term mulop factor");
     }
     | error
     {
@@ -1285,7 +1288,7 @@ factor : INTEGER
         unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
         fill_number_stmt(unary_expr->primary_expr->value->number,$1);
         $$ = unary_expr;
-        LOG_DEBUG("DEBUG factor -> INTEGER\n");
+        LOG_DEBUG("DEBUG factor -> INTEGER");
     }
     | REAL
     {
@@ -1298,7 +1301,7 @@ factor : INTEGER
         unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
         fill_number_stmt(unary_expr->primary_expr->value->number,$1);
         $$ = unary_expr;
-        LOG_DEBUG("DEBUG factor -> REAL\n");
+        LOG_DEBUG("DEBUG factor -> REAL");
     }
     | variable
     {
@@ -1310,7 +1313,7 @@ factor : INTEGER
         unary_expr->primary_expr->value->type =ValueStmt::ValueType::LVal;
         unary_expr->primary_expr->value->lval = std::unique_ptr<LValStmt>($1);
         $$ = unary_expr;
-        LOG_DEBUG("DEBUG factor -> variable\n");
+        LOG_DEBUG("DEBUG factor -> variable");
     }
     | '(' expression ')'
     {
@@ -1320,7 +1323,7 @@ factor : INTEGER
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Parentheses;
         unary_expr->primary_expr->expr = std::unique_ptr<ExprStmt>($2);
         $$ = unary_expr;
-        LOG_DEBUG("DEBUG factor -> '(' expression ')'\n");
+        LOG_DEBUG("DEBUG factor -> '(' expression ')'");
     }
     | IDENTIFIER '(' expression_list ')'
     {
@@ -1338,7 +1341,7 @@ factor : INTEGER
         delete $1;
         delete $3;
         $$ = unary_expr;
-        LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' expression_list ')'\n");
+        LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' expression_list ')'");
     }
     | '-' factor
     {
@@ -1347,7 +1350,7 @@ factor : INTEGER
         unary_expr->primary_expr = std::move($2->primary_expr);
         delete $2;
         $$ = unary_expr;
-        LOG_DEBUG("DEBUG factor -> '-' factor\n");
+        LOG_DEBUG("DEBUG factor -> '-' factor");
     }
     | error
     {
