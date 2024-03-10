@@ -52,14 +52,6 @@ std::string const_decl_stmt_str(const ConstDeclStmt stmt,int deep) {
     return res;
 }
 
-std::string expr_stmt_str(const ExprStmt* stmt, int deep){
-    if(stmt == nullptr){
-        return "";
-    }
-    std::string res = deep_print(deep) + "|____[ExprStmt]\n";
-    res += rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
-    return res + "\n";
-};
 
 std::string rel_expr_stmt_str(const RelExprStmt* stmt, int deep){
     if(stmt == nullptr){
