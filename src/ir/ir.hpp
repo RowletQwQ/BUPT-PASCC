@@ -63,6 +63,7 @@ class VoidType : public Type {
 public:
     explicit VoidType() : Type(Type::VoidTID) {}
     virtual std::string print() override { return "void"; }
+    virtual std::string placeholder() override { return ""; }
 };
 
 /**
@@ -105,6 +106,7 @@ class BooleanType : public Type {
 public:
     explicit BooleanType() : Type(Type::BooleanTID) {}
     virtual std::string print() override { return "bool"; }
+    virtual std::string placeholder() override { return "%d"; }
 };
 
 /**
