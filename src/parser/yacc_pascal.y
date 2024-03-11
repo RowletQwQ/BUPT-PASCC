@@ -503,10 +503,34 @@ const_value: INTEGER
         fill_number_stmt(num_value, $1);
         $$ = num_value;
     }
+    | '+' INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        fill_number_stmt(num_value, $2);
+        $$ = num_value;
+    }
+    | '-' INTEGER
+    {
+        NumberStmt * num_value = new NumberStmt();
+        fill_number_stmt(num_value, ($2) * -1);
+        $$ = num_value;
+    }
     | REAL
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, $1);
+        $$ = num_value;
+    }
+    | '+' REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        fill_number_stmt(num_value, $2);
+        $$ = num_value;
+    }
+    | '-' REAL
+    {
+        NumberStmt * num_value = new NumberStmt();
+        fill_number_stmt(num_value, ($2) * -1);
         $$ = num_value;
     }
     | CHAR
@@ -725,6 +749,7 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
         {
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
             sub_head->func_name = std::string($2);
+            sub_head->ret_type = BasicType::VOID;
             if($3 != nullptr){
                 for(auto formal_parameter : *$3){
                     sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
@@ -968,6 +993,21 @@ statement : /*empty*/
     {
         $$ = $1;
         LOG_DEBUG("DEBUG statement -> compound_statement");
+    }
+    | WHILE expression DO statement
+    {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        WhileStmt * while_stmt = new WhileStmt();
+        while_stmt->expr = std::unique_ptr<ExprStmt>($2);
+        if($4 != nullptr){
+            for(auto stmt : *$4){
+                while_stmt->stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
+            delete $4;
+        }
+        stmt_list->push_back(while_stmt);
+        $$ = stmt_list;
+        LOG_DEBUG("DEBUG statement -> WHILE expression DO statement");
     }
     | IF expression THEN statement else_part
     {
@@ -1265,6 +1305,7 @@ expression : simple_expression
         expr->rel_expr = std::make_unique<RelExprStmt>();
         expr->rel_expr->type = get_rel_expr_type($2);
         expr->rel_expr->rel_expr = std::make_unique<RelExprStmt>();
+        expr->rel_expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
         expr->rel_expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($1);
         expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($3);
         $$ = expr;
@@ -1357,6 +1398,32 @@ factor : INTEGER
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> INTEGER");
     }
+    | '+' INTEGER
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
+        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
+        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
+        unary_expr->primary_expr->value->type =ValueStmt::ValueType::Number;
+        unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(unary_expr->primary_expr->value->number,$2);
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> '+' INTEGER");
+    }
+    | '-' INTEGER
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
+        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
+        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
+        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
+        unary_expr->primary_expr->value->type =ValueStmt::ValueType::Number;
+        unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(unary_expr->primary_expr->value->number,($2)*-1);
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> '-' INTEGER");
+    }
     | REAL
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -1369,6 +1436,32 @@ factor : INTEGER
         fill_number_stmt(unary_expr->primary_expr->value->number,$1);
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> REAL");
+    }
+    | '+' REAL
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
+        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
+        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
+        unary_expr->primary_expr->value->type =ValueStmt::ValueType::Number;
+        unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(unary_expr->primary_expr->value->number,$2);
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> '+' REAL");
+    }
+    | '-' REAL
+    {
+        UnaryExprStmt * unary_expr = new UnaryExprStmt();
+        unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
+        unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
+        unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
+        unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
+        unary_expr->primary_expr->value->type =ValueStmt::ValueType::Number;
+        unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(unary_expr->primary_expr->value->number,($2)*-1);
+        $$ = unary_expr;
+        LOG_DEBUG("DEBUG factor -> '-' REAL");
     }
     | BOOLEAN
     {
@@ -1477,7 +1570,7 @@ addop : '+' { $$ = 0; } | '-' { $$ = 1; } | OR { $$ = 2; }
 /*
 * relop -> = | <> | < | <= | > | >= 
 */
-relop : '=' { $$ = 0; } | NE { $$ = 1; } | '<' { $$ = 2; } | LE { $$ = 3; } | '>' { $$ = 4; } | GE { $$ = 5; }
+relop : '=' { $$ = 0; } | NE { $$ = 1; } | '<' { $$ = 2; } | LE { $$ = 3; } | '>' { $$ = 4; } | GE { $$ = 5; } | IN { $$ = 6; }
 
 /*
 * mulop -> * | / | div | mod | and

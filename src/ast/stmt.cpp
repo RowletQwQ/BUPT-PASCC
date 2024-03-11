@@ -103,6 +103,11 @@ void ForStmt::accept(StmtVisitor &visitor)
     visitor.visit(*this);
 }
 
+void WhileStmt::accept(StmtVisitor &visitor)
+{
+    visitor.visit(*this);
+}
+
 void ReadFuncStmt::accept(StmtVisitor &visitor)
 {
     visitor.visit(*this);

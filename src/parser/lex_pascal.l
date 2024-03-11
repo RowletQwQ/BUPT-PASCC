@@ -63,8 +63,8 @@ extern double atof();
 %option bison-locations
 
 DIGIT                   [0-9]
-INTEGER         [-+]?{DIGIT}+
-REAL               [-+]?{DIGIT}+"."{DIGIT}+
+INTEGER         {DIGIT}+
+REAL               {DIGIT}+"."{DIGIT}+
 
 LETTER                  [a-zA-Z]
 IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
