@@ -233,6 +233,21 @@ void fill_number_stmt(NumberStmt* num_value, char char_val){
     num_value->char_val = char_val;
 }
 
+std::unique_ptr<PrimaryExprStmt> bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt> unary_expr){
+    std::unique_ptr<PrimaryExprStmt> primary_expr = std::make_unique<PrimaryExprStmt>();
+    primary_expr->type = PrimaryExprStmt::PrimaryExprType::Parentheses;
+    primary_expr->expr = std::make_unique<ExprStmt>();
+    primary_expr->expr->rel_expr = std::make_unique<RelExprStmt>();
+    primary_expr->expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
+    primary_expr->expr->rel_expr->add_expr = std::make_unique<AddExprStmt>();
+    primary_expr->expr->rel_expr->add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
+    primary_expr->expr->rel_expr->add_expr->mul_expr = std::make_unique<MulExprStmt>();
+    primary_expr->expr->rel_expr->add_expr->mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
+    primary_expr->expr->rel_expr->add_expr->mul_expr->unary_expr = std::move(unary_expr);
+    return primary_expr;
+}
+
+
 void syntax_error(const char *msg){
     printf("[SYNTAX ERROR] ");
     printf("%s\n", msg);
@@ -246,7 +261,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     return 0;
 }
 
-#line 250 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 265 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -773,20 +788,20 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   341,   341,   349,   359,   366,   372,   383,   408,   421,
-     427,   433,   445,   449,   461,   473,   483,   500,   506,   512,
-     518,   524,   530,   536,   553,   557,   562,   575,   590,   604,
-     616,   625,   637,   649,   654,   659,   664,   678,   688,   706,
-     710,   731,   748,   762,   785,   789,   805,   809,   815,   829,
-     834,   847,   861,   879,   898,   909,   914,   925,   930,   941,
-     958,   962,   972,   985,   992,   997,  1012,  1033,  1050,  1062,
-    1084,  1091,  1097,  1109,  1121,  1133,  1147,  1151,  1160,  1173,
-    1183,  1190,  1206,  1213,  1226,  1241,  1245,  1251,  1264,  1268,
-    1275,  1281,  1293,  1302,  1314,  1328,  1336,  1345,  1358,  1366,
-    1375,  1388,  1401,  1414,  1427,  1440,  1453,  1466,  1480,  1493,
-    1505,  1515,  1534,  1543,  1552,  1561,  1568,  1568,  1568,  1573,
-    1573,  1573,  1573,  1573,  1573,  1573,  1578,  1578,  1578,  1578,
-    1578,  1578
+       0,   356,   356,   364,   374,   381,   387,   398,   423,   436,
+     442,   448,   460,   464,   476,   488,   498,   515,   521,   527,
+     533,   539,   545,   551,   568,   572,   577,   590,   605,   619,
+     631,   640,   652,   664,   669,   674,   679,   693,   703,   721,
+     725,   746,   763,   777,   800,   804,   820,   824,   830,   844,
+     849,   862,   876,   894,   913,   924,   929,   940,   945,   956,
+     973,   977,   987,  1000,  1007,  1012,  1027,  1048,  1065,  1077,
+    1099,  1106,  1112,  1124,  1136,  1148,  1162,  1166,  1175,  1188,
+    1198,  1205,  1221,  1228,  1241,  1256,  1260,  1266,  1279,  1283,
+    1290,  1296,  1308,  1317,  1329,  1343,  1351,  1360,  1373,  1381,
+    1390,  1403,  1416,  1429,  1442,  1455,  1468,  1481,  1495,  1508,
+    1520,  1530,  1549,  1557,  1566,  1574,  1581,  1581,  1581,  1586,
+    1586,  1586,  1586,  1586,  1586,  1586,  1591,  1591,  1591,  1591,
+    1591,  1591
 };
 #endif
 
@@ -1929,7 +1944,7 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* programstruct: program_head ';' program_body '.'  */
-#line 342 "../../src/parser/yacc_pascal.y"
+#line 357 "../../src/parser/yacc_pascal.y"
     {
         ProgramStmt * program_struct = new ProgramStmt();
         program_struct->head = std::unique_ptr<ProgramHeadStmt>((yyvsp[-3].program_head));
@@ -1937,48 +1952,48 @@ yyreduce:
         LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'");
         *program = program_struct;
     }
-#line 1941 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 1956 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 3: /* programstruct: error  */
-#line 349 "../../src/parser/yacc_pascal.y"
+#line 364 "../../src/parser/yacc_pascal.y"
            {
         syntax_error("程序定义出错 请检查是否符合规范");
     }
-#line 1949 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 1964 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 4: /* program_head: PROGRAM IDENTIFIER '(' idlist ')'  */
-#line 360 "../../src/parser/yacc_pascal.y"
+#line 375 "../../src/parser/yacc_pascal.y"
     {
         (yyval.program_head) = new ProgramHeadStmt();
         (yyval.program_head)->id_list = *(yyvsp[-1].id_list);
         delete (yyvsp[-1].id_list);
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER '(' idlist ')'");
     }
-#line 1960 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 1975 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 5: /* program_head: PROGRAM IDENTIFIER  */
-#line 367 "../../src/parser/yacc_pascal.y"
+#line 382 "../../src/parser/yacc_pascal.y"
     {
         (yyval.program_head) = new ProgramHeadStmt();
         (yyval.program_head)->id_list.push_back(std::string((yyvsp[0].string)));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
     }
-#line 1970 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 1985 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 6: /* program_head: error  */
-#line 372 "../../src/parser/yacc_pascal.y"
+#line 387 "../../src/parser/yacc_pascal.y"
            {
         syntax_error("程序头定义出错 请检查是否符合规范");
     }
-#line 1978 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 1993 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 7: /* program_body: const_declarations var_declarations subprogram_declarations compound_statement  */
-#line 384 "../../src/parser/yacc_pascal.y"
+#line 399 "../../src/parser/yacc_pascal.y"
     {
         ProgramBodyStmt* program_body = new ProgramBodyStmt();
         if((yyvsp[-3].const_decls) != nullptr) {program_body->const_decl = std::unique_ptr<ConstDeclStmt>((yyvsp[-3].const_decls));}
@@ -2003,56 +2018,56 @@ yyreduce:
         (yyval.program_body) = program_body;
         LOG_DEBUG("DEBUG program_body -> const_declarations var_declarations subprogram_declarations compound_statement");
     }
-#line 2007 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2022 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 8: /* program_body: error  */
-#line 408 "../../src/parser/yacc_pascal.y"
+#line 423 "../../src/parser/yacc_pascal.y"
            {
         syntax_error("程序体定义出错 请检查是否符合规范");
     }
-#line 2015 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2030 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 9: /* idlist: IDENTIFIER  */
-#line 422 "../../src/parser/yacc_pascal.y"
+#line 437 "../../src/parser/yacc_pascal.y"
     {
         (yyval.id_list) = new std::vector<std::string>();
         (yyval.id_list)->push_back(std::string((yyvsp[0].string)));
         LOG_DEBUG("DEBUG idlist -> IDENTIFIER");
     }
-#line 2025 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2040 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 10: /* idlist: idlist ',' IDENTIFIER  */
-#line 428 "../../src/parser/yacc_pascal.y"
+#line 443 "../../src/parser/yacc_pascal.y"
     {
         (yyvsp[-2].id_list)->push_back(std::string((yyvsp[0].string)));
         (yyval.id_list) = (yyvsp[-2].id_list);
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER");
     }
-#line 2035 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2050 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 11: /* idlist: error  */
-#line 433 "../../src/parser/yacc_pascal.y"
+#line 448 "../../src/parser/yacc_pascal.y"
            {
         syntax_error("标识符定义错误 请检查是否符合规范");
     }
-#line 2043 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2058 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 12: /* const_declarations: %empty  */
-#line 445 "../../src/parser/yacc_pascal.y"
+#line 460 "../../src/parser/yacc_pascal.y"
     {
         (yyval.const_decls) = nullptr;
         LOG_DEBUG("DEBUG const_declarations -> empty");
     }
-#line 2052 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2067 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 13: /* const_declarations: CONST const_declaration ';'  */
-#line 450 "../../src/parser/yacc_pascal.y"
+#line 465 "../../src/parser/yacc_pascal.y"
     {
         ConstDeclStmt * const_decls = new ConstDeclStmt();
         for(auto kv_pair : *(yyvsp[-1].kv_pair_list)){
@@ -2064,19 +2079,19 @@ yyreduce:
         (yyval.const_decls) = const_decls;
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
     }
-#line 2068 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2083 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 14: /* const_declarations: error  */
-#line 462 "../../src/parser/yacc_pascal.y"
+#line 477 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("常量定义出错 请检查是否符合规范");
     }
-#line 2076 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2091 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 15: /* const_declaration: IDENTIFIER '=' const_value  */
-#line 474 "../../src/parser/yacc_pascal.y"
+#line 489 "../../src/parser/yacc_pascal.y"
     {
         std::vector<std::pair<std::string, NumberStmt> *> * const_decls = new std::vector<std::pair<std::string, NumberStmt> *>();
         std::pair<std::string, NumberStmt> * kv_pair = new std::pair<std::string, NumberStmt>((yyvsp[-2].string), *(yyvsp[0].num_value));
@@ -2086,118 +2101,118 @@ yyreduce:
         // 疑似内存泄漏
         (yyval.kv_pair_list) = const_decls;
     }
-#line 2090 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2105 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 16: /* const_declaration: const_declaration ';' IDENTIFIER '=' const_value  */
-#line 484 "../../src/parser/yacc_pascal.y"
+#line 499 "../../src/parser/yacc_pascal.y"
     {
         (yyvsp[-4].kv_pair_list)->push_back(new std::pair<std::string, NumberStmt>((yyvsp[-2].string), *(yyvsp[0].num_value)));
         delete (yyvsp[-2].string);
         delete (yyvsp[0].num_value);
         (yyval.kv_pair_list) = (yyvsp[-4].kv_pair_list); // 不需要删除
     }
-#line 2101 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2116 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 17: /* const_value: INTEGER  */
-#line 501 "../../src/parser/yacc_pascal.y"
+#line 516 "../../src/parser/yacc_pascal.y"
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, (yyvsp[0].number));
         (yyval.num_value) = num_value;
     }
-#line 2111 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2126 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 18: /* const_value: '+' INTEGER  */
-#line 507 "../../src/parser/yacc_pascal.y"
+#line 522 "../../src/parser/yacc_pascal.y"
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, (yyvsp[0].number));
         (yyval.num_value) = num_value;
     }
-#line 2121 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2136 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 19: /* const_value: '-' INTEGER  */
-#line 513 "../../src/parser/yacc_pascal.y"
+#line 528 "../../src/parser/yacc_pascal.y"
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, ((yyvsp[0].number)) * -1);
         (yyval.num_value) = num_value;
     }
-#line 2131 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2146 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 20: /* const_value: REAL  */
-#line 519 "../../src/parser/yacc_pascal.y"
+#line 534 "../../src/parser/yacc_pascal.y"
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, (yyvsp[0].real));
         (yyval.num_value) = num_value;
     }
-#line 2141 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2156 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 21: /* const_value: '+' REAL  */
-#line 525 "../../src/parser/yacc_pascal.y"
+#line 540 "../../src/parser/yacc_pascal.y"
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, (yyvsp[0].real));
         (yyval.num_value) = num_value;
     }
-#line 2151 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2166 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 22: /* const_value: '-' REAL  */
-#line 531 "../../src/parser/yacc_pascal.y"
+#line 546 "../../src/parser/yacc_pascal.y"
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, ((yyvsp[0].real)) * -1);
         (yyval.num_value) = num_value;
     }
-#line 2161 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2176 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 23: /* const_value: CHAR  */
-#line 537 "../../src/parser/yacc_pascal.y"
+#line 552 "../../src/parser/yacc_pascal.y"
     {
         NumberStmt * num_value = new NumberStmt();
         fill_number_stmt(num_value, (yyvsp[0].charactor));
         (yyval.num_value) = num_value;
     }
-#line 2171 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2186 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 24: /* var_declarations: %empty  */
-#line 553 "../../src/parser/yacc_pascal.y"
+#line 568 "../../src/parser/yacc_pascal.y"
     {
         (yyval.var_decls) = nullptr;
         LOG_DEBUG("DEBUG var_declarations -> empty");
     }
-#line 2180 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2195 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 25: /* var_declarations: VAR var_declaration ';'  */
-#line 558 "../../src/parser/yacc_pascal.y"
+#line 573 "../../src/parser/yacc_pascal.y"
     {
         (yyval.var_decls) = (yyvsp[-1].var_decls);
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
     }
-#line 2189 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2204 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 26: /* var_declarations: error  */
-#line 563 "../../src/parser/yacc_pascal.y"
+#line 578 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("变量定义出错 请检查是否符合规范");
     }
-#line 2197 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2212 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 27: /* var_declaration: idlist ':' type  */
-#line 576 "../../src/parser/yacc_pascal.y"
+#line 591 "../../src/parser/yacc_pascal.y"
     {
         std::vector<VarDeclStmt *> * var_decls = new std::vector<VarDeclStmt *>();
         VarDeclStmt * var_decl = new VarDeclStmt();
@@ -2212,11 +2227,11 @@ yyreduce:
         (yyval.var_decls) = var_decls;
         LOG_DEBUG("DEBUG var_declaration -> idlist ':' type");
     }
-#line 2216 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2231 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 28: /* var_declaration: var_declaration ';' idlist ':' type  */
-#line 591 "../../src/parser/yacc_pascal.y"
+#line 606 "../../src/parser/yacc_pascal.y"
     {
         VarDeclStmt * var_decl = new VarDeclStmt();
         var_decl->id.insert(var_decl->id.end(), (yyvsp[-2].id_list)->begin(), (yyvsp[-2].id_list)->end());
@@ -2230,19 +2245,19 @@ yyreduce:
         (yyval.var_decls) = (yyvsp[-4].var_decls);
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type");
     }
-#line 2234 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2249 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 29: /* var_declaration: error  */
-#line 605 "../../src/parser/yacc_pascal.y"
+#line 620 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("变量定义出错 请检查是否符合规范");
     }
-#line 2242 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2257 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 30: /* type: basic_type  */
-#line 617 "../../src/parser/yacc_pascal.y"
+#line 632 "../../src/parser/yacc_pascal.y"
     {
         VarDeclStmt * type_stmt = new VarDeclStmt();
         // TODO 处理type_size
@@ -2251,11 +2266,11 @@ yyreduce:
         (yyval.var_decl) = type_stmt;
         LOG_DEBUG("DEBUG type -> basic_type");
     }
-#line 2255 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2270 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 31: /* type: ARRAY '[' period_list ']' OF basic_type  */
-#line 626 "../../src/parser/yacc_pascal.y"
+#line 641 "../../src/parser/yacc_pascal.y"
     {
         VarDeclStmt * type_stmt = new VarDeclStmt();
         type_stmt->data_type = DataType::ArrayType;
@@ -2267,55 +2282,55 @@ yyreduce:
         (yyval.var_decl) = type_stmt;
         LOG_DEBUG("DEBUG type -> ARRAY '[' period_list ']' OF basic_type");
     }
-#line 2271 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2286 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 32: /* type: error  */
-#line 638 "../../src/parser/yacc_pascal.y"
+#line 653 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("类型定义出错 请检查是否符合规范");
     }
-#line 2279 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2294 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 33: /* basic_type: INTEGER_KW  */
-#line 650 "../../src/parser/yacc_pascal.y"
+#line 665 "../../src/parser/yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::INT;
             LOG_DEBUG("DEBUG basic_type -> INTEGER_KW");
         }
-#line 2288 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2303 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 34: /* basic_type: REAL_KW  */
-#line 655 "../../src/parser/yacc_pascal.y"
+#line 670 "../../src/parser/yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::REAL;
             LOG_DEBUG("DEBUG basic_type -> REAL_KW");
         }
-#line 2297 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2312 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 35: /* basic_type: BOOLEAN_KW  */
-#line 660 "../../src/parser/yacc_pascal.y"
+#line 675 "../../src/parser/yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::BOOLEAN;
             LOG_DEBUG("DEBUG basic_type -> BOOLEAN_KW");
         }
-#line 2306 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2321 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 36: /* basic_type: CHAR_KW  */
-#line 665 "../../src/parser/yacc_pascal.y"
+#line 680 "../../src/parser/yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::CHAR;
             LOG_DEBUG("DEBUG basic_type -> CHAR_KW");
         }
-#line 2315 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2330 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 37: /* period_list: INTEGER DOUBLE_DOT INTEGER  */
-#line 679 "../../src/parser/yacc_pascal.y"
+#line 694 "../../src/parser/yacc_pascal.y"
         {
             (yyval.period_list) = new std::vector<PeriodStmt *>();
             PeriodStmt * period = new PeriodStmt();
@@ -2325,11 +2340,11 @@ yyreduce:
             // debug
             LOG_DEBUG("DEBUG period_list -> INTEGER '..' INTEGER");
         }
-#line 2329 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2344 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 38: /* period_list: period_list ',' INTEGER DOUBLE_DOT INTEGER  */
-#line 689 "../../src/parser/yacc_pascal.y"
+#line 704 "../../src/parser/yacc_pascal.y"
         {
             PeriodStmt * period = new PeriodStmt();
             period->begin = (yyvsp[-2].number);
@@ -2339,20 +2354,20 @@ yyreduce:
             // debug
             LOG_DEBUG("DEBUG period_list -> period_list ',' INTEGER '..' INTEGER");
         }
-#line 2343 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2358 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 39: /* subprogram_declarations: %empty  */
-#line 706 "../../src/parser/yacc_pascal.y"
+#line 721 "../../src/parser/yacc_pascal.y"
         {
             (yyval.func_decl_list) = nullptr;
             LOG_DEBUG("DEBUG subprogram_declarations -> empty");
         }
-#line 2352 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2367 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 40: /* subprogram_declarations: subprogram_declarations subprogram ';'  */
-#line 711 "../../src/parser/yacc_pascal.y"
+#line 726 "../../src/parser/yacc_pascal.y"
         {
             if((yyvsp[-2].func_decl_list) == nullptr){
                 std::vector<FuncDeclStmt *> * func_decl_list = new std::vector<FuncDeclStmt *>();
@@ -2364,11 +2379,11 @@ yyreduce:
             }
             LOG_DEBUG("DEBUG subprogram_declarations -> subprogram_declarations subprogram ';'");
         }
-#line 2368 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2383 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 41: /* subprogram: subprogram_head ';' subprogram_body  */
-#line 732 "../../src/parser/yacc_pascal.y"
+#line 747 "../../src/parser/yacc_pascal.y"
         {
             FuncDeclStmt * subprogram = new FuncDeclStmt();
             subprogram->header = std::unique_ptr<FuncHeadDeclStmt>((yyvsp[-2].func_head));
@@ -2376,11 +2391,11 @@ yyreduce:
             (yyval.func_decl) = subprogram;
             LOG_DEBUG("DEBUG subprogram -> subprogram_head ';' subprogram_body");
         }
-#line 2380 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2395 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 42: /* subprogram_head: PROCEDURE IDENTIFIER formal_parameter  */
-#line 749 "../../src/parser/yacc_pascal.y"
+#line 764 "../../src/parser/yacc_pascal.y"
         {
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
             sub_head->func_name = std::string((yyvsp[-1].string));
@@ -2394,11 +2409,11 @@ yyreduce:
             (yyval.func_head) = sub_head;
             LOG_DEBUG("DEBUG subprogram_head -> PROGRAM IDENTIFIER formal_parameter");
         }
-#line 2398 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2413 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 43: /* subprogram_head: FUNCTION IDENTIFIER formal_parameter ':' basic_type  */
-#line 763 "../../src/parser/yacc_pascal.y"
+#line 778 "../../src/parser/yacc_pascal.y"
         {
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
             sub_head->func_name = std::string((yyvsp[-3].string));
@@ -2412,85 +2427,85 @@ yyreduce:
             (yyval.func_head) = sub_head;
             LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type");
         }
-#line 2416 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2431 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 44: /* formal_parameter: %empty  */
-#line 785 "../../src/parser/yacc_pascal.y"
+#line 800 "../../src/parser/yacc_pascal.y"
         {
             (yyval.var_decls) = nullptr;
             LOG_DEBUG("DEBUG formal_parameter -> empty");
         }
-#line 2425 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2440 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 45: /* formal_parameter: '(' parameter_list ')'  */
-#line 790 "../../src/parser/yacc_pascal.y"
+#line 805 "../../src/parser/yacc_pascal.y"
         {
             (yyval.var_decls) = (yyvsp[-1].var_decls);
             LOG_DEBUG("DEBUG formal_parameter -> '(' parameter_list ')'");
         }
-#line 2434 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2449 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 46: /* parameter_list: %empty  */
-#line 805 "../../src/parser/yacc_pascal.y"
+#line 820 "../../src/parser/yacc_pascal.y"
     {
         (yyval.var_decls) = nullptr;
         LOG_DEBUG("DEBUG parameter_list -> empty");
     }
-#line 2443 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2458 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 47: /* parameter_list: parameter  */
-#line 810 "../../src/parser/yacc_pascal.y"
+#line 825 "../../src/parser/yacc_pascal.y"
         {
             (yyval.var_decls) = new std::vector<VarDeclStmt *>();
             (yyval.var_decls)->push_back((yyvsp[0].var_decl));
             LOG_DEBUG("DEBUG parameter_list -> parameter");
         }
-#line 2453 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2468 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 48: /* parameter_list: parameter_list ';' parameter  */
-#line 816 "../../src/parser/yacc_pascal.y"
+#line 831 "../../src/parser/yacc_pascal.y"
         {
             (yyvsp[-2].var_decls)->push_back((yyvsp[0].var_decl));
             (yyval.var_decls) = (yyvsp[-2].var_decls);
             LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
         }
-#line 2463 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2478 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 49: /* parameter: var_parameter  */
-#line 830 "../../src/parser/yacc_pascal.y"
+#line 845 "../../src/parser/yacc_pascal.y"
         {
             (yyval.var_decl) = (yyvsp[0].var_decl);
             LOG_DEBUG("DEBUG parameter -> var_parameter");
         }
-#line 2472 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2487 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 50: /* parameter: value_parameter  */
-#line 835 "../../src/parser/yacc_pascal.y"
+#line 850 "../../src/parser/yacc_pascal.y"
         {
             (yyval.var_decl) = (yyvsp[0].var_decl);
             LOG_DEBUG("DEBUG parameter -> value_parameter");
         }
-#line 2481 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2496 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 51: /* var_parameter: VAR value_parameter  */
-#line 848 "../../src/parser/yacc_pascal.y"
+#line 863 "../../src/parser/yacc_pascal.y"
         {
             (yyval.var_decl) = (yyvsp[0].var_decl);
             LOG_DEBUG("DEBUG var_parameter -> VAR value_parameter");
         }
-#line 2490 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2505 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 52: /* value_parameter: idlist ':' basic_type  */
-#line 862 "../../src/parser/yacc_pascal.y"
+#line 877 "../../src/parser/yacc_pascal.y"
         {
             VarDeclStmt* var_decl = new VarDeclStmt();
             var_decl->id.insert(var_decl->id.end(), (yyvsp[-2].id_list)->begin(), (yyvsp[-2].id_list)->end());
@@ -2501,11 +2516,11 @@ yyreduce:
             (yyval.var_decl) = var_decl;
             LOG_DEBUG("DEBUG value_parameter -> idlist ':' basic_type");
         }
-#line 2505 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2520 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 53: /* subprogram_body: const_declarations var_declarations compound_statement  */
-#line 880 "../../src/parser/yacc_pascal.y"
+#line 895 "../../src/parser/yacc_pascal.y"
     {
         FuncBodyDeclStmt * func_body = new FuncBodyDeclStmt();
         if((yyvsp[-2].const_decls) != nullptr) func_body->const_decl = std::unique_ptr<ConstDeclStmt>((yyvsp[-2].const_decls));
@@ -2524,45 +2539,45 @@ yyreduce:
         (yyval.func_body) = func_body;
         LOG_DEBUG("DEBUG subprogram_body -> const_declarations var_declarations compound_statement");
     }
-#line 2528 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2543 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 54: /* subprogram_body: error  */
-#line 899 "../../src/parser/yacc_pascal.y"
+#line 914 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("子函数体定义出错 请检查是否符合规范");
     }
-#line 2536 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2551 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 55: /* compound_statement: BEGIN_TOKEN statement_list END  */
-#line 910 "../../src/parser/yacc_pascal.y"
+#line 925 "../../src/parser/yacc_pascal.y"
     {
         (yyval.stmt_list) = (yyvsp[-1].stmt_list);
         LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
     }
-#line 2545 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2560 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 56: /* compound_statement: error  */
-#line 915 "../../src/parser/yacc_pascal.y"
+#line 930 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("复合语句定义出错 请检查是否符合规范");
     }
-#line 2553 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2568 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 57: /* statement_list: statement  */
-#line 926 "../../src/parser/yacc_pascal.y"
+#line 941 "../../src/parser/yacc_pascal.y"
     {
         (yyval.stmt_list) = (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG statement_list -> statement");
     }
-#line 2562 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2577 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 58: /* statement_list: statement_list ';' statement  */
-#line 931 "../../src/parser/yacc_pascal.y"
+#line 946 "../../src/parser/yacc_pascal.y"
     {
         // copy the vector
         if((yyvsp[0].stmt_list) != nullptr){
@@ -2573,28 +2588,28 @@ yyreduce:
         (yyval.stmt_list) = (yyvsp[-2].stmt_list);
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
     }
-#line 2577 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2592 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 59: /* statement_list: error  */
-#line 942 "../../src/parser/yacc_pascal.y"
+#line 957 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("语句定义出错 请检查是否符合规范");
     }
-#line 2585 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2600 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 60: /* statement: %empty  */
-#line 958 "../../src/parser/yacc_pascal.y"
+#line 973 "../../src/parser/yacc_pascal.y"
     {
         (yyval.stmt_list) = nullptr;
         LOG_DEBUG("DEBUG statement -> empty");
     }
-#line 2594 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2609 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 61: /* statement: variable ASSIGNOP expression  */
-#line 963 "../../src/parser/yacc_pascal.y"
+#line 978 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         AssignStmt * assign_stmt = new AssignStmt();
@@ -2604,11 +2619,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> variable ASSIGNOP expression");
     }
-#line 2608 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2623 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 62: /* statement: IDENTIFIER ASSIGNOP expression  */
-#line 973 "../../src/parser/yacc_pascal.y"
+#line 988 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         AssignStmt * assign_stmt = new AssignStmt();
@@ -2621,31 +2636,31 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> IDENTIFIER ASSIGNOP expression");
     }
-#line 2625 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2640 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 63: /* statement: procedure_call  */
-#line 986 "../../src/parser/yacc_pascal.y"
+#line 1001 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         stmt_list->push_back((yyvsp[0].func_call_stmt));
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> procedure_call");
     }
-#line 2636 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2651 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 64: /* statement: compound_statement  */
-#line 993 "../../src/parser/yacc_pascal.y"
+#line 1008 "../../src/parser/yacc_pascal.y"
     {
         (yyval.stmt_list) = (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG statement -> compound_statement");
     }
-#line 2645 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2660 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 65: /* statement: WHILE expression DO statement  */
-#line 998 "../../src/parser/yacc_pascal.y"
+#line 1013 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         WhileStmt * while_stmt = new WhileStmt();
@@ -2660,11 +2675,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> WHILE expression DO statement");
     }
-#line 2664 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2679 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 66: /* statement: IF expression THEN statement else_part  */
-#line 1013 "../../src/parser/yacc_pascal.y"
+#line 1028 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         IfStmt * if_stmt = new IfStmt();
@@ -2685,11 +2700,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> IF expression THEN statement else_part");
     }
-#line 2689 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2704 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 67: /* statement: FOR IDENTIFIER ASSIGNOP expression TO expression DO statement  */
-#line 1034 "../../src/parser/yacc_pascal.y"
+#line 1049 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         ForStmt * for_stmt = new ForStmt();
@@ -2706,11 +2721,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> FOR IDENTIFIER ASSIGNOP expression TO expression DO statement");
     }
-#line 2710 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2725 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 68: /* statement: READ '(' variable_list ')'  */
-#line 1051 "../../src/parser/yacc_pascal.y"
+#line 1066 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         ReadFuncStmt * read_stmt = new ReadFuncStmt();
@@ -2722,11 +2737,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> READ '(' variable_list ')'");
     }
-#line 2726 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2741 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 69: /* statement: WRITE '(' expression_list ')'  */
-#line 1063 "../../src/parser/yacc_pascal.y"
+#line 1078 "../../src/parser/yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         WriteFuncStmt * write_stmt = new WriteFuncStmt();
@@ -2740,40 +2755,40 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'");
     }
-#line 2744 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2759 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 70: /* variable_list: variable  */
-#line 1085 "../../src/parser/yacc_pascal.y"
+#line 1100 "../../src/parser/yacc_pascal.y"
     {
         std::vector<LValStmt *> * lval_list = new std::vector<LValStmt *>();
         lval_list->push_back((yyvsp[0].lval));
         (yyval.lval_list) = lval_list;
         LOG_DEBUG("DEBUG variable_list -> variable");
     }
-#line 2755 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2770 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 71: /* variable_list: variable_list ',' variable  */
-#line 1092 "../../src/parser/yacc_pascal.y"
+#line 1107 "../../src/parser/yacc_pascal.y"
     {
         (yyvsp[-2].lval_list)->push_back((yyvsp[0].lval));
         (yyval.lval_list) = (yyvsp[-2].lval_list);
         LOG_DEBUG("DEBUG variable_list -> variable_list ',' variable");
     }
-#line 2765 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2780 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 72: /* variable_list: error  */
-#line 1098 "../../src/parser/yacc_pascal.y"
+#line 1113 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("变量定义出错 请检查是否符合规范");
     }
-#line 2773 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2788 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 73: /* variable: IDENTIFIER id_varpart  */
-#line 1110 "../../src/parser/yacc_pascal.y"
+#line 1125 "../../src/parser/yacc_pascal.y"
     {
         (yyval.lval) = new LValStmt();
         (yyval.lval)->id = std::string((yyvsp[-1].string));
@@ -2785,11 +2800,11 @@ yyreduce:
         }
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart");
     }
-#line 2789 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2804 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 74: /* variable: IDENTIFIER id_random  */
-#line 1122 "../../src/parser/yacc_pascal.y"
+#line 1137 "../../src/parser/yacc_pascal.y"
     {
         (yyval.lval) = new LValStmt();
         (yyval.lval)->id = std::string((yyvsp[-1].string));
@@ -2801,28 +2816,28 @@ yyreduce:
         }
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_random");
     }
-#line 2805 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2820 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 75: /* variable: error  */
-#line 1134 "../../src/parser/yacc_pascal.y"
+#line 1149 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("变量定义出错 请检查是否符合规范");
     }
-#line 2813 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2828 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 76: /* id_varpart: %empty  */
-#line 1147 "../../src/parser/yacc_pascal.y"
+#line 1162 "../../src/parser/yacc_pascal.y"
     {
         (yyval.expr_list) = nullptr;
         LOG_DEBUG("DEBUG id_varpart -> empty");
     }
-#line 2822 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2837 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 77: /* id_varpart: '[' expression_list ']'  */
-#line 1152 "../../src/parser/yacc_pascal.y"
+#line 1167 "../../src/parser/yacc_pascal.y"
     {
         if((yyvsp[-1].expr_list) != nullptr){
             (yyval.expr_list) = (yyvsp[-1].expr_list);    
@@ -2831,19 +2846,19 @@ yyreduce:
         }
         LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'");
     }
-#line 2835 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2850 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 78: /* id_varpart: error  */
-#line 1161 "../../src/parser/yacc_pascal.y"
+#line 1176 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("数组下标定义出错 请检查是否符合规范");
     }
-#line 2843 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2858 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 79: /* id_random: id_random '[' expression ']'  */
-#line 1174 "../../src/parser/yacc_pascal.y"
+#line 1189 "../../src/parser/yacc_pascal.y"
     {
         if((yyvsp[-3].expr_list) != nullptr){
             (yyvsp[-3].expr_list)->push_back((yyvsp[-1].expr));
@@ -2853,41 +2868,41 @@ yyreduce:
         }
         LOG_DEBUG("DEBUG id_random -> id_random '[' expression ']'");
     }
-#line 2857 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2872 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 80: /* id_random: '[' expression ']'  */
-#line 1184 "../../src/parser/yacc_pascal.y"
+#line 1199 "../../src/parser/yacc_pascal.y"
     {
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
         expr_list->push_back((yyvsp[-1].expr));
         (yyval.expr_list) = expr_list;
         LOG_DEBUG("DEBUG id_random -> '[' expression ']'");
     }
-#line 2868 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2883 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 81: /* id_random: error  */
-#line 1191 "../../src/parser/yacc_pascal.y"
+#line 1206 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("随机存取数组定义出错 请检查是否符合规范");
     }
-#line 2876 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2891 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 82: /* procedure_call: IDENTIFIER  */
-#line 1207 "../../src/parser/yacc_pascal.y"
+#line 1222 "../../src/parser/yacc_pascal.y"
     {
         FuncCallStmt * proc_call = new FuncCallStmt();
         proc_call->id = std::string((yyvsp[0].string));
         (yyval.func_call_stmt) = proc_call;
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER");
     }
-#line 2887 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2902 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 83: /* procedure_call: IDENTIFIER '(' expression_list ')'  */
-#line 1214 "../../src/parser/yacc_pascal.y"
+#line 1229 "../../src/parser/yacc_pascal.y"
     {
         FuncCallStmt * proc_call = new FuncCallStmt();
         proc_call->id = std::string((yyvsp[-3].string));
@@ -2900,84 +2915,84 @@ yyreduce:
         (yyval.func_call_stmt) = proc_call;
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'");
     }
-#line 2904 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2919 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 84: /* procedure_call: error  */
-#line 1227 "../../src/parser/yacc_pascal.y"
+#line 1242 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("过程调用定义出错 请检查是否符合规范");
     }
-#line 2912 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2927 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 85: /* else_part: %empty  */
-#line 1241 "../../src/parser/yacc_pascal.y"
+#line 1256 "../../src/parser/yacc_pascal.y"
     {
         (yyval.stmt_list) = nullptr;
         LOG_DEBUG("DEBUG else_part -> empty");
     }
-#line 2921 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2936 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 86: /* else_part: ELSE statement  */
-#line 1246 "../../src/parser/yacc_pascal.y"
+#line 1261 "../../src/parser/yacc_pascal.y"
     {
         // 强行取第一个
         (yyval.stmt_list) = (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG else_part -> ELSE statement");
     }
-#line 2931 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2946 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 87: /* else_part: error  */
-#line 1252 "../../src/parser/yacc_pascal.y"
+#line 1267 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("else 语法定义出错 请检查是否符合规范");
     }
-#line 2939 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2954 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 88: /* expression_list: %empty  */
-#line 1264 "../../src/parser/yacc_pascal.y"
+#line 1279 "../../src/parser/yacc_pascal.y"
                   {
         (yyval.expr_list) = nullptr;
         LOG_DEBUG("DEBUG expression_list -> empty");
     }
-#line 2948 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2963 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 89: /* expression_list: expression  */
-#line 1269 "../../src/parser/yacc_pascal.y"
+#line 1284 "../../src/parser/yacc_pascal.y"
     {
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
         expr_list->push_back((yyvsp[0].expr));
         (yyval.expr_list) = expr_list;
         LOG_DEBUG("DEBUG expression_list -> expression");
     }
-#line 2959 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2974 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 90: /* expression_list: expression_list ',' expression  */
-#line 1276 "../../src/parser/yacc_pascal.y"
+#line 1291 "../../src/parser/yacc_pascal.y"
     {
         (yyvsp[-2].expr_list)->push_back((yyvsp[0].expr));
         (yyval.expr_list) = (yyvsp[-2].expr_list);
         LOG_DEBUG("DEBUG expression_list -> expression_list ',' expression");
     }
-#line 2969 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2984 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 91: /* expression_list: error  */
-#line 1282 "../../src/parser/yacc_pascal.y"
+#line 1297 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
     }
-#line 2977 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 2992 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 92: /* expression: simple_expression  */
-#line 1294 "../../src/parser/yacc_pascal.y"
+#line 1309 "../../src/parser/yacc_pascal.y"
     {
         ExprStmt * expr = new ExprStmt();
         expr->rel_expr = std::make_unique<RelExprStmt>();
@@ -2986,11 +3001,11 @@ yyreduce:
         (yyval.expr) = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression");
     }
-#line 2990 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3005 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 93: /* expression: simple_expression relop simple_expression  */
-#line 1303 "../../src/parser/yacc_pascal.y"
+#line 1318 "../../src/parser/yacc_pascal.y"
     {
         ExprStmt * expr = new ExprStmt();
         expr->rel_expr = std::make_unique<RelExprStmt>();
@@ -3002,19 +3017,19 @@ yyreduce:
         (yyval.expr) = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression");
     }
-#line 3006 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3021 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 94: /* expression: error  */
-#line 1315 "../../src/parser/yacc_pascal.y"
+#line 1330 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
     }
-#line 3014 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3029 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 95: /* simple_expression: term  */
-#line 1329 "../../src/parser/yacc_pascal.y"
+#line 1344 "../../src/parser/yacc_pascal.y"
     {
         AddExprStmt * add_expr = new AddExprStmt();
         add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
@@ -3022,11 +3037,11 @@ yyreduce:
         (yyval.add_expr) = add_expr;
         LOG_DEBUG("DEBUG simple_expression -> term");
     }
-#line 3026 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3041 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 96: /* simple_expression: simple_expression addop term  */
-#line 1337 "../../src/parser/yacc_pascal.y"
+#line 1352 "../../src/parser/yacc_pascal.y"
     {
         AddExprStmt * add_expr = new AddExprStmt();
         add_expr->type = get_add_expr_type((yyvsp[-1].number));
@@ -3035,19 +3050,19 @@ yyreduce:
         (yyval.add_expr) = add_expr;
         LOG_DEBUG("DEBUG simple_expression -> simple_expression %lld term\n", (yyvsp[-1].number));
     }
-#line 3039 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3054 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 97: /* simple_expression: error  */
-#line 1346 "../../src/parser/yacc_pascal.y"
+#line 1361 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
     }
-#line 3047 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3062 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 98: /* term: factor  */
-#line 1359 "../../src/parser/yacc_pascal.y"
+#line 1374 "../../src/parser/yacc_pascal.y"
     {
         MulExprStmt * mul_expr = new MulExprStmt();
         mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
@@ -3055,11 +3070,11 @@ yyreduce:
         (yyval.mul_expr) = mul_expr;
         LOG_DEBUG("DEBUG term -> factor");
     }
-#line 3059 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3074 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 99: /* term: term mulop factor  */
-#line 1367 "../../src/parser/yacc_pascal.y"
+#line 1382 "../../src/parser/yacc_pascal.y"
     {
         MulExprStmt * mul_expr = new MulExprStmt();
         mul_expr->type = get_mul_expr_type((yyvsp[-1].number));
@@ -3068,19 +3083,19 @@ yyreduce:
         (yyval.mul_expr) = mul_expr;
         LOG_DEBUG("DEBUG term -> term mulop factor");
     }
-#line 3072 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3087 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 100: /* term: error  */
-#line 1376 "../../src/parser/yacc_pascal.y"
+#line 1391 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
     }
-#line 3080 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3095 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 101: /* factor: INTEGER  */
-#line 1389 "../../src/parser/yacc_pascal.y"
+#line 1404 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3093,11 +3108,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> INTEGER");
     }
-#line 3097 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3112 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 102: /* factor: '+' INTEGER  */
-#line 1402 "../../src/parser/yacc_pascal.y"
+#line 1417 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3110,11 +3125,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '+' INTEGER");
     }
-#line 3114 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3129 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 103: /* factor: '-' INTEGER  */
-#line 1415 "../../src/parser/yacc_pascal.y"
+#line 1430 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
@@ -3127,11 +3142,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' INTEGER");
     }
-#line 3131 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3146 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 104: /* factor: REAL  */
-#line 1428 "../../src/parser/yacc_pascal.y"
+#line 1443 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3144,11 +3159,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> REAL");
     }
-#line 3148 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3163 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 105: /* factor: '+' REAL  */
-#line 1441 "../../src/parser/yacc_pascal.y"
+#line 1456 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3161,11 +3176,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '+' REAL");
     }
-#line 3165 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3180 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 106: /* factor: '-' REAL  */
-#line 1454 "../../src/parser/yacc_pascal.y"
+#line 1469 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
@@ -3178,11 +3193,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' REAL");
     }
-#line 3182 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3197 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 107: /* factor: BOOLEAN  */
-#line 1467 "../../src/parser/yacc_pascal.y"
+#line 1482 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3196,11 +3211,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> BOOLEAN");
     }
-#line 3200 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3215 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 108: /* factor: CHAR  */
-#line 1481 "../../src/parser/yacc_pascal.y"
+#line 1496 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3213,11 +3228,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> CHAR");
     }
-#line 3217 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3232 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 109: /* factor: variable  */
-#line 1494 "../../src/parser/yacc_pascal.y"
+#line 1509 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3229,11 +3244,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> variable");
     }
-#line 3233 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3248 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 110: /* factor: '(' expression ')'  */
-#line 1506 "../../src/parser/yacc_pascal.y"
+#line 1521 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3243,11 +3258,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '(' expression ')'");
     }
-#line 3247 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3262 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 111: /* factor: IDENTIFIER '(' expression_list ')'  */
-#line 1516 "../../src/parser/yacc_pascal.y"
+#line 1531 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -3266,154 +3281,152 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' expression_list ')'");
     }
-#line 3270 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3285 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 112: /* factor: NOT factor  */
-#line 1535 "../../src/parser/yacc_pascal.y"
+#line 1550 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Not;
-        unary_expr->primary_expr = std::move((yyvsp[0].unary_expr)->primary_expr);
-        delete (yyvsp[0].unary_expr);
+        unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>((yyvsp[0].unary_expr)));
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> NOT factor");
     }
-#line 3283 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3297 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 113: /* factor: '+' factor  */
-#line 1544 "../../src/parser/yacc_pascal.y"
+#line 1558 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        unary_expr->type = (yyvsp[0].unary_expr)->type;
         unary_expr->primary_expr = std::move((yyvsp[0].unary_expr)->primary_expr);
         delete (yyvsp[0].unary_expr);
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '+' factor");
     }
-#line 3296 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3310 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 114: /* factor: '-' factor  */
-#line 1553 "../../src/parser/yacc_pascal.y"
+#line 1567 "../../src/parser/yacc_pascal.y"
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
-        unary_expr->primary_expr = std::move((yyvsp[0].unary_expr)->primary_expr);
-        delete (yyvsp[0].unary_expr);
+        unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>((yyvsp[0].unary_expr)));
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' factor");
     }
-#line 3309 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3322 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 115: /* factor: error  */
-#line 1562 "../../src/parser/yacc_pascal.y"
+#line 1575 "../../src/parser/yacc_pascal.y"
     {
         syntax_error("表达式定义出错 请检查是否符合规范");
     }
-#line 3317 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3330 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 116: /* addop: '+'  */
-#line 1568 "../../src/parser/yacc_pascal.y"
+#line 1581 "../../src/parser/yacc_pascal.y"
             { (yyval.number) = 0; }
-#line 3323 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3336 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 117: /* addop: '-'  */
-#line 1568 "../../src/parser/yacc_pascal.y"
+#line 1581 "../../src/parser/yacc_pascal.y"
                               { (yyval.number) = 1; }
-#line 3329 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3342 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 118: /* addop: OR  */
-#line 1568 "../../src/parser/yacc_pascal.y"
+#line 1581 "../../src/parser/yacc_pascal.y"
                                                { (yyval.number) = 2; }
-#line 3335 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3348 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 119: /* relop: '='  */
-#line 1573 "../../src/parser/yacc_pascal.y"
+#line 1586 "../../src/parser/yacc_pascal.y"
             { (yyval.number) = 0; }
-#line 3341 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3354 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 120: /* relop: NE  */
-#line 1573 "../../src/parser/yacc_pascal.y"
+#line 1586 "../../src/parser/yacc_pascal.y"
                              { (yyval.number) = 1; }
-#line 3347 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3360 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 121: /* relop: '<'  */
-#line 1573 "../../src/parser/yacc_pascal.y"
+#line 1586 "../../src/parser/yacc_pascal.y"
                                                { (yyval.number) = 2; }
-#line 3353 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3366 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 122: /* relop: LE  */
-#line 1573 "../../src/parser/yacc_pascal.y"
+#line 1586 "../../src/parser/yacc_pascal.y"
                                                                 { (yyval.number) = 3; }
-#line 3359 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3372 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 123: /* relop: '>'  */
-#line 1573 "../../src/parser/yacc_pascal.y"
+#line 1586 "../../src/parser/yacc_pascal.y"
                                                                                   { (yyval.number) = 4; }
-#line 3365 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3378 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 124: /* relop: GE  */
-#line 1573 "../../src/parser/yacc_pascal.y"
+#line 1586 "../../src/parser/yacc_pascal.y"
                                                                                                    { (yyval.number) = 5; }
-#line 3371 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3384 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 125: /* relop: IN  */
-#line 1573 "../../src/parser/yacc_pascal.y"
+#line 1586 "../../src/parser/yacc_pascal.y"
                                                                                                                     { (yyval.number) = 6; }
-#line 3377 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3390 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 126: /* mulop: '*'  */
-#line 1578 "../../src/parser/yacc_pascal.y"
+#line 1591 "../../src/parser/yacc_pascal.y"
             { (yyval.number) = 0; }
-#line 3383 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3396 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 127: /* mulop: '/'  */
-#line 1578 "../../src/parser/yacc_pascal.y"
+#line 1591 "../../src/parser/yacc_pascal.y"
                               { (yyval.number) = 1; }
-#line 3389 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3402 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 128: /* mulop: DIV  */
-#line 1578 "../../src/parser/yacc_pascal.y"
+#line 1591 "../../src/parser/yacc_pascal.y"
                                                 { (yyval.number) = 1; }
-#line 3395 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3408 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 129: /* mulop: MOD  */
-#line 1578 "../../src/parser/yacc_pascal.y"
+#line 1591 "../../src/parser/yacc_pascal.y"
                                                                   { (yyval.number) = 2; }
-#line 3401 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3414 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 130: /* mulop: AND  */
-#line 1578 "../../src/parser/yacc_pascal.y"
+#line 1591 "../../src/parser/yacc_pascal.y"
                                                                                     { (yyval.number) = 3; }
-#line 3407 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3420 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
   case 131: /* mulop: ANDTHEN  */
-#line 1578 "../../src/parser/yacc_pascal.y"
+#line 1591 "../../src/parser/yacc_pascal.y"
                                                                                                           { (yyval.number) = 4; }
-#line 3413 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3426 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
     break;
 
 
-#line 3417 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
+#line 3430 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.cpp"
 
       default: break;
     }
@@ -3642,7 +3655,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 1581 "../../src/parser/yacc_pascal.y"
+#line 1594 "../../src/parser/yacc_pascal.y"
 
 // 此处书写相关函数，会添加在生成的代码中
 extern void scan_string(const char *str, yyscan_t scanner);

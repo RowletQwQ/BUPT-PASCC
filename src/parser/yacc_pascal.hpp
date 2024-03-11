@@ -111,7 +111,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 239 "../../src/parser/yacc_pascal.y"
+#line 254 "../../src/parser/yacc_pascal.y"
 
     ProgramStmt *                                   program_struct;
     ProgramHeadStmt *                               program_head;
