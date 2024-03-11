@@ -126,7 +126,7 @@ std::string primary_expr_stmt_str(const PrimaryExprStmt* stmt, int deep){
     if(stmt->type == PrimaryExprStmt::PrimaryExprType::Value){
         res += value_stmt_str(stmt->value.get(), deep + 1);
     }else{
-        res += value_stmt_str(stmt->value.get(), deep + 1);
+        res += expr_stmt_str(stmt->expr.get(), deep + 1);
     }
     res += deep_print(deep+1);
     return res;
@@ -331,15 +331,18 @@ std::string if_stmt_str(const IfStmt* if_stmt, int deep){
         return "";
     }
     std::string res = deep_print(deep) + "|____[IfStmt]\n";
+    res += deep_print(deep+1) + "expr:\n";
     res += expr_stmt_str(if_stmt->expr.get(), deep + 1);
     res += deep_print(deep+1) + "true_stmt:\n";
     for(auto &stmt : if_stmt->true_stmt){
         res += base_stmt_str(stmt.get(), deep + 1);
     }
+    res += deep_print(deep+1) + "-----------------------\n";
     res += deep_print(deep+1) + "false_stmt:\n";
     for(auto &stmt : if_stmt->false_stmt){
         res += base_stmt_str(stmt.get(), deep + 1);
     }
+    res += deep_print(deep+1) + "-----------------------\n";
     return res;
 };
 
@@ -504,6 +507,9 @@ std::string base_stmt_str(const BaseStmt* stmt, int deep){
     }else if(typeid(*stmt) == typeid(IfStmt)){
         printf("if\n");
         return if_stmt_str((const IfStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(WhileStmt)){
+        printf("while\n");
+        return while_stmt_str((const WhileStmt *)stmt, deep);
     }else if(typeid(*stmt) == typeid(ForStmt)){
         printf("for\n");
         return for_stmt_str((const ForStmt *)stmt, deep);
@@ -519,4 +525,17 @@ std::string base_stmt_str(const BaseStmt* stmt, int deep){
     }else {
         return "ERROR";
     }
+};
+
+std::string while_stmt_str(const WhileStmt* while_stmt, int deep){
+    if(while_stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[WhileStmt]\n";
+    res += deep_print(deep+1) + "expr:\n";
+    res += expr_stmt_str(while_stmt->expr.get(), deep + 1);
+    for(auto &stmt : while_stmt->stmt){
+        res += base_stmt_str(stmt.get(), deep + 1);
+    }
+    return res;
 };

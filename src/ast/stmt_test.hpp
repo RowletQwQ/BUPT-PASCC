@@ -80,3 +80,5 @@ std::string program_body_stmt_str(const ProgramBodyStmt* program_body, int deep)
 std::string program_stmt_str(const ProgramStmt* program, int deep);
 
 std::string base_stmt_str(const BaseStmt* stmt, int deep);
+
+std::string while_stmt_str(const WhileStmt* while_stmt, int deep);
