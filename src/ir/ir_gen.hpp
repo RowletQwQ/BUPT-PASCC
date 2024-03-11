@@ -71,6 +71,7 @@ public:
     void visit(AssignStmt &stmt) override;
     void visit(IfStmt &stmt) override;
     void visit(ForStmt &stmt) override;
+    void visit(WhileStmt &stmt) override;
     void visit(ReadFuncStmt &stmt) override;
     void visit(WriteFuncStmt &stmt) override;
     void visit(ProgramHeadStmt &stmt) override;

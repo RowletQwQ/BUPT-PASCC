@@ -19,8 +19,10 @@ std::shared_ptr<Type> build_basic_type(BasicType type) {
             return std::make_shared<CharType>();
         case BasicType::BOOLEAN:
             return std::make_shared<BooleanType>();
+        case BasicType::VOID:
+            return std::make_shared<VoidType>();
     }
-    return std::make_shared<VoidType>();
+    return nullptr;
 }
 Instruction::OpID build_op_id(RelExprStmt::RelExprType type) {
     switch (type) {
@@ -474,6 +476,34 @@ void IRGenerator::visit(ForStmt &stmt) {
     this->scope_.current_f_->add_basic_block(nxt_bb);
 
     // 补充上面的 if 指令
+    std::shared_ptr<BranchInst> branch_inst = std::make_shared<BranchInst>(cond_inst, body_bb, nxt_bb, cond_bb, true);
+    cond_bb->instructions_.push_back(branch_inst);
+}
+void IRGenerator::visit(WhileStmt &stmt) {
+    // 先得到当前基本块
+    std::shared_ptr<BasicBlock> cur_bb = this->scope_.current_f_->basic_blocks_.back();
+
+    // 然后新建一个条件基本块
+    std::shared_ptr<BasicBlock> cond_bb = std::make_shared<BasicBlock>("cond_basic_block");
+    this->scope_.current_f_->add_basic_block(cond_bb);
+    cur_bb->add_succ_bb(cond_bb);
+    cond_bb->add_pre_bb(cur_bb);
+    stmt.expr->accept(*this);
+    std::shared_ptr<Instruction> cond_inst = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+
+    // 再新建一个循环体基本块
+    std::shared_ptr<BasicBlock> body_bb = std::make_shared<BasicBlock>("body_basic_block");
+    this->scope_.current_f_->add_basic_block(body_bb);
+    for (const auto &stmt : stmt.stmt) {
+        stmt->accept(*this);
+    }
+    body_bb->add_succ_bb(cond_bb);
+
+    // 最后新建一个循环外的基本块
+    std::shared_ptr<BasicBlock> nxt_bb = std::make_shared<BasicBlock>("nxt_basic_block");
+    this->scope_.current_f_->add_basic_block(nxt_bb);
+
+    // 创建 while 指令
     std::shared_ptr<BranchInst> branch_inst = std::make_shared<BranchInst>(cond_inst, body_bb, nxt_bb, cond_bb, true);
     cond_bb->instructions_.push_back(branch_inst);
 }
