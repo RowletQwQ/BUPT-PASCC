@@ -39,6 +39,7 @@ std::string number_stmt_str(const NumberStmt stmt, int deep) {
 
 
 std::string kv_pair_str(const ConstDeclStmt::KvPair pair, int deep) {
+    printf("kv_pair\n");
     return deep_print(deep) + pair.first + " = " + number_stmt_str(pair.second, 1);
 }
 
@@ -47,10 +48,13 @@ std::string const_decl_stmt_str(const ConstDeclStmt* stmt,int deep) {
     if(stmt == nullptr){
         return "";
     }
+    printf("const_decl\n");
     std::string res = deep_print(deep) + "|____[ConstDeclStmt]\n";
-    for(auto &pair : stmt->pairs){
-        res += kv_pair_str(pair, deep + 1) + "\n";
+    
+    for(int i = 0; i < stmt->pairs.size(); i++){
+        res += kv_pair_str(stmt->pairs[i], deep + 1);
     }
+    
     return res;
 }
 
@@ -247,6 +251,7 @@ std::string var_decl_stmt_str(const VarDeclStmt* var_decl, int deep){
     if(var_decl == nullptr){
         return "";
     }
+    printf("var_decl\n");
     std::string res = deep_print(deep) + "|____[VarDeclStmt]\n";
     res += id_list_str(var_decl->id, deep + 1);
     res += deep_print(deep+1) + "data_type: " + data_type_str(var_decl->data_type) + "\n";
@@ -369,11 +374,9 @@ std::string write_func_stmt_str(const WriteFuncStmt* write_func, int deep){
         return "";
     }
     std::string res = deep_print(deep) + "|____[WriteFuncStmt]\n";
-    printf("debug - write %d\n",deep);
     for(auto &expr : write_func->expr){    
         res += expr_stmt_str(expr.get(), deep + 1);
     }
-    
     return res;
 };
 
@@ -381,7 +384,6 @@ std::string expr_stmt_str(const ExprStmt* stmt, int deep){
     if(stmt == nullptr){
         return "";
     }
-    printf("debug - expr %d\n",deep);
     std::string res = deep_print(deep) + "|____[ExprStmt]\n";
     res += rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
     return res + "\n";
@@ -392,6 +394,7 @@ std::string program_head_stmt_str(const ProgramHeadStmt* program_head, int deep)
     if(program_head == nullptr){
         return "";
     }
+    printf("program_head\n");
     std::string res = deep_print(deep) + "|____[ProgramHeadStmt]\n";
     for(auto &id : program_head->id_list){
         res += deep_print(deep+1) + id + "\n";
@@ -403,6 +406,7 @@ std::string program_body_stmt_str(const ProgramBodyStmt* program_body, int deep)
     if(program_body == nullptr){
         return "";
     }
+    printf("program_body\n");
     std::string res = deep_print(deep) + "|____[ProgramBodyStmt]\n";
     res += const_decl_stmt_str(program_body->const_decl.get(), deep + 1);
     for(auto &var_decl : program_body->var_decl){
@@ -422,6 +426,7 @@ std::string program_stmt_str(const ProgramStmt* program, int deep){
     if(program == nullptr){
         return "";
     }
+    printf("program\n");
     std::string res = deep_print(deep) + "|____[ProgramStmt]\n";
     res += program_head_stmt_str(program->head.get(), deep + 1);
     res += program_body_stmt_str(program->body.get(), deep + 1);

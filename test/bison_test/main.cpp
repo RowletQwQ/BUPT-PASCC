@@ -48,6 +48,7 @@ void batch_test(int beginIndex,const std::string folderPath , std::vector<std::s
         }else{
             std::cout << fileName << " : Parsing succeeded." << std::endl;
         }
+        std::cout<<program_stmt_str(program, 0)<<std::endl;
     }
 }
 
@@ -80,9 +81,9 @@ int main() {
       }
   }
     // 
-    common::g_log = new common::Log(common::DEBUG);
-    // batch_test(0,folderPath,files);
-    single_point_test(folderPath,files);
+    common::g_log = new common::Log(common::FATAL);
+    batch_test(0,folderPath,files);
+    // single_point_test(folderPath,files);
   
   return 0;
 }

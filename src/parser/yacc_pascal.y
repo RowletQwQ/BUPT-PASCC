@@ -455,6 +455,7 @@ const_declarations : /*empty*/
         }
         // 疑似内存泄漏
         delete $2;
+        $$ = const_decls;
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
     }
     | error
@@ -836,6 +837,7 @@ value_parameter: idlist ':' basic_type
         {
             VarDeclStmt* var_decl = new VarDeclStmt();
             var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
+            var_decl->data_type = DataType::BasicType;
             var_decl-> basic_type = $3;
             // 疑似内存泄漏
             delete $1;
@@ -1480,7 +1482,7 @@ relop : '=' { $$ = 0; } | NE { $$ = 1; } | '<' { $$ = 2; } | LE { $$ = 3; } | '>
 /*
 * mulop -> * | / | div | mod | and
 */
-mulop : '*' { $$ = 0; } | '/' { $$ = 1; } | DIV { $$ = 2; } | MOD { $$ = 3; } | AND { $$ = 4; }
+mulop : '*' { $$ = 0; } | '/' { $$ = 1; } | DIV { $$ = 1; } | MOD { $$ = 2; } | AND { $$ = 3; } | ANDTHEN { $$ = 4; } 
 
 
 %%
