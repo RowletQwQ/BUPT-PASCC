@@ -83,6 +83,8 @@ int main() {
     // 
     common::g_log = new common::Log(common::DEBUG);
     // batch_test(58,folderPath,files);
+//     common::g_log = new common::Log(common::FATAL);
+//     batch_test(57,folderPath,files);
     // single_point_test(folderPath,files);
     // batch_test(0,folderPath,files);
     single_point_test(folderPath,files);
