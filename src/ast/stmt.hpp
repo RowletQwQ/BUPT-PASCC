@@ -210,6 +210,7 @@ public:
  * 
  */
 enum class BasicType {
+    VOID,
     INT,
     REAL,
     CHAR,
@@ -326,6 +327,17 @@ public:
     std::vector<std::unique_ptr<BaseStmt>> stmt; // 循环体
     void accept(StmtVisitor &visitor) override;
 };
+
+/**
+ * @brief while循环语句
+*/
+class WhileStmt : public BaseStmt {
+public:
+    std::unique_ptr<ExprStmt> expr; // while条件表达式
+    std::vector<std::unique_ptr<BaseStmt>> stmt; // while语句块
+    void accept(StmtVisitor &visitor) override;
+};
+
 
 /**
  * @brief 输入函数

@@ -21,6 +21,7 @@ class FuncDeclStmt;
 class AssignStmt;
 class IfStmt;
 class ForStmt;
+class WhileStmt;
 class ReadFuncStmt;
 class WriteFuncStmt;
 class ProgramHeadStmt;
@@ -51,6 +52,7 @@ public:
     virtual void visit(AssignStmt &stmt) = 0;
     virtual void visit(IfStmt &stmt) = 0;
     virtual void visit(ForStmt &stmt) = 0;
+    virtual void visit(WhileStmt &stmt) = 0; 
     virtual void visit(ReadFuncStmt &stmt) = 0;
     virtual void visit(WriteFuncStmt &stmt) = 0;
     virtual void visit(ProgramHeadStmt &stmt) = 0;

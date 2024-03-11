@@ -39,27 +39,25 @@ std::string number_stmt_str(const NumberStmt stmt, int deep) {
 
 
 std::string kv_pair_str(const ConstDeclStmt::KvPair pair, int deep) {
+    printf("kv_pair\n");
     return deep_print(deep) + pair.first + " = " + number_stmt_str(pair.second, 1);
 }
 
 
-std::string const_decl_stmt_str(const ConstDeclStmt stmt,int deep) {
-    std::string res = deep_print(deep) + "|____[ConstDeclStmt]\n";
-
-    for (auto &pair : stmt.pairs) {
-        res += kv_pair_str(pair, deep + 1) + "\n";
-    }
-    return res;
-}
-
-std::string expr_stmt_str(const ExprStmt* stmt, int deep){
+std::string const_decl_stmt_str(const ConstDeclStmt* stmt,int deep) {
     if(stmt == nullptr){
         return "";
     }
-    std::string res = deep_print(deep) + "|____[ExprStmt]\n";
-    res += rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
-    return res + "\n";
-};
+    printf("const_decl\n");
+    std::string res = deep_print(deep) + "|____[ConstDeclStmt]\n";
+    
+    for(int i = 0; i < stmt->pairs.size(); i++){
+        res += kv_pair_str(stmt->pairs[i], deep + 1);
+    }
+    
+    return res;
+}
+
 
 std::string rel_expr_stmt_str(const RelExprStmt* stmt, int deep){
     if(stmt == nullptr){
@@ -128,7 +126,7 @@ std::string primary_expr_stmt_str(const PrimaryExprStmt* stmt, int deep){
     if(stmt->type == PrimaryExprStmt::PrimaryExprType::Value){
         res += value_stmt_str(stmt->value.get(), deep + 1);
     }else{
-        res += value_stmt_str(stmt->value.get(), deep + 1);
+        res += expr_stmt_str(stmt->expr.get(), deep + 1);
     }
     res += deep_print(deep+1);
     return res;
@@ -194,6 +192,252 @@ std::string expr_stmt_list_str(const std::vector<ExprStmt *> *stmts, int deep){
     return res;
 };
 
+
+std::string id_list_str(const std::vector<std::string>& id_list, int deep){
+    std::string res = deep_print(deep) + "|____[IDList]\n";
+    for(auto &id : id_list){
+        res += deep_print(deep+1) + id + "\n";
+    }
+    return res;
+};
+
+std::string period_stmt_str(const PeriodStmt* period, int deep){
+    if(period == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[PeriodStmt]\n";
+    res += deep_print(deep+1) + "begin: " + std::to_string(period->begin) + " end: " + std::to_string(period->end) + "\n";
+    return res;
+};
+
+std::string period_list_str(const std::vector<PeriodStmt*>* period_list, int deep){
+    if(period_list == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[PeriodList]\n";
+    for(auto &period : *period_list){
+        res += period_stmt_str(period, deep + 1);
+    }
+    return res;
+};
+
+std::string basic_type_str(BasicType type){
+    if(type == BasicType::INT){
+        return "int";
+    }else if(type == BasicType::REAL){
+        return "real";
+    }else if(type == BasicType::CHAR){
+        return "char";
+    }else if(type == BasicType::BOOLEAN){
+        return "boolean";
+    }else{
+        return "ERROR";
+    }
+};
+
+std::string data_type_str(DataType type){
+    if(type == DataType::NULL_TYPE){
+        return "null";
+    }else if(type == DataType::BasicType){
+        return "BasicType";
+    }else if(type == DataType::ArrayType){
+        return "ArrayType";
+    }else{
+        return "ERROR";
+    }
+};
+
+std::string var_decl_stmt_str(const VarDeclStmt* var_decl, int deep){
+    if(var_decl == nullptr){
+        return "";
+    }
+    printf("var_decl\n");
+    std::string res = deep_print(deep) + "|____[VarDeclStmt]\n";
+    res += id_list_str(var_decl->id, deep + 1);
+    res += deep_print(deep+1) + "data_type: " + data_type_str(var_decl->data_type) + "\n";
+    res += deep_print(deep+1) + "basic_type: " + basic_type_str(var_decl->basic_type) + "\n";
+    for(auto &period : var_decl->array_range){
+        res += period_stmt_str(period.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string var_decl_stmt_list_str(const std::vector<VarDeclStmt*>* var_decl_list, int deep){
+    if(var_decl_list == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[VarDeclStmtList]\n";
+    for(auto &var_decl : *var_decl_list){
+        res += var_decl_stmt_str(var_decl, deep + 1);
+    }
+    return res;
+};
+
+std::string func_stmt_str(const FuncDeclStmt* func_decl, int deep){
+    if(func_decl == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[FuncDeclStmt]\n";
+    res += func_head_decl_stmt_str(func_decl->header.get(), deep + 1);
+    res += func_body_decl_stmt_str(func_decl->body.get(), deep + 1);
+    return res;
+};
+
+std::string func_head_decl_stmt_str(const FuncHeadDeclStmt* func_head, int deep){
+    if(func_head == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[FuncHeadDeclStmt]\n";
+    res += deep_print(deep+1) + "func_name: " + func_head->func_name + "\n";
+    res += deep_print(deep+1) + "ret_type: " + basic_type_str(func_head->ret_type) + "\n";
+    res += deep_print(deep+1) + "args:\n";
+    for(auto &var_decl : func_head->args){
+        res += var_decl_stmt_str(var_decl.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string func_body_decl_stmt_str(const FuncBodyDeclStmt* func_body, int deep){
+    if(func_body == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[FuncBodyDeclStmt]\n";
+    res += const_decl_stmt_str(func_body->const_decl.get(), deep + 1);
+    for(auto &var_decl : func_body->var_decl){
+        res += var_decl_stmt_str(var_decl.get(), deep + 1);
+    }
+    int i = 0;
+    // std::string res1 = "";
+    for(auto &stmt : func_body->comp_stmt){
+        // 根据 BaseStmt 类型的子类，调用对应的函数
+        res += base_stmt_str(stmt.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string assign_stmt_str(const AssignStmt* assign, int deep){
+    if(assign == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[AssignStmt]\n";
+    res += deep_print(deep+1) + "is_lval_func: " + std::to_string(assign->is_lval_func) + "\n";
+    res += lval_stmt_str(assign->lval.get(), deep + 1);
+    res += expr_stmt_str(assign->expr.get(), deep + 1);
+    return res;
+};
+
+std::string if_stmt_str(const IfStmt* if_stmt, int deep){
+    if(if_stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[IfStmt]\n";
+    res += deep_print(deep+1) + "expr:\n";
+    res += expr_stmt_str(if_stmt->expr.get(), deep + 1);
+    res += deep_print(deep+1) + "true_stmt:\n";
+    for(auto &stmt : if_stmt->true_stmt){
+        res += base_stmt_str(stmt.get(), deep + 1);
+    }
+    res += deep_print(deep+1) + "-----------------------\n";
+    res += deep_print(deep+1) + "false_stmt:\n";
+    for(auto &stmt : if_stmt->false_stmt){
+        res += base_stmt_str(stmt.get(), deep + 1);
+    }
+    res += deep_print(deep+1) + "-----------------------\n";
+    return res;
+};
+
+std::string for_stmt_str(const ForStmt* for_stmt, int deep){
+    if(for_stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[ForStmt]\n";
+    res += deep_print(deep+1) + "id: " + for_stmt->id + "\n";
+    res += expr_stmt_str(for_stmt->begin.get(), deep + 1);
+    res += expr_stmt_str(for_stmt->end.get(), deep + 1);
+    for(auto &stmt : for_stmt->stmt){
+        res += base_stmt_str(stmt.get(), deep + 1);
+    }
+    return res;
+};
+
+
+std::string read_func_stmt_str(const ReadFuncStmt* read_func, int deep){
+    if(read_func == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[ReadFuncStmt]\n";
+    for(auto &lval : read_func->lval){
+        res += lval_stmt_str(lval.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string write_func_stmt_str(const WriteFuncStmt* write_func, int deep){
+    if(write_func == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[WriteFuncStmt]\n";
+    for(auto &expr : write_func->expr){    
+        res += expr_stmt_str(expr.get(), deep + 1);
+    }
+    return res;
+};
+
+std::string expr_stmt_str(const ExprStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[ExprStmt]\n";
+    res += rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
+    return res + "\n";
+};
+
+
+std::string program_head_stmt_str(const ProgramHeadStmt* program_head, int deep){
+    if(program_head == nullptr){
+        return "";
+    }
+    printf("program_head\n");
+    std::string res = deep_print(deep) + "|____[ProgramHeadStmt]\n";
+    for(auto &id : program_head->id_list){
+        res += deep_print(deep+1) + id + "\n";
+    }
+    return res;
+};
+
+std::string program_body_stmt_str(const ProgramBodyStmt* program_body, int deep){
+    if(program_body == nullptr){
+        return "";
+    }
+    printf("program_body\n");
+    std::string res = deep_print(deep) + "|____[ProgramBodyStmt]\n";
+    res += const_decl_stmt_str(program_body->const_decl.get(), deep + 1);
+    for(auto &var_decl : program_body->var_decl){
+        res += var_decl_stmt_str(var_decl.get(), deep + 1);
+    }
+    for(auto &func_decl : program_body->func_decl){
+        res += func_stmt_str(func_decl.get(), deep + 1);
+    }
+    for(auto &stmt : program_body->comp_stmt){
+        res += base_stmt_str(stmt.get(), deep + 1);
+    }
+    return res;
+};
+
+
+std::string program_stmt_str(const ProgramStmt* program, int deep){
+    if(program == nullptr){
+        return "";
+    }
+    printf("program\n");
+    std::string res = deep_print(deep) + "|____[ProgramStmt]\n";
+    res += program_head_stmt_str(program->head.get(), deep + 1);
+    res += program_body_stmt_str(program->body.get(), deep + 1);
+    return res;
+};
+
+
+
 std::string rel_op(RelExprStmt::RelExprType type){
     if(type == RelExprStmt::RelExprType::Equal){
         return "=";
@@ -251,59 +495,47 @@ std::string unary_op(UnaryExprStmt::UnaryExprType type){
         return "ERROR";
     }
 };
-std::string id_list_str(const std::vector<std::string>& id_list, int deep) {
-    std::string res = deep_print(deep) + "[id_list]\n";
-    for (const auto& id : id_list) {
-        res += deep_print(deep + 1)+ "[string]" + id + "\n";
+
+std::string base_stmt_str(const BaseStmt* stmt, int deep){
+    if(stmt == nullptr){
+        return "";
+    }
+    // 根据 BaseStmt 类型的子类，调用对应的函数
+    if (typeid(*stmt) == typeid(AssignStmt)){
+        printf("assign\n");
+        return assign_stmt_str((const AssignStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(IfStmt)){
+        printf("if\n");
+        return if_stmt_str((const IfStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(WhileStmt)){
+        printf("while\n");
+        return while_stmt_str((const WhileStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(ForStmt)){
+        printf("for\n");
+        return for_stmt_str((const ForStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(ReadFuncStmt)){
+        printf("read\n");
+        return read_func_stmt_str((const ReadFuncStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(WriteFuncStmt)){
+        printf("write\n");
+        return write_func_stmt_str((const WriteFuncStmt *)stmt, deep);
+    }else if(typeid(*stmt) == typeid(FuncCallStmt)){
+        printf("func\n");
+        return func_call_stmt_str((const FuncCallStmt *)stmt, deep);
+    }else {
+        return "ERROR";
+    }
+};
+
+std::string while_stmt_str(const WhileStmt* while_stmt, int deep){
+    if(while_stmt == nullptr){
+        return "";
+    }
+    std::string res = deep_print(deep) + "|____[WhileStmt]\n";
+    res += deep_print(deep+1) + "expr:\n";
+    res += expr_stmt_str(while_stmt->expr.get(), deep + 1);
+    for(auto &stmt : while_stmt->stmt){
+        res += base_stmt_str(stmt.get(), deep + 1);
     }
     return res;
-}
-
-std::string period_stmt_str(const PeriodStmt* period, int deep) {
-    return deep_print(deep) + "[PeriodStmt] begin: " + std::to_string(period->begin) + ", end: " + std::to_string(period->end);
-}
-
-std::string period_list_str(const std::vector<PeriodStmt*>* period_list, int deep) {
-    std::string res = deep_print(deep) + "[PeriodList]\n";
-    for (const auto& period : *period_list) {
-        res += period_stmt_str(period, deep + 1) + "\n";
-    }
-    return res;
-}
-
-std::string basic_type_str(BasicType type) {
-    switch (type) {
-        case BasicType::INT:
-            return "[BasicType] INT\n";
-        case BasicType::REAL:
-            return "[BasicType] REAL\n";
-        case BasicType::BOOLEAN:
-            return "[BasicType] BOOLEAN\n";
-        case BasicType::CHAR:
-            return "[BasicType] CHAR\n";
-        default:
-            return "[BasicType] Unknown\n";
-    }
-}
-
-std::string data_type_str(DataType type) {
-    switch (type) {
-        case DataType::BasicType:
-            return "[DataType] BasicType\n";
-        case DataType::ArrayType:
-            return "[DataType] ArrayType\n";
-        default:
-            return "[DataType] Unknown\n";
-    }
-}
-
-std::string var_decl_stmt_str(const VarDeclStmt* var_decl, int deep) {
-    std::string res = deep_print(deep) + "[VarDeclStmt]\n";
-    res += deep_print(deep + 1) + "ID List: ";
-    for (const auto& id : (var_decl->id)) {
-        res += id + " ";
-    }
-    res += "\n";
-    res += deep_print(deep + 1) + "Basic Type: " + basic_type_str(var_decl->basic_type) + "\n";
-    return res;
-}
+};

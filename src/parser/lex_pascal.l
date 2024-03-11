@@ -64,16 +64,13 @@ extern double atof();
 
 DIGIT                   [0-9]
 INTEGER         {DIGIT}+
-REAL            {DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)?
+REAL               {DIGIT}+"."{DIGIT}+
 
 LETTER                  [a-zA-Z]
 IDENTIFIER              ({LETTER}|[_])({LETTER}|{DIGIT}|[_])*
 
 
-CHAR               '\''[^'\n]\''
-STRING          '\''([^'\n]|\\')*\'
-CHAR               \'(\\.|[^'\\])\'
-STRING             \'([^'\n]|'')*\'
+CHAR               (\'([^'\n]|\\.)\')
 
 
 ANNO_BIGBRACKET         (\{[^\}]*\})
@@ -143,8 +140,7 @@ OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 
 {INTEGER}                                yylval->number = atoi(yytext); RETURN_TOKEN(INTEGER);
 {REAL}                                     yylval->real = (float)atof(yytext); RETURN_TOKEN(REAL);
-{CHAR}                                    yylval->charactor=yytext[0];   RETURN_TOKEN(CHAR);
-{STRING}                                yylval->string = strdup(yytext); RETURN_TOKEN(STRING);
+{CHAR}                                    yylval->charactor = yytext[1]; RETURN_TOKEN(CHAR);
 {IDENTIFIER}                          yylval->string = strdup(yytext);RETURN_TOKEN(IDENTIFIER);
 
 {ANNO_BIGBRACKET}               // ignore comments
@@ -160,4 +156,5 @@ OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 
 void scan_string(const char *str, yyscan_t scanner) {
     yy_switch_to_buffer(yy_scan_string(str, scanner), scanner);
+    //{STRING}                                yylval->string = strdup(yytext); RETURN_TOKEN(STRING);
 }
