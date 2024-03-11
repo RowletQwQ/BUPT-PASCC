@@ -17,6 +17,7 @@
 #include "parser/yacc_pascal.hpp"
 #include "builder/c_builder.hpp"
 
+void code_parse(const char *code, ProgramStmt **program_stmt);
 
 void init_env()
 {
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
 
     // 第一步：词法分析 and 语法分析
     LOG_DEBUG("Start parsing code...");
-    ProgramStmt program_stmt;
+    ProgramStmt* program_stmt;
     code_parse(code.c_str(), &program_stmt);
     LOG_DEBUG("Parsing code done.");
     // 第二步: 语义分析 & 生成中间代码
@@ -89,10 +90,13 @@ int main(int argc, char *argv[])
     
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
 
-    visitor->visit(program_stmt);
-
+    visitor->visit(*program_stmt);
+    visitor->show_result();
     ir::Module ir = visitor->get_ir();
 
+
+    // TODO: 删除
+    return 0;
     LOG_DEBUG("Generating intermediate code done.");
     // 第三步: 优化
     if (G_SETTINGS.opt_level)
