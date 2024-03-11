@@ -20,7 +20,7 @@ std::shared_ptr<Type> build_basic_type(BasicType type) {
         case BasicType::BOOLEAN:
             return std::make_shared<BooleanType>();
     }
-    return nullptr;
+    return std::make_shared<VoidType>();
 }
 Instruction::OpID build_op_id(RelExprStmt::RelExprType type) {
     switch (type) {
@@ -528,6 +528,7 @@ void IRGenerator::visit(ProgramBodyStmt &stmt) {
     this->scope_.current_f_ = main_f; // 记录当前作用域的函数
     this->scope_.push("main", main_f); // 记录函数到全局作用域中
     this->scope_.enter(); // 进入一个新的作用域
+
     std::shared_ptr<BasicBlock> bb = std::make_shared<BasicBlock>("main_begin_basic_block");
     this->scope_.current_f_->add_basic_block(bb);
     for (const auto &stmt : stmt.comp_stmt) {

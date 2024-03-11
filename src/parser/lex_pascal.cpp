@@ -1,4 +1,4 @@
-#line 2 "lex_pascal.cpp"
+#line 2 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.cpp"
 /*
 这里的代码会被复制到lex_pascal.cpp的最开始位置
 定义yy_size_t的原因是因为flex生成的代码，会使用yy_size_t与其他类型的数字
@@ -23,7 +23,7 @@ do {                                                         \
 }                                                            \
 while (0);
 
-#line 27 "lex_pascal.cpp"
+#line 27 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -646,9 +646,9 @@ static const flex_int32_t yy_rule_can_match_eol[60] =
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "lex_pascal.l"
+#line 1 "../../src/parser/lex_pascal.l"
 
-#line 29 "lex_pascal.l"
+#line 29 "../../src/parser/lex_pascal.l"
 #include<cstring>
 #include<cstdio>
 /**
@@ -672,11 +672,11 @@ extern double atof();
 
 #define RETURN_TOKEN(token) LOG_DEBUG("%s", #token);return token
 
-#line 676 "lex_pascal.cpp"
+#line 676 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.cpp"
 /* Prevent the need for linking with -lfl */
 #define YY_NO_INPUT 1
 /* 不区分大小写 */
-#line 680 "lex_pascal.cpp"
+#line 680 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.cpp"
 
 #define INITIAL 0
 
@@ -958,9 +958,9 @@ YY_DECL
 		}
 
 	{
-#line 83 "lex_pascal.l"
+#line 83 "../../src/parser/lex_pascal.l"
 
-#line 964 "lex_pascal.cpp"
+#line 964 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1031,303 +1031,303 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 84 "lex_pascal.l"
+#line 84 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(PROGRAM);
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 85 "lex_pascal.l"
+#line 85 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(CONST);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 86 "lex_pascal.l"
+#line 86 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(TYPE);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 87 "lex_pascal.l"
+#line 87 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(RECORD);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 88 "lex_pascal.l"
+#line 88 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(ARRAY);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 89 "lex_pascal.l"
+#line 89 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(OF);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 90 "lex_pascal.l"
+#line 90 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(VAR);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 91 "lex_pascal.l"
+#line 91 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(FUNCTION);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 92 "lex_pascal.l"
+#line 92 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(PROCEDURE);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 93 "lex_pascal.l"
+#line 93 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(BEGIN_TOKEN);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 94 "lex_pascal.l"
+#line 94 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(END);
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 95 "lex_pascal.l"
+#line 95 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(IF);
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 96 "lex_pascal.l"
+#line 96 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(THEN);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 97 "lex_pascal.l"
+#line 97 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(ELSE);
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 98 "lex_pascal.l"
+#line 98 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(CASE);
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 99 "lex_pascal.l"
+#line 99 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(WHILE);
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 100 "lex_pascal.l"
+#line 100 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(REPEAT);
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 101 "lex_pascal.l"
+#line 101 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(UNTIL);
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 102 "lex_pascal.l"
+#line 102 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(FOR);
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 103 "lex_pascal.l"
+#line 103 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(TO);
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 104 "lex_pascal.l"
+#line 104 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(DOWNTO);
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 105 "lex_pascal.l"
+#line 105 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(DO);
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 106 "lex_pascal.l"
+#line 106 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(READ);
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 107 "lex_pascal.l"
+#line 107 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(READLN);
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 108 "lex_pascal.l"
+#line 108 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(WRITE);
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 109 "lex_pascal.l"
+#line 109 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(WRITELN);
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 110 "lex_pascal.l"
+#line 110 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(CHAR_KW);
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 111 "lex_pascal.l"
+#line 111 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(INTEGER_KW);
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 112 "lex_pascal.l"
+#line 112 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(REAL_KW);
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 113 "lex_pascal.l"
+#line 113 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(BOOLEAN_KW);
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 115 "lex_pascal.l"
+#line 115 "../../src/parser/lex_pascal.l"
 yylval->boolean = true;  return BOOLEAN;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 116 "lex_pascal.l"
+#line 116 "../../src/parser/lex_pascal.l"
 yylval->boolean = false;  return BOOLEAN;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 118 "lex_pascal.l"
+#line 118 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(NOT);
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 120 "lex_pascal.l"
+#line 120 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(DIV);
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 121 "lex_pascal.l"
+#line 121 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(MOD);
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 122 "lex_pascal.l"
+#line 122 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(AND);
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 124 "lex_pascal.l"
+#line 124 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(OR);
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 126 "lex_pascal.l"
+#line 126 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(NE);
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 127 "lex_pascal.l"
+#line 127 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(LE);
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 128 "lex_pascal.l"
+#line 128 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(GE);
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 131 "lex_pascal.l"
+#line 131 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(ASSIGNOP);
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 132 "lex_pascal.l"
+#line 132 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(IN);
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 134 "lex_pascal.l"
+#line 134 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(ORELSE);
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 135 "lex_pascal.l"
+#line 135 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(ANDTHEN);
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 137 "lex_pascal.l"
+#line 137 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(DOUBLE_DOT);
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 139 "lex_pascal.l"
+#line 139 "../../src/parser/lex_pascal.l"
 RETURN_TOKEN(yytext[0]);
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 141 "lex_pascal.l"
+#line 141 "../../src/parser/lex_pascal.l"
 yylval->number = atoi(yytext); RETURN_TOKEN(INTEGER);
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 142 "lex_pascal.l"
+#line 142 "../../src/parser/lex_pascal.l"
 yylval->real = (float)atof(yytext); RETURN_TOKEN(REAL);
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 143 "lex_pascal.l"
+#line 143 "../../src/parser/lex_pascal.l"
 yylval->charactor = yytext[1]; RETURN_TOKEN(CHAR);
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 144 "lex_pascal.l"
+#line 144 "../../src/parser/lex_pascal.l"
 yylval->string = strdup(yytext);RETURN_TOKEN(IDENTIFIER);
 	YY_BREAK
 case 51:
 /* rule 51 can match eol */
 YY_RULE_SETUP
-#line 146 "lex_pascal.l"
+#line 146 "../../src/parser/lex_pascal.l"
 // ignore comments
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 147 "lex_pascal.l"
+#line 147 "../../src/parser/lex_pascal.l"
 // ignore comments
 	YY_BREAK
 case 53:
 /* rule 53 can match eol */
 YY_RULE_SETUP
-#line 148 "lex_pascal.l"
+#line 148 "../../src/parser/lex_pascal.l"
 // ignore comments
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 150 "lex_pascal.l"
+#line 150 "../../src/parser/lex_pascal.l"
 /* ignore whitespace */
 	YY_BREAK
 case 55:
 /* rule 55 can match eol */
 YY_RULE_SETUP
-#line 151 "lex_pascal.l"
+#line 151 "../../src/parser/lex_pascal.l"
 
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 152 "lex_pascal.l"
+#line 152 "../../src/parser/lex_pascal.l"
 
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 153 "lex_pascal.l"
+#line 153 "../../src/parser/lex_pascal.l"
 
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 154 "lex_pascal.l"
+#line 154 "../../src/parser/lex_pascal.l"
 /* ignore other characters */
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 155 "lex_pascal.l"
+#line 155 "../../src/parser/lex_pascal.l"
 ECHO;
 	YY_BREAK
-#line 1331 "lex_pascal.cpp"
+#line 1331 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2489,7 +2489,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 155 "lex_pascal.l"
+#line 155 "../../src/parser/lex_pascal.l"
 
 
 void scan_string(const char *str, yyscan_t scanner) {

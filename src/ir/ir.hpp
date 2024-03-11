@@ -106,7 +106,7 @@ public:
 class BooleanType : public Type {
 public:
     explicit BooleanType() : Type(Type::BooleanTID) {}
-    virtual std::string print() override { return "bool"; }
+    virtual std::string print() override { return "int"; } // c 语言中没有 bool 类型
     virtual std::string placeholder() override { return "%d"; }
 };
 
@@ -356,7 +356,7 @@ public:
     }
 
     bool is_const_; // 是否为常量
-    std::weak_ptr<Literal> init_val_; // 初始值
+    std::shared_ptr<Literal> init_val_; // 初始值
 };
 
 // ----------------------------------------------------------------LocalIdentifier---------------------------------------------------------------
@@ -369,7 +369,7 @@ public:
     }
 
     bool is_const_; // 是否为常量
-    std::weak_ptr<Literal> init_val_; // 初始值  
+    std::shared_ptr<Literal> init_val_; // 初始值  
 };
 
 
@@ -707,7 +707,7 @@ public:
         }
         ans = ans + "\", ";
         for (int i = 0; i < operands_.size(); i++) {
-            ans = ans + "&" + operands_[i]->name_;
+            ans = ans + "&" + operands_[i]->print();
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
             }
@@ -855,7 +855,10 @@ public:
      * @brief 添加全局标识符
      * @param g 全局标识符
     */
-    void add_global_identifier(std::shared_ptr<GlobalIdentifier> g) { global_identifiers_.push_back(g); }
+    void add_global_identifier(std::shared_ptr<GlobalIdentifier> g) { 
+        global_identifiers_.push_back(g); 
+
+    }
 
     /**
      * @brief 添加函数

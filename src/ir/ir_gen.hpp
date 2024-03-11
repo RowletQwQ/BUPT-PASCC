@@ -84,9 +84,10 @@ public:
 
     void show_result() {
         std::cout << "全局标识符如下:" << std::endl;
+
         for (const auto &global : module_.global_identifiers_) {
             if (global->is_const_) {
-                std::cout << global->type_->print() << " " << global->name_ << " = " << global->init_val_.lock()->print() << std::endl;
+                std::cout << "const " + global->type_->print() << " " << global->name_ << " = " << global->init_val_->print() << std::endl;
             } else {
                 std::string s = global->type_->print();
                 int ps = s.find(" ");
@@ -106,7 +107,7 @@ public:
             std::cout << "局部标识符如下:" << std::endl;
             for (const auto &local : func->local_identifiers_) {
                 if (local->is_const_) {
-                    std::cout << local->type_->print() << " " << local->name_ << " = " << local->init_val_.lock()->print() << std::endl;
+                    std::cout << local->type_->print() << " " << local->name_ << " = " << local->init_val_->print() << std::endl;
                 } else {
                     std::cout << local->type_->print() << " " << local->name_ << std::endl;
                 }
