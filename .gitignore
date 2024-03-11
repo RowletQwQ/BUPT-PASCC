@@ -4,3 +4,4 @@ CMakeFiles/
 tmp/
 bin/
 .vscode/
+test/ir_test/output/

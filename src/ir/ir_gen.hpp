@@ -100,7 +100,7 @@ public:
             }
         }
         // 外层遍历函数
-        std::cout << "-----------------------------------------" << "\n";
+        std::cout << "----------------------------------------------------------------------------------------------------------" << "\n";
         for (int i = 0; i < module_.functions_.size(); i++) {
             std::shared_ptr<Function> func = module_.functions_[i];
             std::cout << "第 " << i + 1  << " 个函数信息如下：" << std::endl;
@@ -114,6 +114,7 @@ public:
                 }
             }
             std::cout << "基本块如下:" << std::endl;
+            std::cout << "\n";
             for (int j = 0; j < func->basic_blocks_.size(); j++) {
                 std::shared_ptr<BasicBlock> bb = func->basic_blocks_[j];
                 std::cout << "第 " << j + 1 << " 个基本块信息如下：" << std::endl;
@@ -121,12 +122,12 @@ public:
                 std::cout << "指令列表如下：" << std::endl;
                 for (int k = 0; k < bb->instructions_.size(); k++) {
                     std::shared_ptr<Instruction> inst = bb->instructions_[k];
-                    std::cout << inst->print() << "          ";
+                    std::cout << inst->print() << "\t";
                 }
-                std::cout << "\n";
+                std::cout << "\n\n";
             }
             
-            std::cout << "-----------------------------------------" << "\n";
+            std::cout << "----------------------------------------------------------------------------------------------------------" << "\n";
         }
     }
     
