@@ -178,18 +178,117 @@ std::unique_ptr<PrimaryExprStmt> bridge_primary_to_unary(std::unique_ptr<UnaryEx
 }
 
 
-void syntax_error(const char *msg){
-    printf("[SYNTAX ERROR] ");
-    printf("%s\n", msg);
+void syntax_error(YYLTYPE *llocp, const char *msg){
+    LOG_ERROR("[Syntax Error] at line %d, column %d: %s", llocp->first_line, llocp->first_column, msg);
     exit(1);
 }
+
+enum class CurrentRule {
+    ProgramStruct,
+    ProgramHead,
+    ProgramBody,
+    IdList,
+    ConstDeclarations,
+    ConstDeclaration,
+    ConstValue,
+    VarDeclarations,
+    VarDeclaration,
+    Type,
+    BasicType,
+    PeriodList,
+    SubprogramDeclarations,
+    Subprogram,
+    SubprogramHead,
+    FormalParameter,
+    ParameterList,
+    Parameter,
+    VarParameter,
+    ValueParameter,
+    SubprogramBody,
+    CompoundStatement,
+    StatementList,
+    Statement,
+    ProcedureCall,
+    VariableList,
+    Variable,
+    IdVarpart,
+    ExpressionList,
+    Expression,
+    SimpleExpression,
+    Term,
+    Factor,
+};
+static CurrentRule current_rule = CurrentRule::ProgramStruct;
 
 // 相关所需的函数，可能包含一些错误处理函数
 int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan_t scanner, const char *msg)
 {
-    syntax_error(msg);
+    LOG_ERROR("[Syntax Error] at line %d, column %d:", llocp->first_line + 1, llocp->first_column);
+    switch (current_rule)
+    {
+        case CurrentRule::ProgramStruct:
+            LOG_ERROR("程序定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::ProgramHead:
+            LOG_ERROR("程序头定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::ProgramBody:
+            LOG_ERROR("程序体定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::IdList:
+            LOG_ERROR("标识符定义错误 请检查是否符合规范");
+            break;
+        case CurrentRule::ConstDeclarations: case CurrentRule::ConstDeclaration:
+            LOG_ERROR("常量定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::ConstValue:
+            LOG_ERROR("常量 请检查是否为合法常量");
+            break;
+        case CurrentRule::VarDeclarations: case CurrentRule::VarDeclaration:
+            LOG_ERROR("变量定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::Type:
+            LOG_ERROR("类型定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::SubprogramDeclarations: case CurrentRule::Subprogram:
+            LOG_ERROR("子函数定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::SubprogramHead:
+            LOG_ERROR("子函数头定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::FormalParameter:
+            LOG_ERROR("参数定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::SubprogramBody:
+            LOG_ERROR("子函数体定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::CompoundStatement:
+            LOG_ERROR("复合语句定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::StatementList: case CurrentRule::Statement:
+            LOG_ERROR("语句定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::ProcedureCall:
+            LOG_ERROR("过程调用出错 请检查是否符合规范");
+            break;
+        case CurrentRule::VariableList: case CurrentRule::Variable:
+            LOG_ERROR("变量定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::IdVarpart:
+            LOG_ERROR("数组下标定义出错 请检查是否符合规范");
+            break;
+        case CurrentRule::ExpressionList: case CurrentRule::Expression: 
+        case CurrentRule::SimpleExpression: case CurrentRule::Term: case CurrentRule::Factor:
+            LOG_ERROR("表达式定义出错 请检查是否符合规范");
+            break;
+        default:
+            LOG_ERROR("请检查相关代码是否符合规范");
+            break;
+    }
     return 0;
 }
+
+
 %}
 
 
@@ -241,7 +340,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     DOUBLE_DOT
 
 %define api.pure full
-%define parse.error verbose
+/* %define parse.error verbose */
 /** 启用位置标识 **/
 %locations
 %lex-param { yyscan_t scanner }
@@ -331,7 +430,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %type <func_body>           subprogram_body
 %type <stmt_list>           compound_statement
 %type <stmt_list>           statement_list
-%type <stmt_list>                statement
+%type <stmt_list>           statement
 %type <func_call_stmt>      procedure_call
 %type <lval_list>           variable_list
 %type <lval>                variable
@@ -341,8 +440,12 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %type <add_expr>            simple_expression
 %type <mul_expr>            term
 %type <unary_expr>          factor
-%type <stmt_list>        else_part
-%type <expr_list>      id_random
+/* %type <stmt_list>           else_part */
+/* %type <expr_list>           id_random */
+
+// THEN 和 ELSE 为右结合
+%nonassoc THEN
+%nonassoc ELSE
 
 %%
 // TODO 此处书写文法规则
@@ -355,14 +458,12 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 */
 programstruct : program_head  ';'  program_body '.'
     {
+        current_rule = CurrentRule::ProgramStruct;
         ProgramStmt * program_struct = new ProgramStmt();
         program_struct->head = std::unique_ptr<ProgramHeadStmt>($1);
         program_struct->body = std::unique_ptr<ProgramBodyStmt>($3);
         LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'");
         *program = program_struct;
-    }
-    | error{
-        syntax_error("程序定义出错 请检查是否符合规范");
     };
 /*
 * no : 1.2
@@ -373,6 +474,7 @@ programstruct : program_head  ';'  program_body '.'
 */
 program_head : PROGRAM IDENTIFIER '(' idlist ')'
     {
+        current_rule = CurrentRule::ProgramHead;
         $$ = new ProgramHeadStmt();
         $$->id_list = *$4;
         delete $4;
@@ -380,12 +482,10 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
     }
     | PROGRAM IDENTIFIER
     {
+        current_rule = CurrentRule::ProgramHead;
         $$ = new ProgramHeadStmt();
         $$->id_list.push_back(std::string($2));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
-    }
-    | error{
-        syntax_error("程序头定义出错 请检查是否符合规范");
     };
 
 /*
@@ -397,6 +497,7 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
 */
 program_body : const_declarations var_declarations subprogram_declarations compound_statement
     {
+        current_rule = CurrentRule::ProgramBody;
         ProgramBodyStmt* program_body = new ProgramBodyStmt();
         if($1 != nullptr) {program_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);}
         if($2 != nullptr){
@@ -419,9 +520,6 @@ program_body : const_declarations var_declarations subprogram_declarations compo
         }
         $$ = program_body;
         LOG_DEBUG("DEBUG program_body -> const_declarations var_declarations subprogram_declarations compound_statement");
-    }
-    | error{
-        syntax_error("程序体定义出错 请检查是否符合规范");
     };
 
     
@@ -435,18 +533,17 @@ program_body : const_declarations var_declarations subprogram_declarations compo
 */
 idlist : IDENTIFIER
     {
+        current_rule = CurrentRule::IdList;
         $$ = new std::vector<std::string>();
         $$->push_back(std::string($1));
         LOG_DEBUG("DEBUG idlist -> IDENTIFIER");
     }
     | idlist ',' IDENTIFIER
     {
+        current_rule = CurrentRule::IdList;
         $1->push_back(std::string($3));
         $$ = $1;
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER");
-    }
-    | error{
-        syntax_error("标识符定义错误 请检查是否符合规范");
     };
 
 /*
@@ -458,11 +555,13 @@ idlist : IDENTIFIER
 */
 const_declarations : /*empty*/
     {
+        current_rule = CurrentRule::ConstDeclarations;
         $$ = nullptr;
         LOG_DEBUG("DEBUG const_declarations -> empty");
     }
     | CONST const_declaration ';' 
     {
+        current_rule = CurrentRule::ConstDeclarations;
         ConstDeclStmt * const_decls = new ConstDeclStmt();
         for(auto kv_pair : *$2){
             const_decls->pairs.push_back(*kv_pair);
@@ -472,10 +571,6 @@ const_declarations : /*empty*/
         delete $2;
         $$ = const_decls;
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
-    }
-    | error
-    {
-        syntax_error("常量定义出错 请检查是否符合规范");
     };
 
 
@@ -487,6 +582,7 @@ const_declarations : /*empty*/
 */
 const_declaration : IDENTIFIER '=' const_value
     {
+        current_rule = CurrentRule::ConstDeclaration;
         std::vector<std::pair<std::string, NumberStmt> *> * const_decls = new std::vector<std::pair<std::string, NumberStmt> *>();
         std::pair<std::string, NumberStmt> * kv_pair = new std::pair<std::string, NumberStmt>($1, *$3);
         const_decls->push_back(kv_pair);
@@ -497,6 +593,7 @@ const_declaration : IDENTIFIER '=' const_value
     }
     | const_declaration ';' IDENTIFIER '=' const_value
     {
+        current_rule = CurrentRule::ConstDeclaration;
         $1->push_back(new std::pair<std::string, NumberStmt>($3, *$5));
         delete $3;
         delete $5;
@@ -571,14 +668,10 @@ var_declarations : /*empty*/
     }
     | VAR var_declaration ';'
     {
+        current_rule = CurrentRule::VarDeclarations;
         $$ = $2;
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
-    }
-    | error
-    {
-        syntax_error("变量定义出错 请检查是否符合规范");
-    }
-    ;
+    };
 
 /*
 * no : 2.2
@@ -589,6 +682,7 @@ var_declarations : /*empty*/
 */
 var_declaration : idlist ':' type
     {
+        current_rule = CurrentRule::VarDeclaration;
         std::vector<VarDeclStmt *> * var_decls = new std::vector<VarDeclStmt *>();
         VarDeclStmt * var_decl = new VarDeclStmt();
         var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
@@ -604,6 +698,7 @@ var_declaration : idlist ':' type
     }
     | var_declaration ';' idlist ':' type
     {
+        current_rule = CurrentRule::VarDeclaration;
         VarDeclStmt * var_decl = new VarDeclStmt();
         var_decl->id.insert(var_decl->id.end(), $3->begin(), $3->end());
         // deal with type
@@ -615,12 +710,7 @@ var_declaration : idlist ':' type
         $1->push_back(var_decl);
         $$ = $1;
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type");
-    }
-    | error
-    {
-        syntax_error("变量定义出错 请检查是否符合规范");
-    }
-    ;
+    };
 /*
 * no : 2.3
 * rule  : type -> basic_type | ARRAY '[' period_list ']' OF basic_type 
@@ -630,6 +720,7 @@ var_declaration : idlist ':' type
 */
 type : basic_type
     {
+        current_rule = CurrentRule::Type;
         VarDeclStmt * type_stmt = new VarDeclStmt();
         // TODO 处理type_size
         type_stmt->data_type = DataType::BasicType;
@@ -639,6 +730,7 @@ type : basic_type
     }
     | ARRAY '[' period_list ']' OF basic_type
     {
+        current_rule = CurrentRule::Type;
         VarDeclStmt * type_stmt = new VarDeclStmt();
         type_stmt->data_type = DataType::ArrayType;
         type_stmt->basic_type = $6;
@@ -648,12 +740,7 @@ type : basic_type
         delete $3;
         $$ = type_stmt;
         LOG_DEBUG("DEBUG type -> ARRAY '[' period_list ']' OF basic_type");
-    }
-    | error
-    {
-        syntax_error("类型定义出错 请检查是否符合规范");
-    }
-    ;
+    };
 
 
 /*
@@ -724,6 +811,7 @@ subprogram_declarations : /*empty*/
         }
         | subprogram_declarations subprogram ';'
         {
+            current_rule = CurrentRule::SubprogramDeclarations;
             if($1 == nullptr){
                 std::vector<FuncDeclStmt *> * func_decl_list = new std::vector<FuncDeclStmt *>();
                 func_decl_list->push_back($2);    
@@ -745,6 +833,7 @@ subprogram_declarations : /*empty*/
 */
 subprogram : subprogram_head ';' subprogram_body
         {
+            current_rule = CurrentRule::Subprogram;
             FuncDeclStmt * subprogram = new FuncDeclStmt();
             subprogram->header = std::unique_ptr<FuncHeadDeclStmt>($1);
             subprogram->body = std::unique_ptr<FuncBodyDeclStmt>($3);
@@ -762,6 +851,7 @@ subprogram : subprogram_head ';' subprogram_body
 */
 subprogram_head: PROCEDURE IDENTIFIER formal_parameter
         {
+            current_rule = CurrentRule::SubprogramHead;
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
             sub_head->func_name = std::string($2);
             sub_head->ret_type = BasicType::VOID;
@@ -776,6 +866,7 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
         }
         | FUNCTION IDENTIFIER formal_parameter ':' basic_type
         {
+            current_rule = CurrentRule::SubprogramHead;
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
             sub_head->func_name = std::string($2);
             sub_head->ret_type = $5;
@@ -796,13 +887,14 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
 * son  :  VarDeclStmt *
 * error : 参数定义出错 请检查是否符合规范
 */
- formal_parameter: /*empty*/
+formal_parameter : /* empty */
         {
             $$ = nullptr;
             LOG_DEBUG("DEBUG formal_parameter -> empty");
         }
         | '(' parameter_list ')'
         {
+            current_rule = CurrentRule::FormalParameter;
             $$ = $2;
             LOG_DEBUG("DEBUG formal_parameter -> '(' parameter_list ')'");
         };
@@ -816,7 +908,7 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
 * son  :  VarDeclStmt*
 * error :
 */
-parameter_list : 
+parameter_list :/* empty */
     {
         $$ = nullptr;
         LOG_DEBUG("DEBUG parameter_list -> empty");
@@ -893,6 +985,7 @@ value_parameter: idlist ':' basic_type
 */
 subprogram_body : const_declarations var_declarations compound_statement
     {
+        current_rule = CurrentRule::SubprogramBody;
         FuncBodyDeclStmt * func_body = new FuncBodyDeclStmt();
         if($1 != nullptr) func_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);
         if($2 != nullptr){
@@ -910,10 +1003,7 @@ subprogram_body : const_declarations var_declarations compound_statement
         $$ = func_body;
         LOG_DEBUG("DEBUG subprogram_body -> const_declarations var_declarations compound_statement");
     }
-    | error
-    {
-        syntax_error("子函数体定义出错 请检查是否符合规范");
-    };
+    ;
 /*
 * no : 3.5
 * rule  :  compound_statement -> BEGIN_TOKEN statement_list END
@@ -923,12 +1013,9 @@ subprogram_body : const_declarations var_declarations compound_statement
 */
 compound_statement : BEGIN_TOKEN statement_list END
     {
+        current_rule = CurrentRule::CompoundStatement;
         $$ = $2;
         LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
-    }
-    | error
-    {
-        syntax_error("复合语句定义出错 请检查是否符合规范");
     };
 /*
 * no : 3.6
@@ -945,6 +1032,7 @@ statement_list : statement
     | statement_list ';' statement
     {
         // copy the vector
+        current_rule = CurrentRule::StatementList;
         if($3 != nullptr){
             for(auto stmt : *$3){
                 $1->push_back(stmt);
@@ -952,10 +1040,6 @@ statement_list : statement
         }
         $$ = $1;
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
-    }
-    | error
-    {
-        syntax_error("语句定义出错 请检查是否符合规范");
     }
     ;
 
@@ -984,7 +1068,7 @@ statement : /*empty*/
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> variable ASSIGNOP expression");
     }
-    | IDENTIFIER ASSIGNOP expression
+    /* | IDENTIFIER ASSIGNOP expression
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         AssignStmt * assign_stmt = new AssignStmt();
@@ -996,7 +1080,7 @@ statement : /*empty*/
         stmt_list->push_back(assign_stmt);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> IDENTIFIER ASSIGNOP expression");
-    }
+    } */
     | procedure_call
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
@@ -1024,7 +1108,7 @@ statement : /*empty*/
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> WHILE expression DO statement");
     }
-    | IF expression THEN statement else_part
+    | IF expression THEN statement %prec THEN
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         IfStmt * if_stmt = new IfStmt();
@@ -1034,16 +1118,31 @@ statement : /*empty*/
                 if_stmt->true_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
             }
         }
-        if($5 != nullptr){
-            for(auto stmt : *$5){
-                if_stmt->false_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
-            }
-        }
         delete $4;
-        delete $5;
         stmt_list->push_back(if_stmt);
         $$ = stmt_list;
-        LOG_DEBUG("DEBUG statement -> IF expression THEN statement else_part");
+        LOG_DEBUG("DEBUG statement -> IF expression THEN statement");
+    }
+    | IF expression THEN statement ELSE statement
+    {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        IfStmt * if_stmt = new IfStmt();
+        if_stmt->expr = std::unique_ptr<ExprStmt>($2);
+        if($4 != nullptr){
+            for(auto stmt : *$4){
+                if_stmt->true_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
+            delete $4;
+        }
+        if($6 != nullptr){
+            for(auto stmt : *$6){
+                if_stmt->false_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+            }
+            delete $6;
+        }
+        stmt_list->push_back(if_stmt);
+        $$ = stmt_list;
+        LOG_DEBUG("DEBUG statement -> IF expression THEN statement ELSE statement");
     }
     | FOR IDENTIFIER ASSIGNOP expression TO expression DO statement
     {
@@ -1098,6 +1197,7 @@ statement : /*empty*/
 */
 variable_list : variable
     {
+        current_rule = CurrentRule::VariableList;
         std::vector<LValStmt *> * lval_list = new std::vector<LValStmt *>();
         lval_list->push_back($1);
         $$ = lval_list;
@@ -1105,15 +1205,11 @@ variable_list : variable
     }
     | variable_list ',' variable
     {
+        current_rule = CurrentRule::VariableList;
         $1->push_back($3);
         $$ = $1;
         LOG_DEBUG("DEBUG variable_list -> variable_list ',' variable");
-    }
-    | error
-    {
-        syntax_error("变量定义出错 请检查是否符合规范");
-    }
-    ;
+    };
 /*
 * no : 4.3
 * rule  :  variable -> IDENTIFIER id_varpart
@@ -1123,6 +1219,7 @@ variable_list : variable
 */
 variable : IDENTIFIER id_varpart
     {
+        current_rule = CurrentRule::Variable;
         $$ = new LValStmt();
         $$->id = std::string($1);
         if($2 != nullptr){
@@ -1133,7 +1230,7 @@ variable : IDENTIFIER id_varpart
         }
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart");
     }
-    |IDENTIFIER id_random
+    /* | IDENTIFIER id_random
     {
         $$ = new LValStmt();
         $$->id = std::string($1);
@@ -1144,11 +1241,7 @@ variable : IDENTIFIER id_varpart
             delete $2;
         }
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_random");
-    }
-    | error
-    {
-        syntax_error("变量定义出错 请检查是否符合规范");
-    }
+    } */
     ;
 
 /*
@@ -1165,16 +1258,13 @@ id_varpart : /*empty*/
     }
     | '[' expression_list ']'
     {
+        current_rule = CurrentRule::IdVarpart;
         if($2 != nullptr){
             $$ = $2;    
         }else{
-            syntax_error("数组下标定义出错 请检查是否符合规范");
+            yyerror(&@2, "code_str", program, scanner, "数组下标定义出错 请检查是否符合规范");
         }
         LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'");
-    }
-    | error
-    {
-        syntax_error("数组下标定义出错 请检查是否符合规范");
     }
     ;
 
@@ -1185,13 +1275,13 @@ id_varpart : /*empty*/
 * son :  ExprStmt *
 * error : 随机存取数组定义出错 请检查是否符合规范
 */
-id_random : id_random '[' expression ']'
+/* id_random : id_random '[' expression ']'
     {
         if($1 != nullptr){
             $1->push_back($3);
             $$ = $1;
         }else{
-            syntax_error("随机存取数组定义出错 请检查是否符合规范");
+            syntax_error(&@1, "随机存取数组定义出错 请检查是否符合规范");
         }
         LOG_DEBUG("DEBUG id_random -> id_random '[' expression ']'");
     }
@@ -1204,9 +1294,9 @@ id_random : id_random '[' expression ']'
     }
     | error
     {
-        syntax_error("随机存取数组定义出错 请检查是否符合规范");
+        syntax_error(&@1, "随机存取数组定义出错 请检查是否符合规范");
     }
-    ;
+    ; */
 
 
 
@@ -1220,6 +1310,7 @@ id_random : id_random '[' expression ']'
 */
 procedure_call : IDENTIFIER
     {
+        current_rule = CurrentRule::ProcedureCall;
         FuncCallStmt * proc_call = new FuncCallStmt();
         proc_call->id = std::string($1);
         $$ = proc_call;
@@ -1227,6 +1318,7 @@ procedure_call : IDENTIFIER
     }
     | IDENTIFIER '(' expression_list ')'
     {
+        current_rule = CurrentRule::ProcedureCall;
         FuncCallStmt * proc_call = new FuncCallStmt();
         proc_call->id = std::string($1);
         if($3 != nullptr){
@@ -1238,10 +1330,6 @@ procedure_call : IDENTIFIER
         $$ = proc_call;
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'");
     }
-    | error
-    {
-        syntax_error("过程调用定义出错 请检查是否符合规范");
-    }
     ;
 
 
@@ -1252,7 +1340,7 @@ procedure_call : IDENTIFIER
 * son :  Stmt * 
 * error : else 语法定义出错 请检查是否符合规范
 */
-else_part : /*empty*/
+/* else_part : //empty
     {
         $$ = nullptr;
         LOG_DEBUG("DEBUG else_part -> empty");
@@ -1265,9 +1353,9 @@ else_part : /*empty*/
     }
     | error
     {
-        syntax_error("else 语法定义出错 请检查是否符合规范");
+        syntax_error(&@1, "else 语法定义出错 请检查是否符合规范");
     }
-    ;
+    ; */
 
 /*
 * no : 5.3
@@ -1282,6 +1370,7 @@ expression_list : {
     }
     | expression
     {
+        current_rule = CurrentRule::ExpressionList;
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
         expr_list->push_back($1);
         $$ = expr_list;
@@ -1289,13 +1378,10 @@ expression_list : {
     }
     | expression_list ',' expression
     {
+        current_rule = CurrentRule::ExpressionList;
         $1->push_back($3);
         $$ = $1;
         LOG_DEBUG("DEBUG expression_list -> expression_list ',' expression");
-    }
-    | error
-    {
-        syntax_error("表达式定义出错 请检查是否符合规范");
     }
     ;
 /*
@@ -1307,6 +1393,7 @@ expression_list : {
 */
 expression : simple_expression
     {
+        current_rule = CurrentRule::Expression;
         ExprStmt * expr = new ExprStmt();
         expr->rel_expr = std::make_unique<RelExprStmt>();
         expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
@@ -1316,6 +1403,7 @@ expression : simple_expression
     }
     | simple_expression relop simple_expression
     {
+        current_rule = CurrentRule::Expression;
         ExprStmt * expr = new ExprStmt();
         expr->rel_expr = std::make_unique<RelExprStmt>();
         expr->rel_expr->type = get_rel_expr_type($2);
@@ -1325,10 +1413,6 @@ expression : simple_expression
         expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($3);
         $$ = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression");
-    }
-    | error
-    {
-        syntax_error("表达式定义出错 请检查是否符合规范");
     }
     ;
 
@@ -1342,6 +1426,7 @@ expression : simple_expression
 */
 simple_expression : term
     {
+        current_rule = CurrentRule::SimpleExpression;
         AddExprStmt * add_expr = new AddExprStmt();
         add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
         add_expr->mul_expr = std::unique_ptr<MulExprStmt>($1);
@@ -1350,16 +1435,13 @@ simple_expression : term
     }
     | simple_expression addop term
     {
+        current_rule = CurrentRule::SimpleExpression;
         AddExprStmt * add_expr = new AddExprStmt();
         add_expr->type = get_add_expr_type($2);
         add_expr->mul_expr = std::unique_ptr<MulExprStmt>($3);
         add_expr->add_expr = std::unique_ptr<AddExprStmt>($1);
         $$ = add_expr;
         LOG_DEBUG("DEBUG simple_expression -> simple_expression %lld term\n", $2);
-    }
-    | error
-    {
-        syntax_error("表达式定义出错 请检查是否符合规范");
     }
     ;
 
@@ -1372,6 +1454,7 @@ simple_expression : term
 */
 term : factor
     {
+        current_rule = CurrentRule::Term;
         MulExprStmt * mul_expr = new MulExprStmt();
         mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
         mul_expr->unary_expr = std::unique_ptr<UnaryExprStmt>($1);
@@ -1380,16 +1463,13 @@ term : factor
     }
     | term mulop factor
     {
+        current_rule = CurrentRule::Term;
         MulExprStmt * mul_expr = new MulExprStmt();
         mul_expr->type = get_mul_expr_type($2);
         mul_expr->mul_expr = std::unique_ptr<MulExprStmt>($1);
         mul_expr->unary_expr = std::unique_ptr<UnaryExprStmt>($3);
         $$ = mul_expr;
         LOG_DEBUG("DEBUG term -> term mulop factor");
-    }
-    | error
-    {
-        syntax_error("表达式定义出错 请检查是否符合规范");
     }
     ;
 
@@ -1402,6 +1482,7 @@ term : factor
 */
 factor : INTEGER
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
@@ -1413,7 +1494,7 @@ factor : INTEGER
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> INTEGER");
     }
-    | '+' INTEGER
+    /* | '+' INTEGER
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -1438,9 +1519,10 @@ factor : INTEGER
         fill_number_stmt(unary_expr->primary_expr->value->number,($2)*-1);
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' INTEGER");
-    }
+    } */
     | REAL
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
@@ -1452,7 +1534,7 @@ factor : INTEGER
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> REAL");
     }
-    | '+' REAL
+    /* | '+' REAL
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
@@ -1477,9 +1559,10 @@ factor : INTEGER
         fill_number_stmt(unary_expr->primary_expr->value->number,($2)*-1);
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' REAL");
-    }
+    } */
     | BOOLEAN
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
@@ -1494,6 +1577,7 @@ factor : INTEGER
     }
     | CHAR
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
@@ -1507,6 +1591,7 @@ factor : INTEGER
     }
     | variable
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
@@ -1519,6 +1604,7 @@ factor : INTEGER
     }
     | '(' expression ')'
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
@@ -1529,6 +1615,7 @@ factor : INTEGER
     }
     | IDENTIFIER '(' expression_list ')'
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
@@ -1548,6 +1635,7 @@ factor : INTEGER
     }
     | NOT factor
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Not;
         unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>($2));
@@ -1556,6 +1644,7 @@ factor : INTEGER
     }
     | '+' factor
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type = $2->type;
         unary_expr->primary_expr = std::move($2->primary_expr);
@@ -1565,16 +1654,13 @@ factor : INTEGER
     }
     | '-' factor
     {
+        current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
         unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>($2));
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' factor");
-    }
-    | error
-    {
-        syntax_error("表达式定义出错 请检查是否符合规范");
-    }
+    };
 /*
 * addop ->  + | - | or
 */
