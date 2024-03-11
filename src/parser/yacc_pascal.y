@@ -163,6 +163,21 @@ void fill_number_stmt(NumberStmt* num_value, char char_val){
     num_value->char_val = char_val;
 }
 
+std::unique_ptr<PrimaryExprStmt> bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt> unary_expr){
+    std::unique_ptr<PrimaryExprStmt> primary_expr = std::make_unique<PrimaryExprStmt>();
+    primary_expr->type = PrimaryExprStmt::PrimaryExprType::Parentheses;
+    primary_expr->expr = std::make_unique<ExprStmt>();
+    primary_expr->expr->rel_expr = std::make_unique<RelExprStmt>();
+    primary_expr->expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
+    primary_expr->expr->rel_expr->add_expr = std::make_unique<AddExprStmt>();
+    primary_expr->expr->rel_expr->add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
+    primary_expr->expr->rel_expr->add_expr->mul_expr = std::make_unique<MulExprStmt>();
+    primary_expr->expr->rel_expr->add_expr->mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
+    primary_expr->expr->rel_expr->add_expr->mul_expr->unary_expr = std::move(unary_expr);
+    return primary_expr;
+}
+
+
 void syntax_error(const char *msg){
     printf("[SYNTAX ERROR] ");
     printf("%s\n", msg);
@@ -1535,15 +1550,14 @@ factor : INTEGER
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Not;
-        unary_expr->primary_expr = std::move($2->primary_expr);
-        delete $2;
+        unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>($2));
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> NOT factor");
     }
     | '+' factor
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        unary_expr->type = $2->type;
         unary_expr->primary_expr = std::move($2->primary_expr);
         delete $2;
         $$ = unary_expr;
@@ -1553,8 +1567,7 @@ factor : INTEGER
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
         unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
-        unary_expr->primary_expr = std::move($2->primary_expr);
-        delete $2;
+        unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>($2));
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' factor");
     }
