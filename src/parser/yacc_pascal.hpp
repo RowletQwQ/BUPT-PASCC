@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_YY_MNT_E_BUPT_PASCC_TEST_BISON_TEST_BUILD_YACC_PASCAL_HPP_INCLUDED
-# define YY_YY_MNT_E_BUPT_PASCC_TEST_BISON_TEST_BUILD_YACC_PASCAL_HPP_INCLUDED
+#ifndef YY_YY_YACC_PASCAL_HPP_INCLUDED
+# define YY_YY_YACC_PASCAL_HPP_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -111,7 +111,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 254 "../../src/parser/yacc_pascal.y"
+#line 353 "yacc_pascal.y"
 
     ProgramStmt *                                   program_struct;
     ProgramHeadStmt *                               program_head;
@@ -156,7 +156,7 @@ union YYSTYPE
     double                                          real;
     char                                           charactor;
 
-#line 160 "/mnt/e/BUPT-PASCC/test/bison_test/build/yacc_pascal.hpp"
+#line 160 "yacc_pascal.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -184,4 +184,4 @@ struct YYLTYPE
 int yyparse (const char * code_str, ProgramStmt ** program, void * scanner);
 
 
-#endif /* !YY_YY_MNT_E_BUPT_PASCC_TEST_BISON_TEST_BUILD_YACC_PASCAL_HPP_INCLUDED  */
+#endif /* !YY_YY_YACC_PASCAL_HPP_INCLUDED  */
