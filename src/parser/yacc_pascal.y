@@ -219,11 +219,45 @@ enum class CurrentRule {
     Factor,
 };
 static CurrentRule current_rule = CurrentRule::ProgramStruct;
+void print_error_location(const char* code_str, YYLTYPE *llocp) {
+    const char* p = code_str;
+    int current_line = 0;
+    const char* line_start = p;
+    const char* line_end;
 
+    // 找到错误行的开始和结束位置
+    while (*p) {
+        if (*p == '\n') {
+            if (current_line >= llocp->first_line) {
+                line_end = p;
+                // 输出错误行的代码，并在错误列的位置标出错误的代码
+                if (current_line == llocp->first_line && llocp->first_column > 1) {
+                    std::cout.write(line_start, llocp->first_column - 1);
+                }
+                std::cout << "\033[31m";
+                if (current_line == llocp->last_line) {
+                    std::cout.write(line_start + llocp->first_column - 1, llocp->last_column - llocp->first_column + 1);
+                    std::cout << "\033[0m";
+                    std::cout.write(line_start + llocp->last_column, line_end - line_start - llocp->last_column);
+                } else {
+                    std::cout.write(line_start + llocp->first_column - 1, line_end - line_start - llocp->first_column + 1);
+                }
+                std::cout << std::endl;
+                if (current_line == llocp->last_line) {
+                    break;
+                }
+            }
+            ++current_line;
+            line_start = p + 1;
+        }
+        ++p;
+    }
+}
 // 相关所需的函数，可能包含一些错误处理函数
 int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan_t scanner, const char *msg)
 {
     LOG_ERROR("[Syntax Error] at line %d, column %d:", llocp->first_line + 1, llocp->first_column);
+    print_error_location(code_str, llocp);
     switch (current_rule)
     {
         case CurrentRule::ProgramStruct:
