@@ -59,7 +59,8 @@ void Instruction::init() {
 
 // 全局标识符类相关函数实现
 GlobalIdentifier::GlobalIdentifier(std::shared_ptr<Type> type, const std::string name, bool is_const, std::shared_ptr<Literal> init_val)
-    : Value(type, name), is_const_(is_const), init_val_(init_val) {}
+    : Value(type, name), is_const_(is_const), init_val_(init_val) {
+    }
 
 // 局部标识符类相关函数实现
 LocalIdentifier::LocalIdentifier(std::shared_ptr<Type> type, const std::string name,bool is_const, std::shared_ptr<Literal> init_val)
