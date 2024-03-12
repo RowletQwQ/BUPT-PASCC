@@ -97,12 +97,15 @@ extern int yydebug;
     ORELSE = 298,                  /* ORELSE  */
     ANDTHEN = 299,                 /* ANDTHEN  */
     DOUBLE_DOT = 300,              /* DOUBLE_DOT  */
-    IDENTIFIER = 301,              /* IDENTIFIER  */
-    INTEGER = 302,                 /* INTEGER  */
-    BOOLEAN = 303,                 /* BOOLEAN  */
-    REAL = 304,                    /* REAL  */
-    CHAR = 305,                    /* CHAR  */
-    STRING = 306                   /* STRING  */
+    BRACE_PAIR = 301,              /* BRACE_PAIR  */
+    IDENTIFIER = 302,              /* IDENTIFIER  */
+    INTEGER = 303,                 /* INTEGER  */
+    BOOLEAN = 304,                 /* BOOLEAN  */
+    REAL = 305,                    /* REAL  */
+    CHAR = 306,                    /* CHAR  */
+    STRING = 307,                  /* STRING  */
+    TOKEN_EXPRESSION_LIST = 308,   /* TOKEN_EXPRESSION_LIST  */
+    TOKEN_BRACKET_EXPRESSION_LIST = 309 /* TOKEN_BRACKET_EXPRESSION_LIST  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -111,7 +114,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 353 "yacc_pascal.y"
+#line 394 "yacc_pascal.y"
 
     ProgramStmt *                                   program_struct;
     ProgramHeadStmt *                               program_head;
@@ -155,8 +158,9 @@ union YYSTYPE
     bool                                            boolean;
     double                                          real;
     char                                           charactor;
+    int                                            token;
 
-#line 160 "yacc_pascal.hpp"
+#line 164 "yacc_pascal.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

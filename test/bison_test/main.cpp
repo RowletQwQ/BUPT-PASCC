@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -11,10 +12,10 @@ extern int code_parse(const char * code_str, ProgramStmt ** program);
 
 void single_point_test(const std::string folderPath , std::vector<std::string> files){
     // 输入数字 0 - 69 分别对应 70 个文件
-  int fileIndex;
+  size_t fileIndex;
   std::cout << "Please input the index of the file you want to analyze: ";
   std::cin >> fileIndex;
-  if (fileIndex < 0 || fileIndex >= files.size()) {
+  if (fileIndex >= files.size()) {
       std::cerr << "ERROR : Invalid index." << std::endl;
   }
   std::string fileName = files[fileIndex];
@@ -30,12 +31,13 @@ void single_point_test(const std::string folderPath , std::vector<std::string> f
       std::cerr << "ERROR : Parsing failed." << std::endl;
   }else{
       std::cout << "Parsing succeeded." << std::endl;
+      //std::cout<<program_stmt_str(program, 0)<<std::endl;
+      delete program;
   }
-  std::cout<<program_stmt_str(program, 0)<<std::endl;
 }
 
 void batch_test(int beginIndex,const std::string folderPath , std::vector<std::string> files){
-    for(int i = beginIndex; i < files.size(); i++) {
+    for(size_t i = beginIndex; i < files.size(); i++) {
         std::string fileName = files[i];
         std::ifstream ifs(folderPath + "/" + fileName);
         std::stringstream ss;
@@ -45,10 +47,12 @@ void batch_test(int beginIndex,const std::string folderPath , std::vector<std::s
         code_parse(content.c_str(), &program);
         if(program == nullptr) {
             std::cout << fileName << " : Parsing failed." << std::endl;
+            break;
         }else{
             std::cout << fileName << " : Parsing succeeded." << std::endl;
         }
-        std::cout<<program_stmt_str(program, 0)<<std::endl;
+        delete program;
+        //std::cout<<program_stmt_str(program, 0)<<std::endl;
     }
 }
 
@@ -73,7 +77,7 @@ int main() {
   }
   
   
-  for(int i = 0; i < files.size(); i++) {
+  for(size_t i = 0; i < files.size(); i++) {
       // 识别出第fileIndex个 以 .pas 结尾的文件
       if (files[i].find(".pas") == std::string::npos) {
           files.erase(files.begin() + i);
@@ -86,8 +90,8 @@ int main() {
 //     common::g_log = new common::Log(common::FATAL);
 //     batch_test(57,folderPath,files);
     // single_point_test(folderPath,files);
-    // batch_test(0,folderPath,files);
-    single_point_test(folderPath,files);
+    batch_test(0,folderPath,files);
+    //single_point_test(folderPath,files);
   
   return 0;
 }
