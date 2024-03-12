@@ -2,7 +2,7 @@
 #define yyHEADER_H 1
 #define yyIN_HEADER 1
 
-#line 6 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.hpp"
+#line 6 "lex_pascal.hpp"
 /*
 这里的代码会被复制到lex_pascal.cpp的最开始位置
 定义yy_size_t的原因是因为flex生成的代码，会使用yy_size_t与其他类型的数字
@@ -27,7 +27,7 @@ do {                                                         \
 }                                                            \
 while (0);
 
-#line 31 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.hpp"
+#line 31 "lex_pascal.hpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -541,9 +541,9 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 155 "../../src/parser/lex_pascal.l"
+#line 156 "lex_pascal.l"
 
 
-#line 548 "/mnt/e/BUPT-PASCC/test/bison_test/build/lex_pascal.hpp"
+#line 548 "lex_pascal.hpp"
 #undef yyIN_HEADER
 #endif /* yyHEADER_H */

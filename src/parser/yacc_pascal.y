@@ -213,6 +213,8 @@ enum class CurrentRule {
     Variable,
     IdVarpart,
     ExpressionList,
+    ArrayIndexExpression,
+    BracketExpressionList,
     Expression,
     SimpleExpression,
     Term,
@@ -256,6 +258,9 @@ void print_error_location(const char* code_str, YYLTYPE *llocp) {
 // 相关所需的函数，可能包含一些错误处理函数
 int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan_t scanner, const char *msg)
 {
+    (void)program;
+    (void)scanner;
+    (void)msg;
     LOG_ERROR("[Syntax Error] at line %d, column %d:", llocp->first_line + 1, llocp->first_column);
     print_error_location(code_str, llocp);
     switch (current_rule)
@@ -308,7 +313,8 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
         case CurrentRule::VariableList: case CurrentRule::Variable:
             LOG_ERROR("变量定义出错 请检查是否符合规范");
             break;
-        case CurrentRule::IdVarpart:
+        case CurrentRule::IdVarpart: case CurrentRule::ArrayIndexExpression:
+        case CurrentRule::BracketExpressionList:
             LOG_ERROR("数组下标定义出错 请检查是否符合规范");
             break;
         case CurrentRule::ExpressionList: case CurrentRule::Expression: 
@@ -372,6 +378,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     ORELSE
     ANDTHEN
     DOUBLE_DOT
+    BRACE_PAIR
 
 %define api.pure full
 /* %define parse.error verbose */
@@ -427,6 +434,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     bool                                            boolean;
     double                                          real;
     char                                           charactor;
+    int                                            token;
 }
 
 
@@ -436,6 +444,11 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %token <real> REAL
 %token <charactor> CHAR
 %token <string> STRING
+%token <token> TOKEN_EXPRESSION_LIST
+%token <token> TOKEN_BRACKET_EXPRESSION_LIST
+
+%precedence TOKEN_EXPRESSION_LIST
+%precedence TOKEN_BRACKET_EXPRESSION_LIST
 
 // 下面定义非终结符
 %type <number> relop
@@ -470,6 +483,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %type <lval>                variable
 %type <expr_list>           id_varpart
 %type <expr_list>           expression_list
+%type <expr_list>           array_index_expression
 %type <expr>                expression   
 %type <add_expr>            simple_expression
 %type <mul_expr>            term
@@ -512,14 +526,16 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
         $$ = new ProgramHeadStmt();
         $$->id_list = *$4;
         delete $4;
+        free($2);
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER '(' idlist ')'");
     }
     | PROGRAM IDENTIFIER
     {
         current_rule = CurrentRule::ProgramHead;
         $$ = new ProgramHeadStmt();
-        $$->id_list.push_back(std::string($2));
+        $$->id_list.emplace_back(std::string($2));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
+        free($2);
     };
 
 /*
@@ -536,19 +552,19 @@ program_body : const_declarations var_declarations subprogram_declarations compo
         if($1 != nullptr) {program_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);}
         if($2 != nullptr){
             for(auto var_decl : *$2){
-                program_body->var_decl.push_back(std::unique_ptr<VarDeclStmt>(var_decl));
+                program_body->var_decl.emplace_back(std::unique_ptr<VarDeclStmt>(var_decl));
             }
             delete $2;
         }
         if($3 != nullptr){
             for(auto func_decl : *$3){
-                program_body->func_decl.push_back(std::unique_ptr<FuncDeclStmt>(func_decl));
+                program_body->func_decl.emplace_back(std::unique_ptr<FuncDeclStmt>(func_decl));
             }
             delete $3;
         }
         if($4 != nullptr){
             for(auto stmt : *$4){
-                program_body->comp_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+                program_body->comp_stmt.emplace_back(std::unique_ptr<BaseStmt>(stmt));
             }
             delete $4;
         }
@@ -569,15 +585,17 @@ idlist : IDENTIFIER
     {
         current_rule = CurrentRule::IdList;
         $$ = new std::vector<std::string>();
-        $$->push_back(std::string($1));
+        $$->emplace_back(std::string($1));
         LOG_DEBUG("DEBUG idlist -> IDENTIFIER");
+        free($1);
     }
     | idlist ',' IDENTIFIER
     {
         current_rule = CurrentRule::IdList;
-        $1->push_back(std::string($3));
+        $1->emplace_back(std::string($3));
         $$ = $1;
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER");
+        free($3);
     };
 
 /*
@@ -598,7 +616,7 @@ const_declarations : /*empty*/
         current_rule = CurrentRule::ConstDeclarations;
         ConstDeclStmt * const_decls = new ConstDeclStmt();
         for(auto kv_pair : *$2){
-            const_decls->pairs.push_back(*kv_pair);
+            const_decls->pairs.emplace_back(*kv_pair);
             delete kv_pair;
         }
         // 疑似内存泄漏
@@ -619,8 +637,8 @@ const_declaration : IDENTIFIER '=' const_value
         current_rule = CurrentRule::ConstDeclaration;
         std::vector<std::pair<std::string, NumberStmt> *> * const_decls = new std::vector<std::pair<std::string, NumberStmt> *>();
         std::pair<std::string, NumberStmt> * kv_pair = new std::pair<std::string, NumberStmt>($1, *$3);
-        const_decls->push_back(kv_pair);
-        delete $1;
+        const_decls->emplace_back(kv_pair);
+        free($1);
         delete $3;
         // 疑似内存泄漏
         $$ = const_decls;
@@ -628,8 +646,8 @@ const_declaration : IDENTIFIER '=' const_value
     | const_declaration ';' IDENTIFIER '=' const_value
     {
         current_rule = CurrentRule::ConstDeclaration;
-        $1->push_back(new std::pair<std::string, NumberStmt>($3, *$5));
-        delete $3;
+        $1->emplace_back(new std::pair<std::string, NumberStmt>($3, *$5));
+        free($3);
         delete $5;
         $$ = $1; // 不需要删除
     }
@@ -726,7 +744,7 @@ var_declaration : idlist ':' type
         var_decl->array_range = std::move($3->array_range);
         delete $1;
         delete $3;
-        var_decls->push_back(var_decl);
+        var_decls->emplace_back(var_decl);
         $$ = var_decls;
         LOG_DEBUG("DEBUG var_declaration -> idlist ':' type");
     }
@@ -741,7 +759,7 @@ var_declaration : idlist ':' type
         var_decl->array_range = std::move($5->array_range);
         delete $3;
         delete $5;
-        $1->push_back(var_decl);
+        $1->emplace_back(var_decl);
         $$ = $1;
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type");
     };
@@ -769,7 +787,7 @@ type : basic_type
         type_stmt->data_type = DataType::ArrayType;
         type_stmt->basic_type = $6;
         for(auto period : *$3){
-            type_stmt->array_range.push_back(std::unique_ptr<PeriodStmt>(period));
+            type_stmt->array_range.emplace_back(std::unique_ptr<PeriodStmt>(period));
         }
         delete $3;
         $$ = type_stmt;
@@ -817,7 +835,7 @@ period_list: INTEGER DOUBLE_DOT INTEGER
             PeriodStmt * period = new PeriodStmt();
             period->begin = $1;
             period->end = $3;
-            $$->push_back(period);
+            $$->emplace_back(period);
             // debug
             LOG_DEBUG("DEBUG period_list -> INTEGER '..' INTEGER");
         }
@@ -826,7 +844,7 @@ period_list: INTEGER DOUBLE_DOT INTEGER
             PeriodStmt * period = new PeriodStmt();
             period->begin = $3;
             period->end = $5;
-            $1->push_back(period);
+            $1->emplace_back(period);
             $$ = $1;
             // debug
             LOG_DEBUG("DEBUG period_list -> period_list ',' INTEGER '..' INTEGER");
@@ -848,10 +866,10 @@ subprogram_declarations : /*empty*/
             current_rule = CurrentRule::SubprogramDeclarations;
             if($1 == nullptr){
                 std::vector<FuncDeclStmt *> * func_decl_list = new std::vector<FuncDeclStmt *>();
-                func_decl_list->push_back($2);    
+                func_decl_list->emplace_back($2);    
                 $$ = func_decl_list;
             }else{
-                $1->push_back($2);
+                $1->emplace_back($2);
                 $$ = $1;
             }
             LOG_DEBUG("DEBUG subprogram_declarations -> subprogram_declarations subprogram ';'");
@@ -891,11 +909,12 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
             sub_head->ret_type = BasicType::VOID;
             if($3 != nullptr){
                 for(auto formal_parameter : *$3){
-                    sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+                    sub_head->args.emplace_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
                 }
                 delete $3;
             }
             $$ = sub_head;
+            free($2);
             LOG_DEBUG("DEBUG subprogram_head -> PROGRAM IDENTIFIER formal_parameter");
         }
         | FUNCTION IDENTIFIER formal_parameter ':' basic_type
@@ -906,11 +925,12 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
             sub_head->ret_type = $5;
             if($3 != nullptr){
                 for(auto formal_parameter : *$3){
-                    sub_head->args.push_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
+                    sub_head->args.emplace_back(std::unique_ptr<VarDeclStmt>(formal_parameter));
                 }
                 delete $3;
             }
             $$ = sub_head;
+            free($2);
             LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type");
         }
 
@@ -950,12 +970,12 @@ parameter_list :/* empty */
     |parameter
         {
             $$ = new std::vector<VarDeclStmt *>();
-            $$->push_back($1);
+            $$->emplace_back($1);
             LOG_DEBUG("DEBUG parameter_list -> parameter");
         }
         | parameter_list ';' parameter
         {
-            $1->push_back($3);
+            $1->emplace_back($3);
             $$ = $1;
             LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
         };
@@ -1024,13 +1044,13 @@ subprogram_body : const_declarations var_declarations compound_statement
         if($1 != nullptr) func_body->const_decl = std::unique_ptr<ConstDeclStmt>($1);
         if($2 != nullptr){
             for(auto var_decl : *$2){
-                func_body->var_decl.push_back(std::unique_ptr<VarDeclStmt>(var_decl));
+                func_body->var_decl.emplace_back(std::unique_ptr<VarDeclStmt>(var_decl));
             }
             delete $2;
         }
         if($3 != nullptr){
             for(auto stmt : *$3){
-                func_body->comp_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+                func_body->comp_stmt.emplace_back(std::unique_ptr<BaseStmt>(stmt));
             }
             delete $3;
         }
@@ -1069,10 +1089,11 @@ statement_list : statement
         current_rule = CurrentRule::StatementList;
         if($3 != nullptr){
             for(auto stmt : *$3){
-                $1->push_back(stmt);
+                $1->emplace_back(stmt);
             }
         }
         $$ = $1;
+        delete $3;
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
     }
     ;
@@ -1098,7 +1119,7 @@ statement : /*empty*/
         AssignStmt * assign_stmt = new AssignStmt();
         assign_stmt->lval = std::unique_ptr<LValStmt>($1);
         assign_stmt->expr = std::unique_ptr<ExprStmt>($3);
-        stmt_list->push_back(assign_stmt);
+        stmt_list->emplace_back(assign_stmt);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> variable ASSIGNOP expression");
     }
@@ -1111,14 +1132,14 @@ statement : /*empty*/
         // how to deal with array_index
         // assign_stmt->lval->array_index = std::vector<std::unique_ptr<ExprStmt>>();
         assign_stmt->expr = std::unique_ptr<ExprStmt>($3);
-        stmt_list->push_back(assign_stmt);
+        stmt_list->emplace_back(assign_stmt);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> IDENTIFIER ASSIGNOP expression");
     } */
     | procedure_call
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
-        stmt_list->push_back($1);
+        stmt_list->emplace_back($1);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> procedure_call");
     }
@@ -1134,11 +1155,11 @@ statement : /*empty*/
         while_stmt->expr = std::unique_ptr<ExprStmt>($2);
         if($4 != nullptr){
             for(auto stmt : *$4){
-                while_stmt->stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+                while_stmt->stmt.emplace_back(std::unique_ptr<BaseStmt>(stmt));
             }
             delete $4;
         }
-        stmt_list->push_back(while_stmt);
+        stmt_list->emplace_back(while_stmt);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> WHILE expression DO statement");
     }
@@ -1149,11 +1170,11 @@ statement : /*empty*/
         if_stmt->expr = std::unique_ptr<ExprStmt>($2);
         if($4 != nullptr){
             for(auto stmt : *$4){
-                if_stmt->true_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+                if_stmt->true_stmt.emplace_back(std::unique_ptr<BaseStmt>(stmt));
             }
         }
         delete $4;
-        stmt_list->push_back(if_stmt);
+        stmt_list->emplace_back(if_stmt);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> IF expression THEN statement");
     }
@@ -1164,18 +1185,18 @@ statement : /*empty*/
         if_stmt->expr = std::unique_ptr<ExprStmt>($2);
         if($4 != nullptr){
             for(auto stmt : *$4){
-                if_stmt->true_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+                if_stmt->true_stmt.emplace_back(std::unique_ptr<BaseStmt>(stmt));
             }
-            delete $4;
         }
         if($6 != nullptr){
             for(auto stmt : *$6){
-                if_stmt->false_stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+                if_stmt->false_stmt.emplace_back(std::unique_ptr<BaseStmt>(stmt));
             }
-            delete $6;
         }
-        stmt_list->push_back(if_stmt);
+        stmt_list->emplace_back(if_stmt);
         $$ = stmt_list;
+        delete $4;
+        delete $6;
         LOG_DEBUG("DEBUG statement -> IF expression THEN statement ELSE statement");
     }
     | FOR IDENTIFIER ASSIGNOP expression TO expression DO statement
@@ -1187,12 +1208,13 @@ statement : /*empty*/
         for_stmt->end = std::unique_ptr<ExprStmt>($6);
         if($8 != nullptr){
             for(auto stmt : *$8){
-                for_stmt->stmt.push_back(std::unique_ptr<BaseStmt>(stmt));
+                for_stmt->stmt.emplace_back(std::unique_ptr<BaseStmt>(stmt));
             }
-            delete $8;
         }
-        stmt_list->push_back(for_stmt);
+        stmt_list->emplace_back(for_stmt);
         $$ = stmt_list;
+        free($2);
+        delete $8;
         LOG_DEBUG("DEBUG statement -> FOR IDENTIFIER ASSIGNOP expression TO expression DO statement");
     }
     | READ '(' variable_list ')'
@@ -1200,10 +1222,10 @@ statement : /*empty*/
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         ReadFuncStmt * read_stmt = new ReadFuncStmt();
         for(auto lval : *$3){
-            read_stmt->lval.push_back(std::unique_ptr<LValStmt>(lval));
+            read_stmt->lval.emplace_back(std::unique_ptr<LValStmt>(lval));
         }
         delete $3;
-        stmt_list->push_back(read_stmt);
+        stmt_list->emplace_back(read_stmt);
         $$ = stmt_list;
         LOG_DEBUG("DEBUG statement -> READ '(' variable_list ')'");
     }
@@ -1213,12 +1235,12 @@ statement : /*empty*/
         WriteFuncStmt * write_stmt = new WriteFuncStmt();
         if($3 != nullptr){
             for(auto expr : *$3){
-                write_stmt->expr.push_back(std::unique_ptr<ExprStmt>(expr));
+                write_stmt->expr.emplace_back(std::unique_ptr<ExprStmt>(expr));
             }
-            delete $3;
         }
-        stmt_list->push_back(write_stmt);
+        stmt_list->emplace_back(write_stmt);
         $$ = stmt_list;
+        delete $3;
         LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'");
     }
 
@@ -1233,14 +1255,14 @@ variable_list : variable
     {
         current_rule = CurrentRule::VariableList;
         std::vector<LValStmt *> * lval_list = new std::vector<LValStmt *>();
-        lval_list->push_back($1);
+        lval_list->emplace_back($1);
         $$ = lval_list;
         LOG_DEBUG("DEBUG variable_list -> variable");
     }
     | variable_list ',' variable
     {
         current_rule = CurrentRule::VariableList;
-        $1->push_back($3);
+        $1->emplace_back($3);
         $$ = $1;
         LOG_DEBUG("DEBUG variable_list -> variable_list ',' variable");
     };
@@ -1258,10 +1280,11 @@ variable : IDENTIFIER id_varpart
         $$->id = std::string($1);
         if($2 != nullptr){
             for(auto expr : *$2){
-                $$->array_index.push_back(std::unique_ptr<ExprStmt>(expr));
+                $$->array_index.emplace_back(std::unique_ptr<ExprStmt>(expr));
             }
             delete $2;
         }
+        free($1);
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart");
     }
     /* | IDENTIFIER id_random
@@ -1270,7 +1293,7 @@ variable : IDENTIFIER id_varpart
         $$->id = std::string($1);
         if($2 != nullptr){
             for(auto expr : *$2){
-                $$->array_index.push_back(std::unique_ptr<ExprStmt>(expr));
+                $$->array_index.emplace_back(std::unique_ptr<ExprStmt>(expr));
             }
             delete $2;
         }
@@ -1300,38 +1323,43 @@ id_varpart : /*empty*/
         }
         LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'");
     }
+    | '[' expression BRACE_PAIR array_index_expression
+    {
+        current_rule = CurrentRule::IdVarpart;
+        if($4 != nullptr){
+            $$ = $4;
+        } else {
+            yyerror(&@4, "code_str", program, scanner, "数组下标定义出错 请检查是否符合规范");
+        }
+        $$->emplace_back($2);
+        std::reverse($$->begin(), $$->end());
+        LOG_DEBUG("DEBUG id_varpart -> '[' expression BRACE_PAIR array_index_expression");
+    }
     ;
 
 /*
 * no : 4.5
-* rule  :  id_random -> id_random '[' expression ']' | '[' expression ']'
+* rule  :  array_index_expression -> expression ']' | ex
 * node :   std::vector<ExprStmt *> * expr_list
 * son :  ExprStmt *
 * error : 随机存取数组定义出错 请检查是否符合规范
 */
-/* id_random : id_random '[' expression ']'
+array_index_expression: expression ']'
     {
-        if($1 != nullptr){
-            $1->push_back($3);
-            $$ = $1;
-        }else{
-            syntax_error(&@1, "随机存取数组定义出错 请检查是否符合规范");
-        }
-        LOG_DEBUG("DEBUG id_random -> id_random '[' expression ']'");
-    }
-    | '[' expression ']'
-    {
+        current_rule = CurrentRule::ArrayIndexExpression;
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
-        expr_list->push_back($2);
+        expr_list->emplace_back($1);
         $$ = expr_list;
-        LOG_DEBUG("DEBUG id_random -> '[' expression ']'");
+        LOG_DEBUG("DEBUG array_index_expression -> expression_list");
     }
-    | error
+    | expression BRACE_PAIR array_index_expression
     {
-        syntax_error(&@1, "随机存取数组定义出错 请检查是否符合规范");
+        current_rule = CurrentRule::ArrayIndexExpression;
+        $3->emplace_back($1);
+        $$ = $3;
+        LOG_DEBUG("DEBUG array_index_expression -> array_index_expression BRACE_PAIR expression ']'");
     }
-    ; */
-
+    ;
 
 
 
@@ -1348,6 +1376,7 @@ procedure_call : IDENTIFIER
         FuncCallStmt * proc_call = new FuncCallStmt();
         proc_call->id = std::string($1);
         $$ = proc_call;
+        free($1);
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER");
     }
     | IDENTIFIER '(' expression_list ')'
@@ -1357,11 +1386,12 @@ procedure_call : IDENTIFIER
         proc_call->id = std::string($1);
         if($3 != nullptr){
             for(auto expr : *$3){
-                proc_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
+                proc_call->args.emplace_back(std::unique_ptr<ExprStmt>(expr));
             }
             delete $3;
         }
         $$ = proc_call;
+        free($1);
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'");
     }
     ;
@@ -1406,14 +1436,14 @@ expression_list : {
     {
         current_rule = CurrentRule::ExpressionList;
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
-        expr_list->push_back($1);
+        expr_list->emplace_back($1);
         $$ = expr_list;
         LOG_DEBUG("DEBUG expression_list -> expression");
     }
     | expression_list ',' expression
     {
         current_rule = CurrentRule::ExpressionList;
-        $1->push_back($3);
+        $1->emplace_back($3);
         $$ = $1;
         LOG_DEBUG("DEBUG expression_list -> expression_list ',' expression");
     }
@@ -1660,11 +1690,12 @@ factor : INTEGER
         unary_expr->primary_expr->value->func_call->id = std::string($1);
         if($3 != nullptr){
             for(auto expr : *$3){
-                unary_expr->primary_expr->value->func_call->args.push_back(std::unique_ptr<ExprStmt>(expr));
+                unary_expr->primary_expr->value->func_call->args.emplace_back(std::unique_ptr<ExprStmt>(expr));
             }
             delete $3;
         }
         $$ = unary_expr;
+        free($1);
         LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' expression_list ')'");
     }
     | NOT factor
@@ -1719,6 +1750,7 @@ int code_parse(const char * code_str, ProgramStmt ** program) {
     yyscan_t scanner;
     yylex_init(&scanner);
     scan_string(code_str, scanner);
+
 
     int ret = yyparse(code_str,program, scanner);
 
