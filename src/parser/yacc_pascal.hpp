@@ -103,9 +103,7 @@ extern int yydebug;
     BOOLEAN = 304,                 /* BOOLEAN  */
     REAL = 305,                    /* REAL  */
     CHAR = 306,                    /* CHAR  */
-    STRING = 307,                  /* STRING  */
-    TOKEN_EXPRESSION_LIST = 308,   /* TOKEN_EXPRESSION_LIST  */
-    TOKEN_BRACKET_EXPRESSION_LIST = 309 /* TOKEN_BRACKET_EXPRESSION_LIST  */
+    STRING = 307                   /* STRING  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -121,9 +119,9 @@ union YYSTYPE
     ProgramBodyStmt *                               program_body;
     std::vector<std::string> *                      id_list;
     ConstDeclStmt *                                 const_decls;
-    std::pair<std::string, NumberStmt> *            kv_pair;
-    std::vector<std::pair<std::string, NumberStmt>*> * kv_pair_list;
-    NumberStmt *                                    num_value;
+    std::pair<std::string, ValueStmt *> *            kv_pair;
+    std::vector<std::pair<std::string, ValueStmt *>*> * kv_pair_list;
+    ValueStmt *                                    value;
     std::vector<VarDeclStmt *> *                    var_decls;
     VarDeclStmt *                                   var_decl;
     DataType                                        var_type;
@@ -160,7 +158,7 @@ union YYSTYPE
     char                                           charactor;
     int                                            token;
 
-#line 164 "yacc_pascal.hpp"
+#line 162 "yacc_pascal.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

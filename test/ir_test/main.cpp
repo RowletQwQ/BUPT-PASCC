@@ -15,7 +15,6 @@
 #include "ir/ir_gen.hpp"
 #include "common/setting/settings.hpp"
 #include "parser/yacc_pascal.hpp"
-#include "builder/c_builder.hpp"
 
 void code_parse(const char *code, ProgramStmt **program_stmt);
 
@@ -89,38 +88,18 @@ int main(int argc, char *argv[])
     LOG_DEBUG("Start generating intermediate code...");
     
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
-
-    visitor->visit(*program_stmt);
-    visitor->show_result();
-    ir::Module ir = visitor->get_ir();
-
-
-    
-    LOG_DEBUG("Generating intermediate code done.");
-    // 第三步: 优化
-    if (G_SETTINGS.opt_level)
-    {
-        LOG_DEBUG("Start optimizing intermediate code...");
-        // TODO
-        std::vector<opt::Optimize> opts;
-
-        for (auto &opt : opts)
-        {
-            opt.optimize(ir);
-        }
-        LOG_DEBUG("Optimizing intermediate code done.");
+    try {
+        visitor->visit(*program_stmt);
+        visitor->show_result();
+        ir::Module ir = visitor->get_ir();
+    } catch (const std::exception &e){
+        LOG_FATAL("Error: %s", e.what());
+        delete program_stmt;
+        return 1;
     }
+    
+    delete program_stmt;
 
-    // TODO: 删除
-    return 0;
-    // 第四步: 生成目标代码
-    std::ofstream output_file(G_SETTINGS.output_file);
-    // TODO
-    LOG_DEBUG("Start generating target code...");
-    std::unique_ptr<builder::CBuilder> builder = std::make_unique<builder::CBuilder>();
-    builder->build(ir);
-    builder->output(output_file);
-    LOG_DEBUG("Generating target code done.");
-
+    LOG_DEBUG("Generating intermediate code done.");
     return 0;
 }

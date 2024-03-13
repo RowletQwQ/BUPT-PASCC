@@ -1,11 +1,15 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 #include <ostream>
+#include <queue>
 #include <sstream>
 #include <string>
-#include <sys/time.h>
-#include <pthread.h>
+#include <chrono>
+#include <iomanip>
+#include <thread>
+#include <condition_variable>
 
 
 namespace common 
@@ -18,6 +22,12 @@ typedef enum {
     ERROR,
     FATAL
 } LogLevel;
+
+struct LogMessage {
+    common::LogLevel level;
+    std::string prefix;
+    std::string message;
+};
 
 class Log{
 public:
@@ -40,10 +50,16 @@ public:
      */
     void output(const LogLevel level, const char *prefix, const char *f, ...);
 
+    void log_thread();
+
 private:
+    bool log_done = false;
     const LogLevel log_level_;
-    pthread_mutex_t mutex_;
+    std::queue<LogMessage> log_queue;
+    std::mutex log_mutex;
+    std::condition_variable log_cv;
     std::map<LogLevel, std::string> prefix_map_;
+    std::thread log_thread_;
 
 }; // class Log
 
@@ -54,31 +70,28 @@ extern Log *g_log;
 
 #define LOG_HEAD(prefix, level)                                            \
   if (common::g_log) {                                                     \
-    struct timeval tv;                                                     \
-    gettimeofday(&tv, NULL);                                               \
-    struct tm *p = localtime(&tv.tv_sec);                                  \
-    char time_head[LOG_HEAD_SIZE] = {0};                                   \
-    if (p) {                                                               \
-      int usec = (int)tv.tv_usec;                                          \
-      snprintf(time_head, LOG_HEAD_SIZE,                                   \
-          "%04d-%02d-%02d %02d:%02d:%02u.%06d",                            \
-          p->tm_year + 1900,                                               \
-          p->tm_mon + 1,                                                   \
-          p->tm_mday,                                                      \
-          p->tm_hour,                                                      \
-          p->tm_min,                                                       \
-          p->tm_sec,                                                       \
-          usec);                                                           \
-    }                                                                      \
+    auto now = std::chrono::system_clock::now();                            \
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);         \
+    auto now_tm = std::localtime(&now_time_t);                     \
+    auto now_since_epoch = now.time_since_epoch();                        \
+    auto now_ms = std::chrono::duration_cast<std::chrono::microseconds>(now_since_epoch).count();\
+    std::stringstream ss;                                               \
+    ss << std::put_time(now_tm, "%Y-%m-%d %H:%M:%S")                    \
+        << '.' << now_ms;                                                \
+    std::string time_info = ss.str();                                    \
+    char time_head[LOG_HEAD_SIZE] = {0};                                 \
+    snprintf(time_head, LOG_HEAD_SIZE,                                   \
+          "%s",                                                           \
+          ss.str().c_str());                                              \
     snprintf(prefix,                                                       \
-        sizeof(prefix),                                                    \
-        "[%s %s@%s:%u] >> ",                                               \
-        time_head,                                                         \
-        __FUNCTION__,                                                      \
-        __FILE__,                                                           \
-        (int32_t)__LINE__                                                  \
-        );                                                                 \
-  }                                                                        
+      sizeof(prefix),                                                    \
+      "[%s %s@%s:%u] >> ",                                               \
+      time_head,                                                         \
+      __FUNCTION__,                                                      \
+      __FILE__,                                                           \
+      (int32_t)__LINE__                                                  \
+      );                                                                 \
+  }                                                                     
 
 #define LOG_OUTPUT(level, fmt, ...)                                         \
   do {                                                                      \

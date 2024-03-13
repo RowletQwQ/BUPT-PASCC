@@ -1,22 +1,14 @@
-# 进入到根目录的 build 文件夹
-cd ../../build
-
-# 执行 make
-make
-
-# 进入到 bin 文件夹
-cd ../bin
-
-# 测试集目录
-test_dir="../open_set"
-
-# 逐个处理测试集的所有文件
-for file in "$test_dir"/*; do
-    if [ -f "$file" ]; then
-        # 如果是 .pas 文件，则进行编译
-        if [ "${file##*.}" = "pas" ]; then
-            ./pascc -i $file > ../test/ir_test/output/$(basename "$file").ir
+#!/bin/bash
+test_dir=../open_set
+exit_status=0
+for file in $test_dir/*; do
+    if [ -f $file ]; then
+        if [ ${file##*.} = pas ]; then
+            echo "Testing $file"
+            ../bin/IR_TEST -i $file -d 4 > $(basename $file).ir || exit_status=$?
+            echo "Testing $file done"
         fi
     fi
 done
+exit $exit_status
 

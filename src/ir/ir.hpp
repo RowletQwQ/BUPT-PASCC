@@ -39,11 +39,11 @@ public:
 class Type {
 public:
     enum TID {
-        VoidTID, 
+        VoidTID,
+        BooleanTID,
+        CharTID, 
         IntegerTID,
         RealTID,
-        BooleanTID,
-        CharTID,
         StringTID,
         ArrayTID,
         FunctionTID,
@@ -53,7 +53,8 @@ public:
     ~Type() = default;
     virtual std::string print() { return "";}
     virtual std::string placeholder() { return "";}
-
+    virtual bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
+    virtual TID get_tid() const { return tid_; }
     TID tid_;
 };
 
@@ -128,7 +129,7 @@ public:
 class StringType : public Type {
 public:
     explicit StringType() : Type(Type::StringTID) {}
-    virtual std::string print() override { return "string"; }
+    virtual std::string print() override { return "const char *"; }
     virtual std::string placeholder() override { return "%s"; }
 };
 
@@ -160,8 +161,10 @@ public:
 class FunctionType : public Type {
 public:
     explicit FunctionType(std::shared_ptr<Type> result, std::vector<std::shared_ptr<Type> > params);
-    virtual std::string print() override {return "";}
+    virtual std::string print() override {return result_->print();}
     virtual std::string placeholder() override { return result_->placeholder(); }
+    bool is_number() const override { return result_->is_number(); }
+    TID get_tid() const override { return result_->tid_; }
     std::shared_ptr<Type> result_;
     std::vector<std::shared_ptr<Type> > args_; 
 
@@ -184,12 +187,24 @@ public:
 */
 class Value {
 public:
-    explicit Value(std::shared_ptr<Type> type, const std::string name = "") : type_(type), name_(name) {}
+    enum class ValueID {
+        Value,
+        Literal,
+        GlobalIdentifier,
+        LocalIdentifier,
+        Argument,
+        Function,
+        BasicBlock,
+        Instruction
+    };
+    explicit Value(std::shared_ptr<Type> type,const Value::ValueID id = ValueID::Value, 
+                    const std::string name = "") : type_(type), val_id_(id), name_(name) {}
     ~Value() = default;
     virtual std::string print() { return "";}
 
     /**
      * @brief 移除所有某个值的所有引用
+
      * 
      * @param val 要移除的值 
     */
@@ -216,9 +231,15 @@ public:
     */
     void remove_use(std::list<Use>::iterator it) { use_list_.erase(it); }
 
+    /**
+     * @brief 获取value的对应子类
+     * 
+     * @return ValueID
+    */
+    Value::ValueID get_val_id() { return val_id_; }
 
-
-    std::shared_ptr<Type> type_; // 类型
+    Value::ValueID val_id_; // 值的类型
+    std::shared_ptr<Type> type_; // 返回值类型
     std::string name_; // 名称
     std::list<Use> use_list_; // 所有引用该Value的Instruction的集合，以及该Value在该Instruction的第几个操作数位置被引用
 };
@@ -231,7 +252,7 @@ public:
 */
 class Literal : public Value {
 public:
-    Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, name) {}
+    Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, ValueID::Literal, name) {}
     ~Literal() = default;
 };
 
@@ -380,7 +401,7 @@ public:
 */
 class Argument : public Value {
 public:
-    explicit Argument(std::shared_ptr<Type> type, const std::string name, unsigned arg_no = 0) : Value(type, name), arg_no_(arg_no) {}
+    explicit Argument(std::shared_ptr<Type> type, const std::string name, unsigned arg_no = 0) : Value(type, ValueID::Argument, name), arg_no_(arg_no) {}
     ~Argument() {}
     virtual std::string print() override {
         return name_;
@@ -435,7 +456,7 @@ public:
 */
 class BasicBlock : public Value {
 public:
-    explicit BasicBlock(const std::string name) : Value(std::make_shared<Type>(Type::BlockTID), name) {}
+    explicit BasicBlock(const std::string name) : Value(std::make_shared<Type>(Type::BlockTID), ValueID::BasicBlock, name) {}
     ~BasicBlock() = default;
     virtual std::string print() override {return "";}
     /**
@@ -454,7 +475,7 @@ public:
     */
     void add_succ_bb(std::weak_ptr<BasicBlock> bb) { succ_bbs_.push_back(bb); }
 
-    std::vector<std::shared_ptr<Instruction> > instructions_; // 指令列表
+    std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
     std::vector<std::weak_ptr<BasicBlock> > succ_bbs_; // 后继基本块
 };
@@ -516,8 +537,10 @@ public:
     };
 
     static std::map<Instruction::OpID, std::string> op2str_;
-    explicit Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, bool before = false);
-    explicit Instruction(const std::string name, std::shared_ptr<Type> ty, OpID id, unsigned num_ops, bool before = false);
+    explicit Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, 
+        std::weak_ptr<BasicBlock> bb, bool before = false);
+    explicit Instruction(const std::string name, std::shared_ptr<Type> ty, OpID id, unsigned num_ops, 
+        std::weak_ptr<BasicBlock> bb, bool before = false);
     ~Instruction() = default;
     void init();
 
@@ -528,6 +551,20 @@ public:
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
+    
+    /**
+     * @brief 设置操作数的位置
+     * 
+    */
+    virtual void set_pos_in_bb(std::vector<std::shared_ptr<ir::Instruction> >::iterator pos) {
+        pos_in_bb_ = pos;
+    }
+
+    /**
+     * @brief 获取操作数
+     * 
+    */
+    virtual std::shared_ptr<Value> get_operand(unsigned i) = 0;
 
     // 以下是判断指令类型的函数
     bool is_call_inst() { return op_id_ == OpID::Call; }
@@ -537,12 +574,15 @@ public:
     bool is_unary_inst() { return op_id_ >= OpID::Not && op_id_ <= OpID::LogicalNot; }
     bool is_assign_inst() { return op_id_ == OpID::Assign; }
     bool is_load_inst() { return op_id_ == OpID::Visit; }
+    bool is_expr() { return is_binary_inst() || is_unary_inst() || is_assign_inst() || is_load_inst(); }
+    
 
     OpID op_id_; // 操作码
     unsigned num_ops_; // 操作数个数
     std::vector<std::shared_ptr<Value>> operands_; // 操作数
     std::vector<std::list<Use>::iterator> use_pos_; // 与操作数数组一一对应，是对应的操作数的 uselist 里面，与当前指令相关的 use 的迭代器
-    std::vector<std::list<std::shared_ptr<Instruction>>::iterator> pos_in_bb_; // 在 bb 的指令 list 的位置迭代器, 最多只能有一个
+    std::vector<std::shared_ptr<ir::Instruction> >::iterator pos_in_bb_; // 在 bb 的指令 list 的位置迭代器, 最多只能有一个
+    std::weak_ptr<BasicBlock> bb_; // 所属基本块
 };
 
 /**
@@ -562,8 +602,9 @@ public:
      * @details 形如 b+c, a-b, a*b, a/b, a%b 等式，即为二元表达式
      *          这个类用来表示这些表达式，同时起到承载这些表达式的作用
      */
-    BinaryInst(std::shared_ptr<Type> ty, OpID op, std::shared_ptr<Value> v1, std::shared_ptr<Value> v2)
-      : Instruction(ty, op, 2) {
+    BinaryInst(std::shared_ptr<Type> ty, OpID op, std::shared_ptr<Value> v1, std::shared_ptr<Value> v2, 
+        std::weak_ptr<BasicBlock> bb)
+      : Instruction(ty, op, 2, bb) {
         set_operand(0, v1);
         set_operand(1, v2);
     }
@@ -571,6 +612,23 @@ public:
     virtual std::string print() override {
         return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
     }
+
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+    /**
+     * @brief 用来判断两个类型是否可以进行计算
+     * 
+     * @param t1 
+     * @param t2 
+     * @return true 
+     * @return false 
+     */
+    static bool can_compute(const Type *t1, const Type *t2);
 };
 
 /**
@@ -587,8 +645,9 @@ public:
      * @param bb 所属基本块
      * @details 形如 -a, !a, ~a 等式，即为一元表达式
      */
-    UnaryInst(std::shared_ptr<Type> ty, OpID op, std::shared_ptr<Value> val)
-      : Instruction(ty, op, 1) {
+    UnaryInst(std::shared_ptr<Type> ty, OpID op, std::shared_ptr<Value> val,
+        std::weak_ptr<BasicBlock> bb)
+      : Instruction(ty, op, 1, bb) {
         set_operand(0, val);
     }
     ~UnaryInst() = default;
@@ -604,6 +663,15 @@ public:
             return Instruction::op2str_[op_id_] + operands_[0]->print();
         }
     }
+
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+
 };
 
 /**
@@ -621,15 +689,28 @@ public:
      * @param bb 所属基本块
      * @details 形如 a==b, a!=b, a>b, a>=b, a<b, a<=b 等式，即为比较表达式
      */
-    CompareInst(OpID op, std::shared_ptr<Value> v1, std::shared_ptr<Value> v2)
-      : Instruction(std::make_shared<Type>(Type::BooleanTID), op, 2) {
+    CompareInst(OpID op, std::shared_ptr<Value> v1, std::shared_ptr<Value> v2, 
+        std::weak_ptr<BasicBlock> bb)
+      : Instruction(std::make_shared<Type>(Type::BooleanTID), op, 2, bb) {
         set_operand(0, v1);
         set_operand(1, v2);
     }
     ~CompareInst() = default;
+
     virtual std::string print() override {
         return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
     }
+
+    static bool can_be_compared(const Type *t1, const Type *t2);
+
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+
 }; 
 
 
@@ -648,14 +729,21 @@ public:
      * @param bb 所属基本块
      * @details 形如 a = b, a = 1, a = b[1] 等式，即为赋值表达式
      */
-    StoreInst(std::shared_ptr<Value> val, std::shared_ptr<Value> ptr)
-      : Instruction(std::make_shared<Type>(Type::BooleanTID), OpID::Assign, 2) {
+    StoreInst(std::shared_ptr<Value> val, std::shared_ptr<Value> ptr,
+            std::weak_ptr<BasicBlock> bb )
+      : Instruction(std::make_shared<Type>(Type::BooleanTID), OpID::Assign, 2, bb) {
         set_operand(0, val);
         set_operand(1, ptr);
     }
     ~StoreInst() = default;
     virtual std::string print() override {
         return operands_[0]->print() + " = " + operands_[1]->print();
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 
@@ -673,14 +761,21 @@ public:
      * @param bb 所属基本块
      * @details 形如 *b, a = b[1] 等式
      */
-    LoadInst(std::shared_ptr<Type> ty, std::shared_ptr<Value> array, std::shared_ptr<Value> idx)
-      : Instruction(ty, OpID::Visit, 2) {
+    LoadInst(std::shared_ptr<Type> ty, std::shared_ptr<Value> array, std::shared_ptr<Value> idx,
+            std::weak_ptr<BasicBlock> bb)
+      : Instruction(ty, OpID::Visit, 2, bb) {
         set_operand(0, array);
         set_operand(1, idx);
     }
     ~LoadInst() = default;
     virtual std::string print() override {
         return operands_[0]->print() + "[" + operands_[1]->print() + "]";
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 
@@ -689,8 +784,9 @@ public:
 */
 class ReadInst : public Instruction {
 public:
-    ReadInst(std::vector<std::shared_ptr<Value>> args)
-      : Instruction("read", std::make_shared<Type>(Type::VoidTID), OpID::Read, args.size()) {
+    ReadInst(std::vector<std::shared_ptr<Value>> args, 
+            std::weak_ptr<BasicBlock> bb)
+      : Instruction("read", std::make_shared<Type>(Type::VoidTID), OpID::Read, args.size(), bb) {
         for (int i = 0; i < args.size(); i++) {
             set_operand(i, args[i]);
         }
@@ -715,6 +811,12 @@ public:
         ans = ans + ")";
         return ans;
     }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
 };
 
 /**
@@ -722,8 +824,9 @@ public:
 */
 class WriteInst : public Instruction {
 public:
-    WriteInst(std::vector<std::shared_ptr<Value>> args)
-        : Instruction("write", std::make_shared<Type>(Type::VoidTID), OpID::Read, args.size()) {
+    WriteInst(std::vector<std::shared_ptr<Value>> args,
+            std::weak_ptr<BasicBlock> bb)
+        : Instruction("write", std::make_shared<Type>(Type::VoidTID), OpID::Read, args.size(), bb) {
         for (int i = 0; i < args.size(); i++) {
             set_operand(i, args[i]);
         }
@@ -745,6 +848,12 @@ public:
         ans = ans + ")";
         return ans;
     }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
 };
 
 /**
@@ -760,8 +869,9 @@ public:
      * @param bb 所属基本块
      * @details 用于调用函数
      */
-    CallInst(std::shared_ptr<Function> func, std::vector<std::shared_ptr<Value>> args)
-      : Instruction(func->func_type_.lock()->result_, OpID::Call, args.size() + 1) {
+    CallInst(std::shared_ptr<Function> func, std::vector<std::shared_ptr<Value>> args,
+            std::weak_ptr<BasicBlock> bb)
+      : Instruction(func->func_type_.lock()->result_, OpID::Call, args.size() + 1, bb) {
         // 前面的操作数是参数，最后一个操作数是函数
         int num_ops = args.size() + 1;
         for (int i = 0; i < num_ops - 1; i++) {
@@ -782,6 +892,12 @@ public:
         ret += ")";
         return ret;
     }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
 };
 
 /**
@@ -796,13 +912,20 @@ public:
      * @param bb 所属基本块
      * @details 用于返回
      */
-    ReturnInst(std::shared_ptr<Value> val)
-      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Ret, 1) {
+    ReturnInst(std::shared_ptr<Value> val, 
+            std::weak_ptr<BasicBlock> bb)
+      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Ret, 1, bb) {
         set_operand(0, val);
     }
     ~ReturnInst() = default;
     virtual std::string print() override {
         return "return " + operands_[0]->print();
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 
@@ -818,12 +941,13 @@ public:
      * @param bb 所属基本块
      * @details 用于分支跳转
      */
-    BranchInst(std::shared_ptr<Value> cond, std::shared_ptr<BasicBlock> then_bb, std::shared_ptr<BasicBlock> else_bb, std::shared_ptr<BasicBlock> bb, bool is_loop_cond = false)
-      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Br, 3) {
+    BranchInst(std::shared_ptr<Value> cond, std::shared_ptr<BasicBlock> then_bb, std::shared_ptr<BasicBlock> else_bb, 
+                std::weak_ptr<BasicBlock> bb, bool is_loop_cond = false)
+      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Br, 3, bb) {
         then_bb->add_pre_bb(bb);
         else_bb->add_pre_bb(bb);
-        bb->add_succ_bb(then_bb);
-        bb->add_succ_bb(else_bb);
+        bb.lock()->add_succ_bb(then_bb);
+        bb.lock()->add_succ_bb(else_bb);
         set_operand(0, cond);
         set_operand(1, then_bb);
         set_operand(2, else_bb);
@@ -837,6 +961,12 @@ public:
         } else {
             return "while (" + operands_[0]->print() + ")";
         }
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 
