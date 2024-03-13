@@ -95,8 +95,7 @@ int main(int argc, char *argv[])
     ir::Module ir = visitor->get_ir();
 
 
-    // TODO: 删除
-    return 0;
+    
     LOG_DEBUG("Generating intermediate code done.");
     // 第三步: 优化
     if (G_SETTINGS.opt_level)
@@ -112,7 +111,8 @@ int main(int argc, char *argv[])
         LOG_DEBUG("Optimizing intermediate code done.");
     }
 
-
+    // TODO: 删除
+    return 0;
     // 第四步: 生成目标代码
     std::ofstream output_file(G_SETTINGS.output_file);
     // TODO

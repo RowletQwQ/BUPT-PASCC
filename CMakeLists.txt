@@ -28,3 +28,5 @@ set(SRC_PATH ${PROJECT_SOURCE_DIR}/src)
 MESSAGE(STATUS "SRC_PATH: " ${SRC_PATH})
 
 ADD_EXECUTABLE(pascc ${SRC_FILES} ${MAIN_SRC})
+
+target_include_directories(pascc PUBLIC ${PROJECT_SOURCE_DIR}/src)
