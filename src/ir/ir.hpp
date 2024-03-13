@@ -39,11 +39,11 @@ public:
 class Type {
 public:
     enum TID {
-        VoidTID, 
+        VoidTID,
+        BooleanTID,
+        CharTID, 
         IntegerTID,
         RealTID,
-        BooleanTID,
-        CharTID,
         StringTID,
         ArrayTID,
         FunctionTID,
@@ -53,6 +53,7 @@ public:
     ~Type() = default;
     virtual std::string print() { return "";}
     virtual std::string placeholder() { return "";}
+    bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
 
     TID tid_;
 };
@@ -184,12 +185,24 @@ public:
 */
 class Value {
 public:
-    explicit Value(std::shared_ptr<Type> type, const std::string name = "") : type_(type), name_(name) {}
+    enum class ValueID {
+        Value,
+        Literal,
+        GlobalIdentifier,
+        LocalIdentifier,
+        Argument,
+        Function,
+        BasicBlock,
+        Instruction
+    };
+    explicit Value(std::shared_ptr<Type> type,const Value::ValueID id = ValueID::Value, 
+                    const std::string name = "") : type_(type), val_id_(id), name_(name) {}
     ~Value() = default;
     virtual std::string print() { return "";}
 
     /**
      * @brief 移除所有某个值的所有引用
+
      * 
      * @param val 要移除的值 
     */
@@ -216,9 +229,15 @@ public:
     */
     void remove_use(std::list<Use>::iterator it) { use_list_.erase(it); }
 
+    /**
+     * @brief 获取value的对应子类
+     * 
+     * @return ValueID
+    */
+    Value::ValueID get_val_id() { return val_id_; }
 
-
-    std::shared_ptr<Type> type_; // 类型
+    Value::ValueID val_id_; // 值的类型
+    std::shared_ptr<Type> type_; // 返回值类型
     std::string name_; // 名称
     std::list<Use> use_list_; // 所有引用该Value的Instruction的集合，以及该Value在该Instruction的第几个操作数位置被引用
 };
@@ -231,7 +250,7 @@ public:
 */
 class Literal : public Value {
 public:
-    Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, name) {}
+    Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, ValueID::Literal, name) {}
     ~Literal() = default;
 };
 
@@ -380,7 +399,7 @@ public:
 */
 class Argument : public Value {
 public:
-    explicit Argument(std::shared_ptr<Type> type, const std::string name, unsigned arg_no = 0) : Value(type, name), arg_no_(arg_no) {}
+    explicit Argument(std::shared_ptr<Type> type, const std::string name, unsigned arg_no = 0) : Value(type, ValueID::Argument, name), arg_no_(arg_no) {}
     ~Argument() {}
     virtual std::string print() override {
         return name_;
@@ -435,7 +454,7 @@ public:
 */
 class BasicBlock : public Value {
 public:
-    explicit BasicBlock(const std::string name) : Value(std::make_shared<Type>(Type::BlockTID), name) {}
+    explicit BasicBlock(const std::string name) : Value(std::make_shared<Type>(Type::BlockTID), ValueID::BasicBlock, name) {}
     ~BasicBlock() = default;
     virtual std::string print() override {return "";}
     /**
@@ -529,6 +548,12 @@ public:
         operands_[i] = val;
     }
 
+    /**
+     * @brief 获取操作数
+     * 
+    */
+    virtual std::shared_ptr<Value> get_operand(unsigned i) = 0;
+
     // 以下是判断指令类型的函数
     bool is_call_inst() { return op_id_ == OpID::Call; }
     bool is_ret_inst() { return op_id_ == OpID::Ret; }
@@ -537,6 +562,8 @@ public:
     bool is_unary_inst() { return op_id_ >= OpID::Not && op_id_ <= OpID::LogicalNot; }
     bool is_assign_inst() { return op_id_ == OpID::Assign; }
     bool is_load_inst() { return op_id_ == OpID::Visit; }
+    bool is_expr() { return is_binary_inst() || is_unary_inst() || is_assign_inst() || is_load_inst(); }
+    
 
     OpID op_id_; // 操作码
     unsigned num_ops_; // 操作数个数
@@ -571,6 +598,23 @@ public:
     virtual std::string print() override {
         return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
     }
+
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+    /**
+     * @brief 用来判断两个类型是否可以进行计算
+     * 
+     * @param t1 
+     * @param t2 
+     * @return true 
+     * @return false 
+     */
+    static bool can_compute(const Type *t1, const Type *t2);
 };
 
 /**
@@ -604,6 +648,15 @@ public:
             return Instruction::op2str_[op_id_] + operands_[0]->print();
         }
     }
+
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+
 };
 
 /**
@@ -627,9 +680,21 @@ public:
         set_operand(1, v2);
     }
     ~CompareInst() = default;
+
     virtual std::string print() override {
         return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
     }
+
+    static bool can_be_compared(const Type *t1, const Type *t2);
+
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+
 }; 
 
 
@@ -657,6 +722,12 @@ public:
     virtual std::string print() override {
         return operands_[0]->print() + " = " + operands_[1]->print();
     }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
 };
 
 /**
@@ -681,6 +752,12 @@ public:
     ~LoadInst() = default;
     virtual std::string print() override {
         return operands_[0]->print() + "[" + operands_[1]->print() + "]";
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 
@@ -715,6 +792,12 @@ public:
         ans = ans + ")";
         return ans;
     }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
 };
 
 /**
@@ -744,6 +827,12 @@ public:
         }
         ans = ans + ")";
         return ans;
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 
@@ -782,6 +871,12 @@ public:
         ret += ")";
         return ret;
     }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
 };
 
 /**
@@ -803,6 +898,12 @@ public:
     ~ReturnInst() = default;
     virtual std::string print() override {
         return "return " + operands_[0]->print();
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 
@@ -837,6 +938,12 @@ public:
         } else {
             return "while (" + operands_[0]->print() + ")";
         }
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
     }
 };
 

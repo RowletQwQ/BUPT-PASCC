@@ -4,7 +4,8 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <sys/time.h>
+#include <chrono>
+#include <iomanip>
 #include <pthread.h>
 
 
@@ -54,31 +55,28 @@ extern Log *g_log;
 
 #define LOG_HEAD(prefix, level)                                            \
   if (common::g_log) {                                                     \
-    struct timeval tv;                                                     \
-    gettimeofday(&tv, NULL);                                               \
-    struct tm *p = localtime(&tv.tv_sec);                                  \
-    char time_head[LOG_HEAD_SIZE] = {0};                                   \
-    if (p) {                                                               \
-      int usec = (int)tv.tv_usec;                                          \
-      snprintf(time_head, LOG_HEAD_SIZE,                                   \
-          "%04d-%02d-%02d %02d:%02d:%02u.%06d",                            \
-          p->tm_year + 1900,                                               \
-          p->tm_mon + 1,                                                   \
-          p->tm_mday,                                                      \
-          p->tm_hour,                                                      \
-          p->tm_min,                                                       \
-          p->tm_sec,                                                       \
-          usec);                                                           \
-    }                                                                      \
+    auto now = std::chrono::system_clock::now();                            \
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);         \
+    auto now_tm = std::localtime(&now_time_t);                     \
+    auto now_since_epoch = now.time_since_epoch();                        \
+    auto now_ms = std::chrono::duration_cast<std::chrono::microseconds>(now_since_epoch).count();\
+    std::stringstream ss;                                               \
+    ss << std::put_time(now_tm, "%Y-%m-%d %H:%M:%S")                    \
+        << '.' << now_ms;                                                \
+    std::string time_info = ss.str();                                    \
+    char time_head[LOG_HEAD_SIZE] = {0};                                 \
+    snprintf(time_head, LOG_HEAD_SIZE,                                   \
+          "%s",                                                           \
+          ss.str().c_str());                                              \
     snprintf(prefix,                                                       \
-        sizeof(prefix),                                                    \
-        "[%s %s@%s:%u] >> ",                                               \
-        time_head,                                                         \
-        __FUNCTION__,                                                      \
-        __FILE__,                                                           \
-        (int32_t)__LINE__                                                  \
-        );                                                                 \
-  }                                                                        
+      sizeof(prefix),                                                    \
+      "[%s %s@%s:%u] >> ",                                               \
+      time_head,                                                         \
+      __FUNCTION__,                                                      \
+      __FILE__,                                                           \
+      (int32_t)__LINE__                                                  \
+      );                                                                 \
+  }                                                                     
 
 #define LOG_OUTPUT(level, fmt, ...)                                         \
   do {                                                                      \

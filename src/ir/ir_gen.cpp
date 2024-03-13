@@ -1,5 +1,8 @@
 #include "ir/ir_gen.hpp"
 #include "assert.h"
+#include "common/exception/exception.hpp"
+#include "common/log/log.hpp"
+#include <algorithm>
 #include <iostream>
 
 namespace ir {
@@ -140,6 +143,10 @@ void IRGenerator::visit(RelExprStmt &stmt) {
         std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
         stmt.add_expr->accept(*this);
         std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        if(!CompareInst::can_be_compared(lhs->type_.get(), rhs->type_.get())) {
+            LOG_ERROR("比较表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
+            throw common::IRGenException("比较表达式类型不匹配");
+        }
         std::shared_ptr<CompareInst> inst = std::make_shared<CompareInst>(op, lhs, rhs);
         this->scope_.current_f_->basic_blocks_.back()->instructions_.push_back(inst);
     }
@@ -153,7 +160,12 @@ void IRGenerator::visit(AddExprStmt &stmt) {
         std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
         stmt.mul_expr->accept(*this);
         std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(lhs->type_, op, lhs, rhs);
+        if (!BinaryInst::can_compute(lhs->type_.get(), rhs->type_.get())) {
+            LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
+            throw common::IRGenException("二元运算表达式类型不匹配");
+        }
+        auto inst_type = std::max(lhs->type_->tid_, rhs->type_->tid_); // 选择更大的类型
+        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs);
         this->scope_.current_f_->basic_blocks_.back()->instructions_.push_back(inst);
     }
 }
@@ -166,7 +178,12 @@ void IRGenerator::visit(MulExprStmt &stmt) {
         std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
         stmt.unary_expr->accept(*this);
         std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(lhs->type_, op, lhs, rhs);
+        if (!BinaryInst::can_compute(lhs->type_.get(), rhs->type_.get())) {
+            LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
+            throw common::IRGenException("二元运算表达式类型不匹配");
+        }
+        auto inst_type = std::max(lhs->type_->tid_, rhs->type_->tid_); // 选择更大的类型
+        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs);
         this->scope_.current_f_->basic_blocks_.back()->instructions_.push_back(inst);
     }
     
