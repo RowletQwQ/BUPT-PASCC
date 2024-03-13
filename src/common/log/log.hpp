@@ -1,12 +1,15 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 #include <ostream>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <chrono>
 #include <iomanip>
-#include <pthread.h>
+#include <thread>
+#include <condition_variable>
 
 
 namespace common 
@@ -19,6 +22,12 @@ typedef enum {
     ERROR,
     FATAL
 } LogLevel;
+
+struct LogMessage {
+    common::LogLevel level;
+    std::string prefix;
+    std::string message;
+};
 
 class Log{
 public:
@@ -41,10 +50,16 @@ public:
      */
     void output(const LogLevel level, const char *prefix, const char *f, ...);
 
+    void log_thread();
+
 private:
+    bool log_done = false;
     const LogLevel log_level_;
-    pthread_mutex_t mutex_;
+    std::queue<LogMessage> log_queue;
+    std::mutex log_mutex;
+    std::condition_variable log_cv;
     std::map<LogLevel, std::string> prefix_map_;
+    std::thread log_thread_;
 
 }; // class Log
 
