@@ -7,6 +7,7 @@
 
 namespace opt {
 
+//TODO: 实现常数表达式优化
 std::shared_ptr<ir::Value> try_get_value(std::shared_ptr<ir::Value> val) {
     if(val->get_val_id() == ir::Value::ValueID::Literal) {
         return val;
