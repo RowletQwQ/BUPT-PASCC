@@ -94,10 +94,12 @@ int main(int argc, char *argv[])
         ir::Module ir = visitor->get_ir();
     } catch (const std::exception &e){
         LOG_FATAL("Error: %s", e.what());
+        delete program_stmt;
         return 1;
     }
     
-    
+    delete program_stmt;
+
     LOG_DEBUG("Generating intermediate code done.");
     return 0;
 }

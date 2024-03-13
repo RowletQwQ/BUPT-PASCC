@@ -30,10 +30,10 @@ std::string number_stmt_str(const NumberStmt stmt, int deep) {
 }
 
 
-std::string kv_pair_str(const ConstDeclStmt::KvPair pair, int deep) {
+std::string kv_pair_str(const ConstDeclStmt::KvPair &pair, int deep) {
     printf("kv_pair\n");
     std::stringstream res;
-    res << deep_print(deep) << pair.first << " = " << number_stmt_str(pair.second, 1);
+    res << deep_print(deep) << pair.first << " = " << value_stmt_str(pair.second.get(), 1);
     return res.str();
 }
 

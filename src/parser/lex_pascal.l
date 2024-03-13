@@ -47,7 +47,17 @@ while (0);
 extern int atoi();
 extern double atof();
 
-#define RETURN_TOKEN(token) LOG_DEBUG("%s", #token);return token
+#define RETURN_TOKEN(token) LOG_DEBUG("%s  %s", #token, yytext);return token
+
+char *strdup_tolower(const char *s) {
+    char *d = (char *)malloc(strlen(s) + 1);
+    if (d == NULL) return NULL;
+    for (int i = 0; s[i]; i++) {
+        d[i] = tolower((unsigned char)s[i]);
+    }
+    d[strlen(s)] = '\0';  // 确保字符串以 null 结尾
+    return d;
+}
 
 %}
 
@@ -137,12 +147,12 @@ OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 {BRACE_PAIR}                            RETURN_TOKEN(BRACE_PAIR);
 ".."                                       RETURN_TOKEN(DOUBLE_DOT);
 
-{OTHER_SIGN}            RETURN_TOKEN(yytext[0]);
+{OTHER_SIGN}                            RETURN_TOKEN(yytext[0]);
 
 {INTEGER}                                yylval->number = atoi(yytext); RETURN_TOKEN(INTEGER);
 {REAL}                                     yylval->real = (float)atof(yytext); RETURN_TOKEN(REAL);
 {CHAR}                                    yylval->charactor = yytext[1]; RETURN_TOKEN(CHAR);
-{IDENTIFIER}                          yylval->string = strdup(yytext);RETURN_TOKEN(IDENTIFIER);
+{IDENTIFIER}                          yylval->string = strdup_tolower(yytext);RETURN_TOKEN(IDENTIFIER);
 
 {ANNO_BIGBRACKET}               // ignore comments
 {ANNO_DOUBLE}                       // ignore comments
@@ -152,6 +162,9 @@ OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 "\n"
 "\r"
 " "
+\"[^"]*\"                               yylval->string = strdup(yytext); RETURN_TOKEN(STRING);
+'[^']*\'                                yylval->string = strdup(yytext); RETURN_TOKEN(STRING);
+
 .                                                /* ignore other characters */
 %%
 

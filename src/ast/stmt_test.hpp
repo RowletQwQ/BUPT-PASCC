@@ -9,7 +9,7 @@ std::string deep_print(int deep);
 
 std::string number_stmt_str(const NumberStmt stmt, int deep);
 
-std::string kv_pair_str(const ConstDeclStmt::KvPair pair, int deep);
+std::string kv_pair_str(const ConstDeclStmt::KvPair &pair, int deep);
 
 std::string const_decl_stmt_str(const ConstDeclStmt* stmt,int deep);
 

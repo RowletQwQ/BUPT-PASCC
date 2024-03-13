@@ -129,7 +129,7 @@ public:
 class StringType : public Type {
 public:
     explicit StringType() : Type(Type::StringTID) {}
-    virtual std::string print() override { return "string"; }
+    virtual std::string print() override { return "const char *"; }
     virtual std::string placeholder() override { return "%s"; }
 };
 
