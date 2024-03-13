@@ -115,7 +115,7 @@ NumberStmt * new_number_stmt(char char_val);
 NumberStmt * new_number_stmt(double real_val);
 NumberStmt * new_number_stmt(long long int_val);
 
-void fill_number_stmt(std::unique_ptr<NumberStmt> & num_value, long long int_val){
+void fill_number_stmt(std::unique_ptr<NumberStmt> &num_value, long long int_val){
     num_value->is_signed = true;
     num_value->is_real = false;
     num_value->is_char = false;
@@ -123,7 +123,7 @@ void fill_number_stmt(std::unique_ptr<NumberStmt> & num_value, long long int_val
     num_value->int_val = int_val;
 }
 
-void fill_number_stmt(std::unique_ptr<NumberStmt> & num_value, double real_val){
+void fill_number_stmt(std::unique_ptr<NumberStmt> &num_value, double real_val){
     num_value->is_signed = true;
     num_value->is_real = true;
     num_value->is_char = false;
@@ -131,7 +131,7 @@ void fill_number_stmt(std::unique_ptr<NumberStmt> & num_value, double real_val){
     num_value->real_val = real_val;
 }
 
-void fill_number_stmt(std::unique_ptr<NumberStmt> & num_value, char char_val){
+void fill_number_stmt(std::unique_ptr<NumberStmt> &num_value, char char_val){
     num_value->is_signed = true;
     num_value->is_real = false;
     num_value->is_char = true;
@@ -397,9 +397,9 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     ProgramBodyStmt *                               program_body;
     std::vector<std::string> *                      id_list;
     ConstDeclStmt *                                 const_decls;
-    std::pair<std::string, NumberStmt> *            kv_pair;
-    std::vector<std::pair<std::string, NumberStmt>*> * kv_pair_list;
-    NumberStmt *                                    num_value;
+    std::pair<std::string, ValueStmt *> *            kv_pair;
+    std::vector<std::pair<std::string, ValueStmt *>*> * kv_pair_list;
+    ValueStmt *                                    value;
     std::vector<VarDeclStmt *> *                    var_decls;
     VarDeclStmt *                                   var_decl;
     DataType                                        var_type;
@@ -444,11 +444,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %token <real> REAL
 %token <charactor> CHAR
 %token <string> STRING
-%token <token> TOKEN_EXPRESSION_LIST
-%token <token> TOKEN_BRACKET_EXPRESSION_LIST
 
-%precedence TOKEN_EXPRESSION_LIST
-%precedence TOKEN_BRACKET_EXPRESSION_LIST
 
 // 下面定义非终结符
 %type <number> relop
@@ -460,7 +456,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %type <id_list>                   idlist
 %type <const_decls>         const_declarations
 %type <kv_pair_list>             const_declaration
-%type <num_value>           const_value
+%type <value>               const_value
 %type <var_decls>           var_declarations
 %type <var_decls>           var_declaration
 %type <var_decl>            type
@@ -602,7 +598,7 @@ idlist : IDENTIFIER
 * no : 1.5
 * rule  :  const_declarations -> empty | "const" const_declaration ';' const_declarations
 * node :  ConstDeclStmt * const_decls
-* son  :  std::vector<std::pair<std::string, NumberStmt> *> *
+* son  :  std::vector<std::pair<std::string, ValueStmt *> *> *
 * error : 常量定义出错 请检查是否符合规范
 */
 const_declarations : /*empty*/
@@ -616,12 +612,18 @@ const_declarations : /*empty*/
         current_rule = CurrentRule::ConstDeclarations;
         ConstDeclStmt * const_decls = new ConstDeclStmt();
         for(auto kv_pair : *$2){
-            const_decls->pairs.emplace_back(*kv_pair);
+            const_decls->pairs.emplace_back(std::make_pair(kv_pair->first, kv_pair->second));
             delete kv_pair;
         }
         // 疑似内存泄漏
         delete $2;
         $$ = const_decls;
+        for(auto &t: const_decls->pairs){
+            LOG_INFO("Get Const Type:%d, pointer %p", t.second->type, t.second.get());
+            if(t.second->str) {
+                LOG_INFO("Get string:%s",t.second->str->val.c_str());
+            }
+        }
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
     };
 
@@ -629,26 +631,23 @@ const_declarations : /*empty*/
 /*
 * no : 1.6
 * rule  :  const_declaration -> IDENTIFIER = const_value | const_declaration ; IDENTIFIER = const_value
-* node :  std::vector<std::pair<std::string, NumberStmt> *> *
-* son  :  char *   NumberStmt *
+* node :  std::vector<std::pair<std::string, ValueStmt *> *> *
+* son  :  char *   ValueStmt *
 */
 const_declaration : IDENTIFIER '=' const_value
     {
         current_rule = CurrentRule::ConstDeclaration;
-        std::vector<std::pair<std::string, NumberStmt> *> * const_decls = new std::vector<std::pair<std::string, NumberStmt> *>();
-        std::pair<std::string, NumberStmt> * kv_pair = new std::pair<std::string, NumberStmt>($1, *$3);
+        std::vector<std::pair<std::string, ValueStmt *> *> * const_decls = new std::vector<std::pair<std::string, ValueStmt *> *>();
+        std::pair<std::string, ValueStmt *> * kv_pair = new std::pair<std::string, ValueStmt *>($1, $3);
         const_decls->emplace_back(kv_pair);
         free($1);
-        delete $3;
-        // 疑似内存泄漏
         $$ = const_decls;
     }
     | const_declaration ';' IDENTIFIER '=' const_value
     {
         current_rule = CurrentRule::ConstDeclaration;
-        $1->emplace_back(new std::pair<std::string, NumberStmt>($3, *$5));
+        $1->emplace_back(new std::pair<std::string, ValueStmt *>($3, $5));
         free($3);
-        delete $5;
         $$ = $1; // 不需要删除
     }
     ;
@@ -657,50 +656,74 @@ const_declaration : IDENTIFIER '=' const_value
 /*
 * no : 1.7
 * rule  :  const_value -> INTEGER | REAL | CHAR | '-' INTEGER | '-' REAL | '+' INTEGER | '+' REAL | ' CHAR '
-* node :  NumberStmt * num_value
+* node :  ValueStmt * num_value
 * son  :  long long | double | char
 * error : 常量 请检查是否为合法常量
 */
 const_value: INTEGER
     {
-        NumberStmt * num_value = new NumberStmt();
-        fill_number_stmt(num_value, $1);
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Number;
+        num_value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(num_value->number, $1);
         $$ = num_value;
     }
     | '+' INTEGER
     {
-        NumberStmt * num_value = new NumberStmt();
-        fill_number_stmt(num_value, $2);
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Number;
+        num_value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(num_value->number, $2);
         $$ = num_value;
     }
     | '-' INTEGER
     {
-        NumberStmt * num_value = new NumberStmt();
-        fill_number_stmt(num_value, ($2) * -1);
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Number;
+        num_value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(num_value->number, ($2) * -1);
         $$ = num_value;
     }
     | REAL
     {
-        NumberStmt * num_value = new NumberStmt();
-        fill_number_stmt(num_value, $1);
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Number;
+        num_value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(num_value->number, $1);
         $$ = num_value;
     }
     | '+' REAL
     {
-        NumberStmt * num_value = new NumberStmt();
-        fill_number_stmt(num_value, $2);
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Number;
+        num_value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(num_value->number, $2);
         $$ = num_value;
     }
     | '-' REAL
     {
-        NumberStmt * num_value = new NumberStmt();
-        fill_number_stmt(num_value, ($2) * -1);
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Number;
+        num_value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(num_value->number, ($2) * -1);
         $$ = num_value;
     }
     | CHAR
     {
-        NumberStmt * num_value = new NumberStmt();
-        fill_number_stmt(num_value, $1);
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Number;
+        num_value->number = std::make_unique<NumberStmt>();
+        fill_number_stmt(num_value->number, $1);
+        LOG_DEBUG("DEBUG const_value -> CHAR, value: %c", $1);
+        $$ = num_value;
+    }
+    | STRING 
+    {
+        ValueStmt * num_value = new ValueStmt();
+        num_value->type = ValueStmt::ValueType::Str;
+        num_value->str = std::make_unique<StrStmt>();
+        num_value->str->val = std::string($1);
+        free($1);
         $$ = num_value;
     }
     ;

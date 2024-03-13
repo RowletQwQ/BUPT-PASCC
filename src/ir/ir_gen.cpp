@@ -281,16 +281,25 @@ void IRGenerator::visit(PeriodStmt &stmt) {
 void IRGenerator::visit(ConstDeclStmt &stmt) {
     for (const auto &pair : stmt.pairs) {
         std::string name = pair.first; // 常量名
-        NumberStmt num_stmt = pair.second;
+        ValueStmt *value_stmt = pair.second.get();
         std::shared_ptr<Type> type; // 类型
         std::shared_ptr<Literal> val; // 值
-        if (num_stmt.is_real) {
-            type = std::make_shared<RealType>(kDefaultRealBitWidth);
-            val = std::make_shared<LiteralDouble>(type, num_stmt.real_val);
+        if (value_stmt->type == ValueStmt::ValueType::Number) {
+            NumberStmt *num_stmt = value_stmt->number.get();
+            if (num_stmt->is_real) {
+                type = std::make_shared<RealType>(kDefaultRealBitWidth);
+                val = std::make_shared<LiteralDouble>(type, num_stmt->real_val);
+            } else {
+                type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth);
+                val = std::make_shared<LiteraltInt>(type, num_stmt->int_val);
+            }
+        } else if (value_stmt->type == ValueStmt::ValueType::Str) {
+            type = std::make_shared<StringType>();
+            val = std::make_shared<LiteralString>(type, value_stmt->str->val);
         } else {
-            type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth);
-            val = std::make_shared<LiteraltInt>(type, num_stmt.int_val);
+            LOG_ERROR("常量声明:不支持的类型, 常量名:%s, 类型:%d, 指针:%p", name.c_str(), value_stmt->type, value_stmt);
         }
+        
 
         // 判断是否是全局作用域
         if (this->scope_.is_global()) {
@@ -396,6 +405,9 @@ void IRGenerator::visit(FuncDeclStmt &stmt) {
 }
 void IRGenerator::visit(LValStmt &stmt) {
     std::shared_ptr<Value> val = this->scope_.find(stmt.id); // 符号表寻找对应 value
+    if (!val) {
+        LOG_FATAL("没有这样的符号：%s",stmt.id.c_str());
+    }
     assert (val != nullptr);
     if (stmt.array_index.size() == 0) { // 如果不是数组, 就说明是一个普通变量, 如 a、b 等, 当成一个 Null 的一元指令
         std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back()); 

@@ -238,7 +238,7 @@ public:
  */
 class ConstDeclStmt : public BaseStmt {
 public:
-    typedef std::pair<std::string, NumberStmt> KvPair;
+    typedef std::pair<std::string, std::unique_ptr<ValueStmt>> KvPair;
     std::vector<KvPair> pairs;
     void accept(StmtVisitor &visitor) override;
 };

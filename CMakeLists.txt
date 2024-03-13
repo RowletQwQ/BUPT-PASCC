@@ -20,7 +20,7 @@ SET(MAIN_SRC ${PROJECT_SOURCE_DIR}/src/main.cpp)
 
 SET(LIBEVENT_STATIC_LINK TRUE)
 
-SET(pthread)
+
 # 指定文件输出位置
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 MESSAGE(STATUS "PROJECT_SOURCE_DIR: " ${PROJECT_SOURCE_DIR})
@@ -30,6 +30,7 @@ MESSAGE(STATUS "SRC_PATH: " ${SRC_PATH})
 ADD_EXECUTABLE(pascc ${SRC_FILES} ${MAIN_SRC})
 
 target_include_directories(pascc PUBLIC ${PROJECT_SOURCE_DIR}/src)
+# target_link_libraries(pascc -fsanitize=address)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/test/bison_test)
 add_subdirectory(${PROJECT_SOURCE_DIR}/test/ir_test)
