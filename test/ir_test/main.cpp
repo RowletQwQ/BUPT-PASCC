@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
     }
     
     delete program_stmt;
+
     LOG_DEBUG("Generating intermediate code done.");
     return 0;
 }

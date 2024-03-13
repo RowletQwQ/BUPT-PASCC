@@ -11,3 +11,4 @@ for file in $test_dir/*; do
     fi
 done
 exit $exit_status
+
