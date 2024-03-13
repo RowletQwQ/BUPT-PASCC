@@ -44,12 +44,12 @@ std::map<Instruction::OpID, std::string> Instruction::op2str_ = {
     {Instruction::OpID::Write, "Write"}
 };
 
-Instruction::Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, bool before)
-    : Value(ty, ValueID::Instruction, ""), op_id_(id), num_ops_(num_ops) {
+Instruction::Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::weak_ptr<BasicBlock> bb, bool before)
+    : Value(ty, ValueID::Instruction, ""), op_id_(id), num_ops_(num_ops), bb_(bb) {
         init();        
     }
-Instruction::Instruction(const std::string name, std::shared_ptr<Type> ty, OpID id, unsigned num_ops, bool before) 
-    : Value(ty, ValueID::Instruction, name), op_id_(id), num_ops_(num_ops) {
+Instruction::Instruction(const std::string name, std::shared_ptr<Type> ty, OpID id, unsigned num_ops, std::weak_ptr<BasicBlock> bb, bool before) 
+    : Value(ty, ValueID::Instruction, name), op_id_(id), num_ops_(num_ops), bb_(bb) {
         init();
 }
 void Instruction::init() {

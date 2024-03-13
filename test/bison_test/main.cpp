@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <vector>
 #include <dirent.h>
@@ -8,6 +10,7 @@
 #include "ast/stmt.hpp"
 #include "ast/stmt_test.hpp"
 #include "common/log/log.hpp"
+
 extern int code_parse(const char * code_str, ProgramStmt ** program);
 
 void single_point_test(const std::string folderPath , std::vector<std::string> files){
@@ -16,21 +19,21 @@ void single_point_test(const std::string folderPath , std::vector<std::string> f
   std::cout << "Please input the index of the file you want to analyze: ";
   std::cin >> fileIndex;
   if (fileIndex >= files.size()) {
-      std::cerr << "ERROR : Invalid index." << std::endl;
+      LOG_FATAL("ERROR : Invalid index.");
   }
   std::string fileName = files[fileIndex];
   std::ifstream ifs(folderPath + "/" + fileName);
   std::stringstream ss;
   ss << ifs.rdbuf();
   std::string content = ss.str();
-  std::cout << "File: " << fileName << std::endl;
+  LOG_INFO("File: %s",fileName.c_str());
   ProgramStmt * program = nullptr;
   code_parse(content.c_str(), &program);
   
   if(program == nullptr) {
-      std::cerr << "ERROR : Parsing failed." << std::endl;
+      LOG_FATAL("ERROR : Parsing failed.");
   }else{
-      std::cout << "Parsing succeeded." << std::endl;
+      LOG_INFO("File %s Parsing succeeded.", fileName.c_str());
       //std::cout<<program_stmt_str(program, 0)<<std::endl;
       delete program;
   }
@@ -46,10 +49,10 @@ void batch_test(int beginIndex,const std::string folderPath , std::vector<std::s
         ProgramStmt * program = nullptr;
         code_parse(content.c_str(), &program);
         if(program == nullptr) {
-            std::cout << fileName << " : Parsing failed." << std::endl;
+            LOG_FATAL("ERROR : Parsing failed.");
             break;
         }else{
-            std::cout << fileName << " : Parsing succeeded." << std::endl;
+            LOG_INFO("File %s Parsing succeeded.",  fileName.c_str());
         }
         delete program;
         //std::cout<<program_stmt_str(program, 0)<<std::endl;
@@ -76,7 +79,7 @@ int main() {
       return 1;
   }
   
-  
+  std::sort(files.begin(), files.end());
   for(size_t i = 0; i < files.size(); i++) {
       // 识别出第fileIndex个 以 .pas 结尾的文件
       if (files[i].find(".pas") == std::string::npos) {
@@ -92,6 +95,6 @@ int main() {
     // single_point_test(folderPath,files);
     batch_test(0,folderPath,files);
     //single_point_test(folderPath,files);
-  
-  return 0;
+    delete common::g_log;
+    return 0;
 }
