@@ -30,7 +30,7 @@ set(LOG_SOURCE_FILES
     ../../src/common/log/log.cpp
 )
 
-add_executable(PASCC_TEST
+add_executable(BISON_TEST
     main.cpp
     ${FLEX_FLEX_OUTPUTS}
     ${BISON_BISON_OUTPUTS}
@@ -38,7 +38,7 @@ add_executable(PASCC_TEST
     ${LOG_SOURCE_FILES}
 )
 
-target_link_libraries(PASCC_TEST ${BISON_LIBRARIES} -fsanitize=address)
+target_link_libraries(BISON_TEST ${BISON_LIBRARIES} -fsanitize=address)
 # 项目架构 
 # |---src
 #          |---token

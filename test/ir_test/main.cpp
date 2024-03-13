@@ -88,12 +88,15 @@ int main(int argc, char *argv[])
     LOG_DEBUG("Start generating intermediate code...");
     
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
-
-    visitor->visit(*program_stmt);
-    visitor->show_result();
-    ir::Module ir = visitor->get_ir();
-
-
+    try {
+        visitor->visit(*program_stmt);
+        visitor->show_result();
+        ir::Module ir = visitor->get_ir();
+    } catch (const std::exception &e){
+        LOG_FATAL("Error: %s", e.what());
+        return 1;
+    }
+    
     
     LOG_DEBUG("Generating intermediate code done.");
     return 0;

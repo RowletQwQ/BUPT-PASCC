@@ -53,8 +53,8 @@ public:
     ~Type() = default;
     virtual std::string print() { return "";}
     virtual std::string placeholder() { return "";}
-    bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
-
+    virtual bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
+    virtual TID get_tid() const { return tid_; }
     TID tid_;
 };
 
@@ -161,8 +161,10 @@ public:
 class FunctionType : public Type {
 public:
     explicit FunctionType(std::shared_ptr<Type> result, std::vector<std::shared_ptr<Type> > params);
-    virtual std::string print() override {return "";}
+    virtual std::string print() override {return result_->print();}
     virtual std::string placeholder() override { return result_->placeholder(); }
+    bool is_number() const override { return result_->is_number(); }
+    TID get_tid() const override { return result_->tid_; }
     std::shared_ptr<Type> result_;
     std::vector<std::shared_ptr<Type> > args_; 
 

@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 # 当所有函数都写完时，打开这个编译选项
 # add_compile_options(-Wall -Wextra -Wpedantic -Werror -g -fsanitize=address)
 
-project(PASCC)
+project(BISON_TEST)
 
 SET(PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
@@ -30,11 +30,9 @@ SET(LIBEVENT_STATIC_LINK TRUE)
 
 SET(pthread)
 # 指定文件输出位置
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_DIR}/bin)
 MESSAGE(STATUS "PROJECT_DIR: " ${PROJECT_DIR})
 set(SRC_PATH ${PROJECT_DIR}/src)
 MESSAGE(STATUS "SRC_PATH: " ${SRC_PATH})
 
-ADD_EXECUTABLE(pascc ${SRC_FILES} ${MAIN_SRC})
-
-target_include_directories(pascc PUBLIC ${PROJECT_DIR}/src)
+ADD_EXECUTABLE(IR_TEST ${SRC_FILES} ${MAIN_SRC})

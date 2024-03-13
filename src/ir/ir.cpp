@@ -83,7 +83,7 @@ bool CompareInst::can_be_compared(const Type *t1, const Type *t2) {
 }
 
 bool BinaryInst::can_compute(const Type *t1, const Type *t2) {
-    if(t1->tid_ == t2->tid_) {
+    if(t1->get_tid() == t2->get_tid()) {
         return true;
     }
     if(t1->is_number() && t2->is_number()) {
