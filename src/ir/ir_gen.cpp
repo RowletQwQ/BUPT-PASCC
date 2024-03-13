@@ -4,6 +4,7 @@
 #include "common/log/log.hpp"
 #include <algorithm>
 #include <iostream>
+#include <memory>
 
 namespace ir {
 
@@ -164,7 +165,8 @@ void IRGenerator::visit(AddExprStmt &stmt) {
             LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
             throw common::IRGenException("二元运算表达式类型不匹配");
         }
-        auto inst_type = std::max(lhs->type_->tid_, rhs->type_->tid_); // 选择更大的类型
+        auto inst_type_id = std::max(lhs->type_->tid_, rhs->type_->tid_); // 选择更大的类型
+        auto inst_type = std::make_shared<Type>(inst_type_id);
         std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs);
         this->scope_.current_f_->basic_blocks_.back()->instructions_.push_back(inst);
     }
@@ -182,7 +184,8 @@ void IRGenerator::visit(MulExprStmt &stmt) {
             LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
             throw common::IRGenException("二元运算表达式类型不匹配");
         }
-        auto inst_type = std::max(lhs->type_->tid_, rhs->type_->tid_); // 选择更大的类型
+        auto inst_type_id = std::max(lhs->type_->tid_, rhs->type_->tid_); // 选择更大的类型
+        auto inst_type = std::make_shared<Type>(inst_type_id);
         std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs);
         this->scope_.current_f_->basic_blocks_.back()->instructions_.push_back(inst);
     }
