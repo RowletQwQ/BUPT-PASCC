@@ -132,3 +132,13 @@ void ProgramStmt::accept(StmtVisitor &visitor)
 {
     visitor.visit(*this);
 }
+
+void BreakStmt::accept(StmtVisitor &visitor)
+{
+    visitor.visit(*this);
+}
+
+void ContinueStmt::accept(StmtVisitor &visitor)
+{
+    visitor.visit(*this);
+}

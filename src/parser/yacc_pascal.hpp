@@ -98,12 +98,14 @@ extern int yydebug;
     ANDTHEN = 299,                 /* ANDTHEN  */
     DOUBLE_DOT = 300,              /* DOUBLE_DOT  */
     BRACE_PAIR = 301,              /* BRACE_PAIR  */
-    IDENTIFIER = 302,              /* IDENTIFIER  */
-    INTEGER = 303,                 /* INTEGER  */
-    BOOLEAN = 304,                 /* BOOLEAN  */
-    REAL = 305,                    /* REAL  */
-    CHAR = 306,                    /* CHAR  */
-    STRING = 307                   /* STRING  */
+    BREAK = 302,                   /* BREAK  */
+    CONTINUE = 303,                /* CONTINUE  */
+    IDENTIFIER = 304,              /* IDENTIFIER  */
+    INTEGER = 305,                 /* INTEGER  */
+    BOOLEAN = 306,                 /* BOOLEAN  */
+    REAL = 307,                    /* REAL  */
+    CHAR = 308,                    /* CHAR  */
+    STRING = 309                   /* STRING  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -112,7 +114,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 394 "yacc_pascal.y"
+#line 396 "yacc_pascal.y"
 
     ProgramStmt *                                   program_struct;
     ProgramHeadStmt *                               program_head;
@@ -151,6 +153,9 @@ union YYSTYPE
     UnaryExprStmt *                                 unary_expr;
     PrimaryExprStmt *                               primary_expr;
 
+    BreakStmt *                                     break_stmt;
+    ContinueStmt *                                  continue_stmt;
+
     char *                                          string;
     long long                                       number;
     bool                                            boolean;
@@ -158,7 +163,7 @@ union YYSTYPE
     char                                           charactor;
     int                                            token;
 
-#line 162 "yacc_pascal.hpp"
+#line 167 "yacc_pascal.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

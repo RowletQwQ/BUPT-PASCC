@@ -41,5 +41,5 @@ MESSAGE(STATUS "SRC_PATH: " ${SRC_PATH})
 
 ADD_EXECUTABLE(IR_TEST ${SRC_FILES} ${MAIN_SRC})
 
-# target_link_libraries(IR_TEST -fsanitize=address)
+#target_link_libraries(IR_TEST -fsanitize=address)
 

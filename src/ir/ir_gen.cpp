@@ -1,10 +1,13 @@
 #include "ir/ir_gen.hpp"
 #include "assert.h"
+#include "ast/stmt.hpp"
 #include "common/exception/exception.hpp"
 #include "common/log/log.hpp"
+#include "ir/ir.hpp"
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <utility>
 
 namespace ir {
 
@@ -43,7 +46,9 @@ Instruction::OpID build_op_id(RelExprStmt::RelExprType type) {
         case RelExprStmt::RelExprType::GreaterEqual:
             return Instruction::OpID::Ge;
         case RelExprStmt::RelExprType::In:
-            return Instruction::OpID::In; 
+            return Instruction::OpID::In;
+        default:
+            break; 
     }
     return Instruction::OpID::Null;
 }
@@ -55,6 +60,8 @@ Instruction::OpID build_op_id(AddExprStmt::AddExprType type) {
             return Instruction::OpID::Sub;
         case AddExprStmt::AddExprType::Or:
             return Instruction::OpID::Or;
+        default:
+            break;
     }
     return Instruction::OpID::Null;
 }
@@ -70,6 +77,8 @@ Instruction::OpID build_op_id(MulExprStmt::MulExprType type) {
             return Instruction::OpID::And;
         case MulExprStmt::MulExprType::AndThen:
             return Instruction::OpID::AndThen;
+        default:
+            break;
     }
     return Instruction::OpID::Null;
 }
@@ -79,6 +88,8 @@ Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
             return Instruction::OpID::Sub;
         case UnaryExprStmt::UnaryExprType::Not:
             return Instruction::OpID::Not;
+        default:
+            break;
     }
     return Instruction::OpID::Null;
 }
@@ -90,11 +101,23 @@ Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
 void Scope::enter() {
     symbols_.emplace_back(std::map<std::string, std::shared_ptr<Value>>());
 }
+std::weak_ptr<BasicBlock> Scope::get_loop_body(){
+    return loop_stack_.back().first;
+}
+std::weak_ptr<BasicBlock> Scope::get_loop_brk(){
+    return loop_stack_.back().second;
+}
 /**
  * @brief 离开一个作用域
 */
 void Scope::leave() {
     symbols_.pop_back();
+}
+void Scope::enter_loop(std::weak_ptr<BasicBlock> body_bb, std::weak_ptr<BasicBlock> brk_bb) {
+    loop_stack_.emplace_back(std::make_pair(body_bb, brk_bb));
+}
+void Scope::leave_loop() {
+    loop_stack_.pop_back();
 }
 /**
  * @brief 检测是否在全局作用域
@@ -148,6 +171,10 @@ void IRGenerator::visit(RelExprStmt &stmt) {
                 throw common::IRGenException("比较表达式类型不匹配");
             }
 
+            if(op == Instruction::OpID::Null) {
+                LOG_ERROR("不支持的比较操作符, 左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
+                throw common::IRGenException("不支持的比较操作符");
+            }
             // 新建指令，并赋予基本块信息
             std::shared_ptr<CompareInst> inst = std::make_shared<CompareInst>(op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
             this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
@@ -170,6 +197,10 @@ void IRGenerator::visit(AddExprStmt &stmt) {
                 LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
                 LOG_ERROR("左侧类型 %s, 右侧类型 %s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
                 throw common::IRGenException("二元运算表达式类型不匹配");
+            }
+            if (op == Instruction::OpID::Null) {
+                LOG_ERROR("不支持的二元运算操作符, 左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
+                throw common::IRGenException("不支持的二元运算操作符");
             }
             auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
             auto inst_type = std::make_shared<Type>(inst_type_id);
@@ -197,6 +228,11 @@ void IRGenerator::visit(MulExprStmt &stmt) {
                 throw common::IRGenException("二元运算表达式类型不匹配");
             }
 
+            if (op == Instruction::OpID::Null) {
+                LOG_ERROR("不支持的二元运算操作符, 左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
+                throw common::IRGenException("不支持的二元运算操作符");
+            }
+
             auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
             auto inst_type = std::make_shared<Type>(inst_type_id);
             std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
@@ -210,7 +246,12 @@ void IRGenerator::visit(UnaryExprStmt &stmt) {
     stmt.primary_expr->accept(*this);
     for(auto &t: stmt.types) {
         Instruction::OpID op = build_op_id(t); // 操作符
+        
         std::shared_ptr<Value> val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        if (op == Instruction::OpID::Null) {
+            LOG_ERROR("不支持的一元运算操作符, 表达式：%s, 操作符: %d", val->print().c_str(), t);
+            throw common::IRGenException("不支持的一元运算操作符");
+        }
         std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, op, val, this->scope_.current_f_->basic_blocks_.back());
         this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
         inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
@@ -266,6 +307,10 @@ void IRGenerator::visit(StrStmt &stmt) {
 void IRGenerator::visit(FuncCallStmt &stmt) {
     // 先寻找函数的指针
     std::shared_ptr<Function> val = std::static_pointer_cast<Function>(this->scope_.find(stmt.id));
+    if(!val) {
+        LOG_FATAL("没有这样的函数：%s",stmt.id.c_str());
+        throw common::IRGenException("没有这样的函数");
+    }
     assert(val != nullptr);
 
     // 得到参数
@@ -438,6 +483,24 @@ void IRGenerator::visit(LValStmt &stmt) {
         }
     }
 }
+void IRGenerator::visit(BreakStmt &stmt) {
+    if(!this->scope_.is_in_loop()) {
+        LOG_ERROR("break 语句不在循环内");
+        throw common::IRGenException("break 语句不在循环内");
+    }
+    std::shared_ptr<BreakInst> inst = std::make_shared<BreakInst>(this->scope_.get_loop_brk().lock(), this->scope_.current_f_->basic_blocks_.back());
+    this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+    inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+}
+void IRGenerator::visit(ContinueStmt &stmt) {
+    if(!this->scope_.is_in_loop()) {
+        LOG_ERROR("continue 语句不在循环内");
+        throw common::IRGenException("continue 语句不在循环内");
+    }
+    std::shared_ptr<ContinueInst> inst = std::make_shared<ContinueInst>(this->scope_.get_loop_body().lock(), this->scope_.current_f_->basic_blocks_.back());
+    this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+    inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+}
 void IRGenerator::visit(AssignStmt &stmt) {
     std::shared_ptr<Instruction> inst; // 对应的指令
     // 处理左值
@@ -518,20 +581,26 @@ void IRGenerator::visit(ForStmt &stmt) {
     cond_bb->instructions_.emplace_back(cond_inst);
     cond_inst->set_pos_in_bb(std::prev(cond_bb->instructions_.end()));
 
+    
     // 再新建一个基本块, 这个基本块是循环体
     std::shared_ptr<BasicBlock> body_bb = std::make_shared<BasicBlock>("body_basic_block");
+    // 最后新建一个循环外的基本块
+    std::shared_ptr<BasicBlock> nxt_bb = std::make_shared<BasicBlock>("nxt_basic_block");
+    // 进入循环，记录循环外基本块位置
+    this->scope_.enter_loop(body_bb, nxt_bb);
     this->scope_.current_f_->add_basic_block(body_bb);
     for (const auto &stmt : stmt.stmt) {
         stmt->accept(*this);
     }
+    // 退出循环
+    this->scope_.leave_loop();
     // 循环体的最后一条指令是循环变量加 1
     std::shared_ptr<UnaryInst> inc_inst = std::make_shared<UnaryInst>(id->type_, Instruction::OpID::Inc, id, body_bb);
     body_bb->instructions_.emplace_back(inc_inst);
     inc_inst->set_pos_in_bb(std::prev(body_bb->instructions_.end()));
     body_bb->add_succ_bb(cond_bb);
 
-    // 最后新建一个循环外的基本块
-    std::shared_ptr<BasicBlock> nxt_bb = std::make_shared<BasicBlock>("nxt_basic_block");
+    
     this->scope_.current_f_->add_basic_block(nxt_bb);
 
     // 补充上面的 if 指令
@@ -550,17 +619,21 @@ void IRGenerator::visit(WhileStmt &stmt) {
     cond_bb->add_pre_bb(cur_bb);
     stmt.expr->accept(*this);
     std::shared_ptr<Instruction> cond_inst = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-
     // 再新建一个循环体基本块
     std::shared_ptr<BasicBlock> body_bb = std::make_shared<BasicBlock>("body_basic_block");
+    // 最后新建一个循环外的基本块
+    std::shared_ptr<BasicBlock> nxt_bb = std::make_shared<BasicBlock>("nxt_basic_block");
+    // 进入循环
+    this->scope_.enter_loop(body_bb, nxt_bb);
     this->scope_.current_f_->add_basic_block(body_bb);
     for (const auto &stmt : stmt.stmt) {
         stmt->accept(*this);
     }
+    // 退出循环
+    this->scope_.leave_loop();
     body_bb->add_succ_bb(cond_bb);
 
-    // 最后新建一个循环外的基本块
-    std::shared_ptr<BasicBlock> nxt_bb = std::make_shared<BasicBlock>("nxt_basic_block");
+    
     this->scope_.current_f_->add_basic_block(nxt_bb);
 
     // 创建 while 指令
