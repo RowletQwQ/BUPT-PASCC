@@ -60,23 +60,12 @@ std::string rel_expr_stmt_str(const RelExprStmt* stmt, int deep){
     }
     std::stringstream res;
     res << deep_print(deep) << "|____[RelExprStmt] " << "\n";
-    if(stmt->type == RelExprStmt::RelExprType::NULL_TYPE){
-        res << add_expr_stmt_str(stmt->add_expr.get(), deep + 1);
-    }else{
-        std::string res1, res2, res3;
-        std::thread t1([&res1, stmt, deep](){
-            res1 = add_expr_stmt_str(stmt->add_expr.get(), deep + 1);
-        });
-        std::thread t2([&res2, stmt, deep](){
-            res2 = "\n" + deep_print(deep+1) + "===>[OP]: " + rel_op(stmt->type) + "\n";
-        });
-        std::thread t3([&res3, stmt, deep](){
-            res3 = rel_expr_stmt_str(stmt->rel_expr.get(), deep + 1);
-        });
-        t1.join();
-        t2.join();
-        t3.join();
-        res << res1 << res2 << res3;
+    for(auto &term : stmt->terms){
+        if (term.type != RelExprStmt::RelExprType::NULL_TYPE)
+        {
+            res << "\n" + deep_print(deep+1) << "===>[OP]: " + rel_op(term.type) << "\n";
+        }
+        res << add_expr_stmt_str(term.add_expr.get(), deep + 1);
     }
     return res.str();
 };
@@ -87,21 +76,12 @@ std::string add_expr_stmt_str(const AddExprStmt* stmt, int deep){
     }
     std::stringstream res; 
     res << deep_print(deep) << "|____[AddExprStmt]\n";
-    if(stmt->type == AddExprStmt::AddExprType::NULL_TYPE){
-        res << mul_expr_stmt_str(stmt->mul_expr.get(), deep + 1);
-    }else{
-        std::string res1, res2;
-        std::thread t1([&res1, stmt, deep](){
-            res1 = mul_expr_stmt_str(stmt->mul_expr.get(), deep + 1);
-        });
-        std::thread t2([&res2, stmt, deep](){
-            res2 = add_expr_stmt_str(stmt->add_expr.get(), deep + 1);
-        });
-        t1.join();
-        t2.join();
-        res << res1;
-        res << "\n" + deep_print(deep+1) << "===>[OP]: " + add_op(stmt->type) << "\n";
-        res << res2;
+    for(auto &term : stmt->terms){
+        if (term.type != AddExprStmt::AddExprType::NULL_TYPE)
+        {
+            res << "\n" + deep_print(deep+1) << "===>[OP]: " + add_op(term.type) << "\n";
+        }
+        res << mul_expr_stmt_str(term.mul_expr.get(), deep + 1);
     }
     return res.str();
 };
@@ -112,21 +92,12 @@ std::string mul_expr_stmt_str(const MulExprStmt* stmt, int deep){
     }
     std::stringstream res; 
     res << deep_print(deep) << "|____[MulExprStmt]\n";
-    if(stmt->type == MulExprStmt::MulExprType::NULL_TYPE){
-        res << unary_expr_stmt_str(stmt->unary_expr.get(), deep + 1);
-    }else{
-        std::string res1, res2;
-        std::thread t1([&res1, stmt, deep](){
-            res1 = unary_expr_stmt_str(stmt->unary_expr.get(), deep + 1);
-        });
-        std::thread t2([&res2, stmt, deep](){
-            res2 = mul_expr_stmt_str(stmt->mul_expr.get(), deep + 1);
-        });
-        t1.join();
-        t2.join();
-        res << res1;
-        res << "\n" + deep_print(deep+1) << "===>[OP]: " + mul_op(stmt->type) << "\n";
-        res << res2;
+    for(auto &term : stmt->terms){
+        if (term.type != MulExprStmt::MulExprType::NULL_TYPE)
+        {
+            res << "\n" + deep_print(deep+1) << "===>[OP]: " + mul_op(term.type) << "\n";
+        }
+        res << unary_expr_stmt_str(term.unary_expr.get(), deep + 1);
     }
     return res.str();
 };
@@ -137,12 +108,15 @@ std::string unary_expr_stmt_str(const UnaryExprStmt* stmt, int deep){
     }
     std::stringstream res; 
     res << deep_print(deep) << "|____[UnaryExprStmt]\n";
-    if(stmt->type == UnaryExprStmt::UnaryExprType::NULL_TYPE){
-        res << primary_expr_stmt_str(stmt->primary_expr.get(), deep + 1);
-    }else{
-        res << "\n" + deep_print(deep+1) << "===>[OP]: " + unary_op(stmt->type) << "\n";
-        res << primary_expr_stmt_str(stmt->primary_expr.get(), deep + 1);
+    for (auto &term : stmt->types)
+    {
+        if (term != UnaryExprStmt::UnaryExprType::NULL_TYPE)
+        {
+            res << "\n" + deep_print(deep+1) << "===>[OP]: " + unary_op(term) << "\n";
+        }
+        
     }
+    res << primary_expr_stmt_str(stmt->primary_expr.get(), deep + 1);
     return res.str();
 };
 
