@@ -67,9 +67,11 @@ public:
         GreaterEqual, // >=
         In, // in
     };
-    RelExprType type;
-    std::unique_ptr<AddExprStmt> add_expr;
-    std::unique_ptr<RelExprStmt> rel_expr;
+    struct Term {
+        RelExprType type;
+        std::unique_ptr<AddExprStmt> add_expr;
+    };
+    std::vector<Term> terms;
     void accept(StmtVisitor &visitor) override;
 };
 
@@ -84,9 +86,11 @@ public:
         Minus, // -
         Or, // or
     };
-    AddExprType type;
-    std::unique_ptr<MulExprStmt> mul_expr;
-    std::unique_ptr<AddExprStmt> add_expr;
+    struct Term {
+        AddExprType type;
+        std::unique_ptr<MulExprStmt> mul_expr;
+    };
+    std::vector<Term> terms;
     void accept(StmtVisitor &visitor) override;
 };
 
@@ -103,9 +107,11 @@ public:
         And, // and
         AndThen, // and then
     }; 
-    MulExprType type;
-    std::unique_ptr<UnaryExprStmt> unary_expr;
-    std::unique_ptr<MulExprStmt> mul_expr;
+    struct Term {
+        MulExprType type;
+        std::unique_ptr<UnaryExprStmt> unary_expr;
+    };
+    std::vector<Term> terms;
     void accept(StmtVisitor &visitor) override;
 };
 
@@ -119,7 +125,7 @@ public:
         Not, // not
         Minus, // -
     };
-    UnaryExprType type;
+    std::vector<UnaryExprType> types;
     std::unique_ptr<PrimaryExprStmt> primary_expr;
     void accept(StmtVisitor &visitor) override;
 };

@@ -62,54 +62,54 @@ MulExprStmt::MulExprType get_mul_expr_type(long long op) {
 
 }
 
-std::unique_ptr<RelExprStmt> new_rel_expr_stmt(RelExprStmt::RelExprType type) {
-    std::unique_ptr<RelExprStmt> rel_expr = std::make_unique<RelExprStmt>();
-    rel_expr->type = type;
-    if(type == RelExprStmt::RelExprType::NULL_TYPE){
-        rel_expr->add_expr = nullptr;
-    }
-    return rel_expr;
-}
+// std::unique_ptr<RelExprStmt> new_rel_expr_stmt(RelExprStmt::RelExprType type) {
+//     std::unique_ptr<RelExprStmt> rel_expr = std::make_unique<RelExprStmt>();
+//     rel_expr->type = type;
+//     if(type == RelExprStmt::RelExprType::NULL_TYPE){
+//         rel_expr->add_expr = nullptr;
+//     }
+//     return rel_expr;
+// }
 
 
-std::unique_ptr<AddExprStmt> new_add_expr_stmt(AddExprStmt::AddExprType type) {
-    std::unique_ptr<AddExprStmt> add_expr = std::make_unique<AddExprStmt>();
-    add_expr->type = type;
-    if(type == AddExprStmt::AddExprType::NULL_TYPE){
-        add_expr->add_expr = nullptr;
-    }
-    return add_expr;
-}
+// std::unique_ptr<AddExprStmt> new_add_expr_stmt(AddExprStmt::AddExprType type) {
+//     std::unique_ptr<AddExprStmt> add_expr = std::make_unique<AddExprStmt>();
+//     add_expr->type = type;
+//     if(type == AddExprStmt::AddExprType::NULL_TYPE){
+//         add_expr->add_expr = nullptr;
+//     }
+//     return add_expr;
+// }
 
 
-std::unique_ptr<MulExprStmt> new_mul_expr_stmt(MulExprStmt::MulExprType type) {
-    std::unique_ptr<MulExprStmt> mul_expr = std::make_unique<MulExprStmt>();
-    mul_expr->type = type;
-    if(type == MulExprStmt::MulExprType::NULL_TYPE){
-        mul_expr->mul_expr = nullptr;
-    }
-    return mul_expr;
-}
+// std::unique_ptr<MulExprStmt> new_mul_expr_stmt(MulExprStmt::MulExprType type) {
+//     std::unique_ptr<MulExprStmt> mul_expr = std::make_unique<MulExprStmt>();
+//     mul_expr->type = type;
+//     if(type == MulExprStmt::MulExprType::NULL_TYPE){
+//         mul_expr->mul_expr = nullptr;
+//     }
+//     return mul_expr;
+// }
 
 
-std::unique_ptr<UnaryExprStmt> new_unary_expr_stmt(UnaryExprStmt::UnaryExprType type) {
-    std::unique_ptr<UnaryExprStmt> unary_expr = std::make_unique<UnaryExprStmt>();
-    unary_expr->type = type;
-    return unary_expr;
-}
+// std::unique_ptr<UnaryExprStmt> new_unary_expr_stmt(UnaryExprStmt::UnaryExprType type) {
+//     std::unique_ptr<UnaryExprStmt> unary_expr = std::make_unique<UnaryExprStmt>();
+//     unary_expr->type = type;
+//     return unary_expr;
+// }
 
 
-std::unique_ptr<PrimaryExprStmt> new_primary_expr_stmt(PrimaryExprStmt::PrimaryExprType type) {
-    std::unique_ptr<PrimaryExprStmt> primary_expr = std::make_unique<PrimaryExprStmt>();
-    primary_expr->type = type;
-    return primary_expr;
-}
+// std::unique_ptr<PrimaryExprStmt> new_primary_expr_stmt(PrimaryExprStmt::PrimaryExprType type) {
+//     std::unique_ptr<PrimaryExprStmt> primary_expr = std::make_unique<PrimaryExprStmt>();
+//     primary_expr->type = type;
+//     return primary_expr;
+// }
 
-std::unique_ptr<ValueStmt> new_value_stmt(ValueStmt::ValueType type) {
-    std::unique_ptr<ValueStmt> value = std::make_unique<ValueStmt>();
-    value->type = type;
-    return value;
-}
+// std::unique_ptr<ValueStmt> new_value_stmt(ValueStmt::ValueType type) {
+//     std::unique_ptr<ValueStmt> value = std::make_unique<ValueStmt>();
+//     value->type = type;
+//     return value;
+// }
 
 NumberStmt * new_number_stmt(char char_val);
 NumberStmt * new_number_stmt(double real_val);
@@ -163,19 +163,19 @@ void fill_number_stmt(NumberStmt* num_value, char char_val){
     num_value->char_val = char_val;
 }
 
-std::unique_ptr<PrimaryExprStmt> bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt> unary_expr){
-    std::unique_ptr<PrimaryExprStmt> primary_expr = std::make_unique<PrimaryExprStmt>();
-    primary_expr->type = PrimaryExprStmt::PrimaryExprType::Parentheses;
-    primary_expr->expr = std::make_unique<ExprStmt>();
-    primary_expr->expr->rel_expr = std::make_unique<RelExprStmt>();
-    primary_expr->expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
-    primary_expr->expr->rel_expr->add_expr = std::make_unique<AddExprStmt>();
-    primary_expr->expr->rel_expr->add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
-    primary_expr->expr->rel_expr->add_expr->mul_expr = std::make_unique<MulExprStmt>();
-    primary_expr->expr->rel_expr->add_expr->mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
-    primary_expr->expr->rel_expr->add_expr->mul_expr->unary_expr = std::move(unary_expr);
-    return primary_expr;
-}
+// std::unique_ptr<PrimaryExprStmt> bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt> unary_expr){
+//     std::unique_ptr<PrimaryExprStmt> primary_expr = std::make_unique<PrimaryExprStmt>();
+//     primary_expr->type = PrimaryExprStmt::PrimaryExprType::Parentheses;
+//     primary_expr->expr = std::make_unique<ExprStmt>();
+//     primary_expr->expr->rel_expr = std::make_unique<RelExprStmt>();
+//     primary_expr->expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
+//     primary_expr->expr->rel_expr->add_expr = std::make_unique<AddExprStmt>();
+//     primary_expr->expr->rel_expr->add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
+//     primary_expr->expr->rel_expr->add_expr->mul_expr = std::make_unique<MulExprStmt>();
+//     primary_expr->expr->rel_expr->add_expr->mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
+//     primary_expr->expr->rel_expr->add_expr->mul_expr->unary_expr = std::move(unary_expr);
+//     return primary_expr;
+// }
 
 
 void syntax_error(YYLTYPE *llocp, const char *msg){
@@ -1483,21 +1483,21 @@ expression : simple_expression
         current_rule = CurrentRule::Expression;
         ExprStmt * expr = new ExprStmt();
         expr->rel_expr = std::make_unique<RelExprStmt>();
-        expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
-        expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($1);
+        RelExprStmt::Term term;
+        term.type = RelExprStmt::RelExprType::NULL_TYPE;
+        term.add_expr = std::unique_ptr<AddExprStmt>($1);
+        expr->rel_expr->terms.emplace_back(std::move(term));
         $$ = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression");
     }
-    | simple_expression relop simple_expression
+    | expression relop simple_expression
     {
         current_rule = CurrentRule::Expression;
-        ExprStmt * expr = new ExprStmt();
-        expr->rel_expr = std::make_unique<RelExprStmt>();
-        expr->rel_expr->type = get_rel_expr_type($2);
-        expr->rel_expr->rel_expr = std::make_unique<RelExprStmt>();
-        expr->rel_expr->rel_expr->type = RelExprStmt::RelExprType::NULL_TYPE;
-        expr->rel_expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($1);
-        expr->rel_expr->add_expr = std::unique_ptr<AddExprStmt>($3);
+        ExprStmt * expr = $1;
+        RelExprStmt::Term term;
+        term.type = get_rel_expr_type($2);
+        term.add_expr = std::unique_ptr<AddExprStmt>($3);
+        expr->rel_expr->terms.emplace_back(std::move(term));
         $$ = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression");
     }
@@ -1515,18 +1515,21 @@ simple_expression : term
     {
         current_rule = CurrentRule::SimpleExpression;
         AddExprStmt * add_expr = new AddExprStmt();
-        add_expr->type = AddExprStmt::AddExprType::NULL_TYPE;
-        add_expr->mul_expr = std::unique_ptr<MulExprStmt>($1);
+        AddExprStmt::Term term;
+        term.type = AddExprStmt::AddExprType::NULL_TYPE;
+        term.mul_expr = std::unique_ptr<MulExprStmt>($1);
+        add_expr->terms.emplace_back(std::move(term));
         $$ = add_expr;
         LOG_DEBUG("DEBUG simple_expression -> term");
     }
     | simple_expression addop term
     {
         current_rule = CurrentRule::SimpleExpression;
-        AddExprStmt * add_expr = new AddExprStmt();
-        add_expr->type = get_add_expr_type($2);
-        add_expr->mul_expr = std::unique_ptr<MulExprStmt>($3);
-        add_expr->add_expr = std::unique_ptr<AddExprStmt>($1);
+        AddExprStmt * add_expr = $1;
+        AddExprStmt::Term term;
+        term.type = get_add_expr_type($2);
+        term.mul_expr = std::unique_ptr<MulExprStmt>($3);
+        add_expr->terms.emplace_back(std::move(term));
         $$ = add_expr;
         LOG_DEBUG("DEBUG simple_expression -> simple_expression %lld term\n", $2);
     }
@@ -1543,18 +1546,21 @@ term : factor
     {
         current_rule = CurrentRule::Term;
         MulExprStmt * mul_expr = new MulExprStmt();
-        mul_expr->type = MulExprStmt::MulExprType::NULL_TYPE;
-        mul_expr->unary_expr = std::unique_ptr<UnaryExprStmt>($1);
+        MulExprStmt::Term term;
+        term.type = MulExprStmt::MulExprType::NULL_TYPE;
+        term.unary_expr = std::unique_ptr<UnaryExprStmt>($1);
+        mul_expr->terms.emplace_back(std::move(term));
         $$ = mul_expr;
         LOG_DEBUG("DEBUG term -> factor");
     }
     | term mulop factor
     {
         current_rule = CurrentRule::Term;
-        MulExprStmt * mul_expr = new MulExprStmt();
-        mul_expr->type = get_mul_expr_type($2);
-        mul_expr->mul_expr = std::unique_ptr<MulExprStmt>($1);
-        mul_expr->unary_expr = std::unique_ptr<UnaryExprStmt>($3);
+        MulExprStmt * mul_expr = $1;
+        MulExprStmt::Term term;
+        term.type = get_mul_expr_type($2);
+        term.unary_expr = std::unique_ptr<UnaryExprStmt>($3);
+        mul_expr->terms.emplace_back(std::move(term));
         $$ = mul_expr;
         LOG_DEBUG("DEBUG term -> term mulop factor");
     }
@@ -1571,7 +1577,7 @@ factor : INTEGER
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1584,7 +1590,7 @@ factor : INTEGER
     /* | '+' INTEGER
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1597,7 +1603,7 @@ factor : INTEGER
     | '-' INTEGER
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
+        unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::Minus;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1611,7 +1617,7 @@ factor : INTEGER
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1624,7 +1630,7 @@ factor : INTEGER
     /* | '+' REAL
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1637,7 +1643,7 @@ factor : INTEGER
     | '-' REAL
     {
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
+        unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::Minus;
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1651,7 +1657,7 @@ factor : INTEGER
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1666,7 +1672,7 @@ factor : INTEGER
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1680,7 +1686,7 @@ factor : INTEGER
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1693,7 +1699,7 @@ factor : INTEGER
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Parentheses;
         unary_expr->primary_expr->expr = std::unique_ptr<ExprStmt>($2);
@@ -1704,7 +1710,7 @@ factor : INTEGER
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::NULL_TYPE;
+        //unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::NULL_TYPE);
         unary_expr->primary_expr = std::make_unique<PrimaryExprStmt>();
         unary_expr->primary_expr->type =PrimaryExprStmt::PrimaryExprType::Value;
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
@@ -1724,28 +1730,22 @@ factor : INTEGER
     | NOT factor
     {
         current_rule = CurrentRule::Factor;
-        UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::Not;
-        unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>($2));
+        UnaryExprStmt * unary_expr = $2;
+        unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::Not);
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> NOT factor");
     }
     | '+' factor
     {
         current_rule = CurrentRule::Factor;
-        UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type = $2->type;
-        unary_expr->primary_expr = std::move($2->primary_expr);
-        delete $2;
-        $$ = unary_expr;
+        $$ = $2;
         LOG_DEBUG("DEBUG factor -> '+' factor");
     }
     | '-' factor
     {
         current_rule = CurrentRule::Factor;
-        UnaryExprStmt * unary_expr = new UnaryExprStmt();
-        unary_expr->type =UnaryExprStmt::UnaryExprType::Minus;
-        unary_expr->primary_expr = bridge_primary_to_unary(std::unique_ptr<UnaryExprStmt>($2));
+        UnaryExprStmt * unary_expr = $2;
+        unary_expr->types.emplace_back(UnaryExprStmt::UnaryExprType::Minus);
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' factor");
     };

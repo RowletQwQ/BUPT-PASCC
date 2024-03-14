@@ -136,75 +136,80 @@ void IRGenerator::visit(ExprStmt &stmt) {
     }
 }
 void IRGenerator::visit(RelExprStmt &stmt) {
-    if (stmt.type == RelExprStmt::RelExprType::NULL_TYPE) { // 降级处理
-        stmt.add_expr->accept(*this);
-    } else {
-        Instruction::OpID op = build_op_id(stmt.type); // 操作符
-        stmt.rel_expr->accept(*this);
-        std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        stmt.add_expr->accept(*this);
+    std::shared_ptr<Value> lhs; // 左侧表达式
+    for (const auto &term : stmt.terms) {
+        term.add_expr->accept(*this);
         std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        if(!CompareInst::can_be_compared(lhs->type_.get(), rhs->type_.get())) {
-            LOG_ERROR("比较表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
-            LOG_ERROR("左侧类型 %s, 右侧类型 %s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
-            throw common::IRGenException("比较表达式类型不匹配");
-        }
-        // 新建指令，并赋予基本块信息
-        std::shared_ptr<CompareInst> inst = std::make_shared<CompareInst>(op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
-        this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
-        inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+        if (lhs && term.type != RelExprStmt::RelExprType::NULL_TYPE) {
+            Instruction::OpID op = build_op_id(term.type);
+            if(!CompareInst::can_be_compared(lhs->type_.get(), rhs->type_.get())) {
+                LOG_ERROR("比较表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
+                LOG_ERROR("左侧类型 %s, 右侧类型 %s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
+                throw common::IRGenException("比较表达式类型不匹配");
+            }
 
+            // 新建指令，并赋予基本块信息
+            std::shared_ptr<CompareInst> inst = std::make_shared<CompareInst>(op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+            inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+        }
+        lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
     }
 }
 void IRGenerator::visit(AddExprStmt &stmt) {
-    if (stmt.type == AddExprStmt::AddExprType::NULL_TYPE) { // 降级处理
-        stmt.mul_expr->accept(*this);
-    } else {
-        Instruction::OpID op = build_op_id(stmt.type); // 操作符
-        stmt.add_expr->accept(*this);
-        std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        stmt.mul_expr->accept(*this);
+    std::shared_ptr<Value> lhs; // 左侧表达式
+    for (const auto &term : stmt.terms) {
+        term.mul_expr->accept(*this);
         std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        if (!BinaryInst::can_compute(lhs->type_.get(), rhs->type_.get())) {
-            LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
-            LOG_ERROR("左侧类型 %s, 右侧类型 %s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
-            throw common::IRGenException("二元运算表达式类型不匹配");
+
+        if (lhs && term.type != AddExprStmt::AddExprType::NULL_TYPE) {
+            Instruction::OpID op = build_op_id(term.type);
+            //std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+
+            if (!BinaryInst::can_compute(lhs->type_.get(), rhs->type_.get())) {
+                LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
+                LOG_ERROR("左侧类型 %s, 右侧类型 %s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
+                throw common::IRGenException("二元运算表达式类型不匹配");
+            }
+            auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
+            auto inst_type = std::make_shared<Type>(inst_type_id);
+            std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+            inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
         }
-        auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
-        auto inst_type = std::make_shared<Type>(inst_type_id);
-        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
-        this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
-        inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+        lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
     }
 }
+
 void IRGenerator::visit(MulExprStmt &stmt) {
-    if (stmt.type == MulExprStmt::MulExprType::NULL_TYPE) { // 降级处理
-        stmt.unary_expr->accept(*this);
-    } else {
-        Instruction::OpID op = build_op_id(stmt.type); // 操作符
-        stmt.mul_expr->accept(*this);
-        std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        stmt.unary_expr->accept(*this);
+    std::shared_ptr<Value> lhs; // 左侧表达式
+    for (const auto &term : stmt.terms) {
+        term.unary_expr->accept(*this);
         std::shared_ptr<Value> rhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-        if (!BinaryInst::can_compute(lhs->type_.get(), rhs->type_.get())) {
-            LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
-            LOG_ERROR("左侧类型 %s, 右侧类型 %s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
-            throw common::IRGenException("二元运算表达式类型不匹配");
+
+        if (lhs && term.type != MulExprStmt::MulExprType::NULL_TYPE) {
+            Instruction::OpID op = build_op_id(term.type);
+            //std::shared_ptr<Value> lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+
+            if (!BinaryInst::can_compute(lhs->type_.get(), rhs->type_.get())) {
+                LOG_ERROR("二元运算表达式类型不匹配，左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
+                LOG_ERROR("左侧类型 %s, 右侧类型 %s", lhs->type_->print().c_str(), rhs->type_->print().c_str());
+                throw common::IRGenException("二元运算表达式类型不匹配");
+            }
+
+            auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
+            auto inst_type = std::make_shared<Type>(inst_type_id);
+            std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+            inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
         }
-        auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
-        auto inst_type = std::make_shared<Type>(inst_type_id);
-        std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
-        this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
-        inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+        lhs = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
     }
-    
 }
 void IRGenerator::visit(UnaryExprStmt &stmt) {
-    if (stmt.type == UnaryExprStmt::UnaryExprType::NULL_TYPE) { // 降级处理
-        stmt.primary_expr->accept(*this);
-    } else {
-        Instruction::OpID op = build_op_id(stmt.type); // 操作符
-        stmt.primary_expr->accept(*this);
+    stmt.primary_expr->accept(*this);
+    for(auto &t: stmt.types) {
+        Instruction::OpID op = build_op_id(t); // 操作符
         std::shared_ptr<Value> val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
         std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, op, val, this->scope_.current_f_->basic_blocks_.back());
         this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
