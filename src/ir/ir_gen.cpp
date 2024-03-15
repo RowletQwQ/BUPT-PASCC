@@ -3,7 +3,6 @@
 #include "ast/stmt.hpp"
 #include "common/exception/exception.hpp"
 #include "common/log/log.hpp"
-#include "ir/ir.hpp"
 #include <algorithm>
 #include <iostream>
 #include <memory>

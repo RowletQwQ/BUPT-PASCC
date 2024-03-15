@@ -2,7 +2,6 @@
 
 #include "ir/ir.hpp"
 #include "ast/visitor.hpp"
-#include "ast/stmt.hpp"
 
 #include <memory>
 #include <vector>
