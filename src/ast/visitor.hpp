@@ -24,6 +24,8 @@ class ForStmt;
 class WhileStmt;
 class ReadFuncStmt;
 class WriteFuncStmt;
+class BreakStmt;
+class ContinueStmt;
 class ProgramHeadStmt;
 class ProgramBodyStmt;
 class ProgramStmt;
@@ -55,6 +57,8 @@ public:
     virtual void visit(WhileStmt &stmt) = 0; 
     virtual void visit(ReadFuncStmt &stmt) = 0;
     virtual void visit(WriteFuncStmt &stmt) = 0;
+    virtual void visit(BreakStmt &stmt) = 0;
+    virtual void visit(ContinueStmt &stmt) = 0;
     virtual void visit(ProgramHeadStmt &stmt) = 0;
     virtual void visit(ProgramBodyStmt &stmt) = 0;
     virtual void visit(ProgramStmt &stmt) = 0;

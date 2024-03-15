@@ -363,6 +363,18 @@ public:
     void accept(StmtVisitor &visitor) override;
 };
 
+
+class BreakStmt : public BaseStmt {
+public:
+    void accept(StmtVisitor &visitor) override;
+};
+
+class ContinueStmt : public BaseStmt {
+public:
+    void accept(StmtVisitor &visitor) override;
+};
+
+
 /*******************************功能语句******************************************/
 
 /*******************************主函数******************************************/

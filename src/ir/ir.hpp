@@ -495,6 +495,8 @@ public:
         
         // Branch Jump
         Br,
+        Break,
+        Continue,
 
         // Binary Operation
         Add, 
@@ -920,6 +922,54 @@ public:
     ~ReturnInst() = default;
     virtual std::string print() override {
         return "return " + operands_[0]->print();
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+};
+
+class BreakInst : public Instruction {
+public:
+    /**
+     * @brief Construct a new Break Inst object
+     * 
+     * @param brk_bb 跳转的基本块
+     * @param bb 所属基本块
+     */
+    BreakInst(std::shared_ptr<BasicBlock> brk_bb,std::weak_ptr<BasicBlock> bb)
+      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Break, 1, bb) {
+        set_operand(0, brk_bb);
+      }
+    ~BreakInst() = default;
+    virtual std::string print() override {
+        return "break";
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::shared_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+};
+
+class ContinueInst : public Instruction {
+public:
+    /**
+     * @brief Construct a new Continue Inst object
+     * 
+     * @param cont_bb 跳转的基本块
+     * @param bb 所属基本块
+     */
+    ContinueInst(std::shared_ptr<BasicBlock> cont_bb,std::weak_ptr<BasicBlock> bb)
+      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Continue, 1, bb) {
+        set_operand(0, cont_bb);
+      }
+    ~ContinueInst() = default;
+    virtual std::string print() override {
+        return "continue";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;

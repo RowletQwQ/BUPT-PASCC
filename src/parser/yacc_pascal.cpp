@@ -475,65 +475,67 @@ enum yysymbol_kind_t
   YYSYMBOL_ANDTHEN = 44,                   /* ANDTHEN  */
   YYSYMBOL_DOUBLE_DOT = 45,                /* DOUBLE_DOT  */
   YYSYMBOL_BRACE_PAIR = 46,                /* BRACE_PAIR  */
-  YYSYMBOL_IDENTIFIER = 47,                /* IDENTIFIER  */
-  YYSYMBOL_INTEGER = 48,                   /* INTEGER  */
-  YYSYMBOL_BOOLEAN = 49,                   /* BOOLEAN  */
-  YYSYMBOL_REAL = 50,                      /* REAL  */
-  YYSYMBOL_CHAR = 51,                      /* CHAR  */
-  YYSYMBOL_STRING = 52,                    /* STRING  */
-  YYSYMBOL_53_ = 53,                       /* ';'  */
-  YYSYMBOL_54_ = 54,                       /* '.'  */
-  YYSYMBOL_55_ = 55,                       /* '('  */
-  YYSYMBOL_56_ = 56,                       /* ')'  */
-  YYSYMBOL_57_ = 57,                       /* ','  */
-  YYSYMBOL_58_ = 58,                       /* '='  */
-  YYSYMBOL_59_ = 59,                       /* '+'  */
-  YYSYMBOL_60_ = 60,                       /* '-'  */
-  YYSYMBOL_61_ = 61,                       /* ':'  */
-  YYSYMBOL_62_ = 62,                       /* '['  */
-  YYSYMBOL_63_ = 63,                       /* ']'  */
-  YYSYMBOL_64_ = 64,                       /* '<'  */
-  YYSYMBOL_65_ = 65,                       /* '>'  */
-  YYSYMBOL_66_ = 66,                       /* '*'  */
-  YYSYMBOL_67_ = 67,                       /* '/'  */
-  YYSYMBOL_YYACCEPT = 68,                  /* $accept  */
-  YYSYMBOL_programstruct = 69,             /* programstruct  */
-  YYSYMBOL_program_head = 70,              /* program_head  */
-  YYSYMBOL_program_body = 71,              /* program_body  */
-  YYSYMBOL_idlist = 72,                    /* idlist  */
-  YYSYMBOL_const_declarations = 73,        /* const_declarations  */
-  YYSYMBOL_const_declaration = 74,         /* const_declaration  */
-  YYSYMBOL_const_value = 75,               /* const_value  */
-  YYSYMBOL_var_declarations = 76,          /* var_declarations  */
-  YYSYMBOL_var_declaration = 77,           /* var_declaration  */
-  YYSYMBOL_type = 78,                      /* type  */
-  YYSYMBOL_basic_type = 79,                /* basic_type  */
-  YYSYMBOL_period_list = 80,               /* period_list  */
-  YYSYMBOL_subprogram_declarations = 81,   /* subprogram_declarations  */
-  YYSYMBOL_subprogram = 82,                /* subprogram  */
-  YYSYMBOL_subprogram_head = 83,           /* subprogram_head  */
-  YYSYMBOL_formal_parameter = 84,          /* formal_parameter  */
-  YYSYMBOL_parameter_list = 85,            /* parameter_list  */
-  YYSYMBOL_parameter = 86,                 /* parameter  */
-  YYSYMBOL_var_parameter = 87,             /* var_parameter  */
-  YYSYMBOL_value_parameter = 88,           /* value_parameter  */
-  YYSYMBOL_subprogram_body = 89,           /* subprogram_body  */
-  YYSYMBOL_compound_statement = 90,        /* compound_statement  */
-  YYSYMBOL_statement_list = 91,            /* statement_list  */
-  YYSYMBOL_statement = 92,                 /* statement  */
-  YYSYMBOL_variable_list = 93,             /* variable_list  */
-  YYSYMBOL_variable = 94,                  /* variable  */
-  YYSYMBOL_id_varpart = 95,                /* id_varpart  */
-  YYSYMBOL_array_index_expression = 96,    /* array_index_expression  */
-  YYSYMBOL_procedure_call = 97,            /* procedure_call  */
-  YYSYMBOL_expression_list = 98,           /* expression_list  */
-  YYSYMBOL_expression = 99,                /* expression  */
-  YYSYMBOL_simple_expression = 100,        /* simple_expression  */
-  YYSYMBOL_term = 101,                     /* term  */
-  YYSYMBOL_factor = 102,                   /* factor  */
-  YYSYMBOL_addop = 103,                    /* addop  */
-  YYSYMBOL_relop = 104,                    /* relop  */
-  YYSYMBOL_mulop = 105                     /* mulop  */
+  YYSYMBOL_BREAK = 47,                     /* BREAK  */
+  YYSYMBOL_CONTINUE = 48,                  /* CONTINUE  */
+  YYSYMBOL_IDENTIFIER = 49,                /* IDENTIFIER  */
+  YYSYMBOL_INTEGER = 50,                   /* INTEGER  */
+  YYSYMBOL_BOOLEAN = 51,                   /* BOOLEAN  */
+  YYSYMBOL_REAL = 52,                      /* REAL  */
+  YYSYMBOL_CHAR = 53,                      /* CHAR  */
+  YYSYMBOL_STRING = 54,                    /* STRING  */
+  YYSYMBOL_55_ = 55,                       /* ';'  */
+  YYSYMBOL_56_ = 56,                       /* '.'  */
+  YYSYMBOL_57_ = 57,                       /* '('  */
+  YYSYMBOL_58_ = 58,                       /* ')'  */
+  YYSYMBOL_59_ = 59,                       /* ','  */
+  YYSYMBOL_60_ = 60,                       /* '='  */
+  YYSYMBOL_61_ = 61,                       /* '+'  */
+  YYSYMBOL_62_ = 62,                       /* '-'  */
+  YYSYMBOL_63_ = 63,                       /* ':'  */
+  YYSYMBOL_64_ = 64,                       /* '['  */
+  YYSYMBOL_65_ = 65,                       /* ']'  */
+  YYSYMBOL_66_ = 66,                       /* '<'  */
+  YYSYMBOL_67_ = 67,                       /* '>'  */
+  YYSYMBOL_68_ = 68,                       /* '*'  */
+  YYSYMBOL_69_ = 69,                       /* '/'  */
+  YYSYMBOL_YYACCEPT = 70,                  /* $accept  */
+  YYSYMBOL_programstruct = 71,             /* programstruct  */
+  YYSYMBOL_program_head = 72,              /* program_head  */
+  YYSYMBOL_program_body = 73,              /* program_body  */
+  YYSYMBOL_idlist = 74,                    /* idlist  */
+  YYSYMBOL_const_declarations = 75,        /* const_declarations  */
+  YYSYMBOL_const_declaration = 76,         /* const_declaration  */
+  YYSYMBOL_const_value = 77,               /* const_value  */
+  YYSYMBOL_var_declarations = 78,          /* var_declarations  */
+  YYSYMBOL_var_declaration = 79,           /* var_declaration  */
+  YYSYMBOL_type = 80,                      /* type  */
+  YYSYMBOL_basic_type = 81,                /* basic_type  */
+  YYSYMBOL_period_list = 82,               /* period_list  */
+  YYSYMBOL_subprogram_declarations = 83,   /* subprogram_declarations  */
+  YYSYMBOL_subprogram = 84,                /* subprogram  */
+  YYSYMBOL_subprogram_head = 85,           /* subprogram_head  */
+  YYSYMBOL_formal_parameter = 86,          /* formal_parameter  */
+  YYSYMBOL_parameter_list = 87,            /* parameter_list  */
+  YYSYMBOL_parameter = 88,                 /* parameter  */
+  YYSYMBOL_var_parameter = 89,             /* var_parameter  */
+  YYSYMBOL_value_parameter = 90,           /* value_parameter  */
+  YYSYMBOL_subprogram_body = 91,           /* subprogram_body  */
+  YYSYMBOL_compound_statement = 92,        /* compound_statement  */
+  YYSYMBOL_statement_list = 93,            /* statement_list  */
+  YYSYMBOL_statement = 94,                 /* statement  */
+  YYSYMBOL_variable_list = 95,             /* variable_list  */
+  YYSYMBOL_variable = 96,                  /* variable  */
+  YYSYMBOL_id_varpart = 97,                /* id_varpart  */
+  YYSYMBOL_array_index_expression = 98,    /* array_index_expression  */
+  YYSYMBOL_procedure_call = 99,            /* procedure_call  */
+  YYSYMBOL_expression_list = 100,          /* expression_list  */
+  YYSYMBOL_expression = 101,               /* expression  */
+  YYSYMBOL_simple_expression = 102,        /* simple_expression  */
+  YYSYMBOL_term = 103,                     /* term  */
+  YYSYMBOL_factor = 104,                   /* factor  */
+  YYSYMBOL_addop = 105,                    /* addop  */
+  YYSYMBOL_relop = 106,                    /* relop  */
+  YYSYMBOL_mulop = 107                     /* mulop  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -864,19 +866,19 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  5
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   228
+#define YYLAST   230
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  68
+#define YYNTOKENS  70
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  38
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  104
+#define YYNRULES  106
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  196
+#define YYNSTATES  198
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   307
+#define YYMAXUTOK   309
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -894,12 +896,12 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-      55,    56,    66,    59,    57,    60,    54,    67,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,    61,    53,
-      64,    58,    65,     2,     2,     2,     2,     2,     2,     2,
+      57,    58,    68,    61,    59,    62,    56,    69,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,    63,    55,
+      66,    60,    67,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    62,     2,    63,     2,     2,     2,     2,     2,     2,
+       2,    64,     2,    65,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -920,24 +922,24 @@ static const yytype_int8 yytranslate[] =
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47,    48,    49,    50,    51,    52
+      45,    46,    47,    48,    49,    50,    51,    52,    53,    54
 };
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   503,   503,   519,   528,   544,   580,   588,   605,   610,
-     637,   646,   663,   671,   679,   687,   695,   703,   711,   720,
-     740,   744,   758,   774,   796,   806,   826,   831,   836,   841,
-     855,   865,   883,   887,   909,   927,   943,   968,   972,   989,
-     993,   999,  1013,  1018,  1031,  1045,  1063,  1091,  1104,  1109,
-    1135,  1139,  1162,  1169,  1174,  1189,  1204,  1225,  1243,  1255,
-    1277,  1285,  1299,  1335,  1339,  1349,  1370,  1378,  1396,  1405,
-    1454,  1458,  1466,  1481,  1493,  1514,  1525,  1545,  1556,  1576,
-    1616,  1656,  1671,  1685,  1698,  1709,  1730,  1738,  1744,  1755,
-    1755,  1755,  1760,  1760,  1760,  1760,  1760,  1760,  1760,  1765,
-    1765,  1765,  1765,  1765,  1765
+       0,   508,   508,   524,   533,   549,   585,   593,   610,   615,
+     642,   651,   668,   676,   684,   692,   700,   708,   716,   725,
+     745,   749,   763,   779,   801,   811,   831,   836,   841,   846,
+     860,   870,   888,   892,   914,   932,   948,   973,   977,   994,
+     998,  1004,  1018,  1023,  1036,  1050,  1068,  1096,  1109,  1114,
+    1140,  1144,  1167,  1174,  1179,  1194,  1209,  1230,  1248,  1260,
+    1274,  1282,  1299,  1307,  1321,  1357,  1361,  1371,  1392,  1400,
+    1418,  1427,  1476,  1480,  1488,  1503,  1515,  1536,  1547,  1567,
+    1578,  1598,  1638,  1678,  1693,  1707,  1720,  1731,  1752,  1760,
+    1766,  1777,  1777,  1777,  1782,  1782,  1782,  1782,  1782,  1782,
+    1782,  1787,  1787,  1787,  1787,  1787,  1787
 };
 #endif
 
@@ -959,11 +961,11 @@ static const char *const yytname[] =
   "UNTIL", "FOR", "TO", "DOWNTO", "DO", "READ", "READLN", "WRITE",
   "WRITELN", "CHAR_KW", "INTEGER_KW", "REAL_KW", "BOOLEAN_KW", "NOT",
   "DIV", "MOD", "AND", "OR", "NE", "LE", "GE", "ASSIGNOP", "IN", "ORELSE",
-  "ANDTHEN", "DOUBLE_DOT", "BRACE_PAIR", "IDENTIFIER", "INTEGER",
-  "BOOLEAN", "REAL", "CHAR", "STRING", "';'", "'.'", "'('", "')'", "','",
-  "'='", "'+'", "'-'", "':'", "'['", "']'", "'<'", "'>'", "'*'", "'/'",
-  "$accept", "programstruct", "program_head", "program_body", "idlist",
-  "const_declarations", "const_declaration", "const_value",
+  "ANDTHEN", "DOUBLE_DOT", "BRACE_PAIR", "BREAK", "CONTINUE", "IDENTIFIER",
+  "INTEGER", "BOOLEAN", "REAL", "CHAR", "STRING", "';'", "'.'", "'('",
+  "')'", "','", "'='", "'+'", "'-'", "':'", "'['", "']'", "'<'", "'>'",
+  "'*'", "'/'", "$accept", "programstruct", "program_head", "program_body",
+  "idlist", "const_declarations", "const_declaration", "const_value",
   "var_declarations", "var_declaration", "type", "basic_type",
   "period_list", "subprogram_declarations", "subprogram",
   "subprogram_head", "formal_parameter", "parameter_list", "parameter",
@@ -981,12 +983,12 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-108)
+#define YYPACT_NINF (-109)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-64)
+#define YYTABLE_NINF (-66)
 
 #define yytable_value_is_error(Yyn) \
   0
@@ -995,26 +997,26 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-      24,    -6,    62,    -7,     4,  -108,    78,    56,    61,    67,
-     118,  -108,   127,    72,    64,  -108,    56,  -108,  -108,   106,
-     130,   109,   -19,    87,    63,  -108,  -108,  -108,  -108,  -108,
-      91,   114,  -108,   107,   145,    56,   124,   150,    -2,   146,
-     147,  -108,  -108,  -108,  -108,  -108,   130,   136,  -108,  -108,
-    -108,  -108,  -108,  -108,    15,   148,   148,    47,    47,   154,
-     149,   151,   -26,  -108,    -5,  -108,   161,  -108,  -108,    78,
-    -108,   157,   145,    11,   152,  -108,    47,     6,  -108,  -108,
-    -108,  -108,    47,    47,    47,  -108,    -8,    77,    57,  -108,
-      25,   166,   162,    47,    47,    47,  -108,  -108,    -2,    47,
-     118,  -108,   163,   -46,  -108,    56,    48,    59,  -108,  -108,
-    -108,   138,  -108,    47,    93,  -108,  -108,    -2,  -108,  -108,
-    -108,  -108,  -108,  -108,  -108,    47,  -108,  -108,  -108,    47,
-    -108,  -108,  -108,  -108,  -108,  -108,    47,    -2,    47,   153,
-     131,  -108,   135,   121,   137,   -30,   108,  -108,   121,   198,
-     164,   168,   203,  -108,   138,    11,  -108,  -108,   139,  -108,
-     201,    77,    57,  -108,  -108,    13,  -108,   162,  -108,    47,
-    -108,  -108,    47,  -108,  -108,   169,   138,  -108,  -108,  -108,
-      -2,    47,  -108,   121,  -108,    80,   170,  -108,  -108,    46,
-      47,  -108,  -108,    -2,  -108,  -108
+      20,    12,    65,    42,    62,  -109,    76,    79,    80,    81,
+     126,  -109,    14,    98,   104,  -109,    79,  -109,  -109,   116,
+      93,   118,   -43,   113,   101,  -109,  -109,  -109,  -109,  -109,
+      43,    57,  -109,   109,   178,    79,   125,   132,    73,   127,
+     128,  -109,  -109,  -109,  -109,  -109,    93,    89,  -109,  -109,
+    -109,  -109,  -109,  -109,   -17,   129,   129,    99,    99,   139,
+     130,   135,  -109,  -109,   -24,  -109,    -5,  -109,   160,  -109,
+    -109,    76,  -109,   152,   178,     2,   140,  -109,    99,   -42,
+    -109,  -109,  -109,  -109,    99,    99,    99,  -109,    -8,     7,
+      70,  -109,    -3,   170,   157,    99,    99,    99,  -109,  -109,
+      73,    99,   126,  -109,   167,   -47,  -109,    79,     8,    22,
+    -109,  -109,  -109,   165,  -109,    99,    50,  -109,  -109,    73,
+    -109,  -109,  -109,  -109,  -109,  -109,  -109,    99,  -109,  -109,
+    -109,    99,  -109,  -109,  -109,  -109,  -109,  -109,    99,    73,
+      99,   149,    24,  -109,    67,   138,    75,   -10,   133,  -109,
+     138,   202,   166,   168,   207,  -109,   165,     2,  -109,  -109,
+      82,  -109,   201,     7,    70,  -109,  -109,   -13,  -109,   157,
+    -109,    99,  -109,  -109,    99,  -109,  -109,   174,   165,  -109,
+    -109,  -109,    73,    99,  -109,   138,  -109,   124,   171,  -109,
+    -109,    36,    99,  -109,  -109,    73,  -109,  -109
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -1028,38 +1030,38 @@ static const yytype_int8 yydefact[] =
        0,     0,    10,     0,     0,    21,     0,     0,    50,     0,
        0,     5,    13,    16,    14,    17,     0,     0,    29,    26,
       27,    28,    22,    24,     0,    37,    37,     0,     0,     0,
-       0,     0,    68,    53,     0,    48,     0,    52,    33,     8,
-      11,     0,     0,    39,     0,    35,     0,    63,    79,    81,
-      80,    82,     0,     0,     0,    83,     0,    73,    75,    77,
-       0,     0,     0,    70,    70,    70,    62,    47,    50,     0,
-      20,    34,     0,     0,    23,     0,     0,     0,    40,    42,
-      43,     0,    86,    70,     0,    87,    88,    50,    93,    95,
-      97,    98,    92,    94,    96,     0,    91,    89,    90,     0,
-     101,   102,   103,   104,    99,   100,     0,    50,     0,    63,
-       0,    60,     0,    71,     0,     0,    71,    49,    51,     0,
-       0,     0,     0,    44,     0,     0,    38,    36,     0,    84,
-      55,    74,    76,    78,    54,     0,    58,     0,    59,     0,
-      69,    64,     0,    46,    30,     0,     0,    45,    41,    85,
-      50,     0,    61,    72,    65,     0,     0,    25,    56,     0,
-       0,    66,    31,    50,    67,    57
+       0,     0,    60,    61,    70,    53,     0,    48,     0,    52,
+      33,     8,    11,     0,     0,    39,     0,    35,     0,    65,
+      81,    83,    82,    84,     0,     0,     0,    85,     0,    75,
+      77,    79,     0,     0,     0,    72,    72,    72,    64,    47,
+      50,     0,    20,    34,     0,     0,    23,     0,     0,     0,
+      40,    42,    43,     0,    88,    72,     0,    89,    90,    50,
+      95,    97,    99,   100,    94,    96,    98,     0,    93,    91,
+      92,     0,   103,   104,   105,   106,   101,   102,     0,    50,
+       0,    65,     0,    62,     0,    73,     0,     0,    73,    49,
+      51,     0,     0,     0,     0,    44,     0,     0,    38,    36,
+       0,    86,    55,    76,    78,    80,    54,     0,    58,     0,
+      59,     0,    71,    66,     0,    46,    30,     0,     0,    45,
+      41,    87,    50,     0,    63,    74,    67,     0,     0,    25,
+      56,     0,     0,    68,    31,    50,    69,    57
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -108,  -108,  -108,  -108,     2,   155,  -108,   173,   120,  -108,
-     156,  -107,  -108,  -108,  -108,  -108,   165,  -108,    68,  -108,
-     117,  -108,   -21,  -108,   -93,  -108,   -38,  -108,    35,  -108,
-     -73,   -56,   101,    98,   -70,  -108,  -108,  -108
+    -109,  -109,  -109,  -109,     3,   151,  -109,   177,   122,  -109,
+     146,  -108,  -109,  -109,  -109,  -109,   169,  -109,    69,  -109,
+     120,  -109,   -21,  -109,   -96,  -109,   -38,  -109,    37,  -109,
+      27,   -56,   103,    97,   -72,  -109,  -109,  -109
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_uint8 yydefgoto[] =
 {
-       0,     2,     3,     9,   106,    10,    14,    32,    17,    23,
-      52,    53,   103,    24,    39,    40,    74,   107,   108,   109,
-     110,   101,    63,    64,    65,   140,    85,    96,   184,    67,
-     142,   143,    87,    88,    89,   129,   125,   136
+       0,     2,     3,     9,   108,    10,    14,    32,    17,    23,
+      52,    53,   105,    24,    39,    40,    76,   109,   110,   111,
+     112,   103,    65,    66,    67,   142,    87,    98,   186,    69,
+     144,   145,    89,    90,    91,   131,   127,   138
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -1067,98 +1069,100 @@ static const yytype_uint8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
-      66,    86,    90,    41,   157,   147,   112,   117,    97,    12,
-      38,   151,    57,   115,   116,   -63,    58,   152,    22,    59,
-     105,   144,   145,    60,   160,    61,   114,   169,     1,    94,
-     118,   119,   120,   171,   121,   181,    95,    54,    19,   146,
-     158,     4,    34,   148,   164,    62,     6,   177,    98,   137,
-     122,   118,   119,   120,   141,   121,   123,   124,    11,     7,
-      66,   113,     5,   118,   119,   120,   163,   121,    95,   187,
-     193,   122,    19,    36,    37,    38,    72,   123,   124,    66,
-      76,     8,   165,   122,   118,   119,   120,   188,   121,   123,
-     124,   130,   131,   132,    77,    78,    79,    80,    81,    66,
-     195,   133,    82,    11,   122,    19,    83,    84,    13,   154,
-     123,   124,   155,   183,   126,   156,   185,    21,   118,   119,
-     120,    15,   121,   134,   135,   189,   190,    16,   173,   182,
-      20,   118,   119,   120,   185,   121,   127,   128,   122,    42,
-      35,    43,    66,   191,   123,   124,   118,   119,   120,   159,
-     121,   122,    47,    25,   172,    66,    33,   123,   124,   118,
-     119,   120,    44,   121,    45,    46,   122,    48,    49,    50,
-      51,    55,   123,   124,    48,    49,    50,    51,    26,   122,
-      27,    28,    29,    18,    19,   123,   124,   166,   167,    30,
-      31,   168,   169,   170,   169,   179,   169,    56,    71,    68,
-      69,    91,    99,    73,    92,   102,    93,   138,   150,   139,
-      38,   176,   174,   111,   186,    95,   175,   180,   192,    70,
-     149,    75,   153,   178,   100,   194,   161,   162,   104
+      68,    88,    92,    41,   149,   159,   114,   119,    99,   183,
+      12,   107,   153,   117,   118,   115,    19,   -65,   154,    22,
+      34,   139,    97,   162,     1,   120,   121,   122,   116,   123,
+     120,   121,   122,    96,   123,   120,   121,   122,    54,   123,
+      97,   148,    19,   166,   128,   150,    74,   124,   179,   171,
+     100,    11,   124,   125,   126,   173,   143,   124,   125,   126,
+     195,     4,    68,   125,   126,     5,   165,    19,   129,   130,
+     189,   156,    18,    19,   120,   121,   122,   157,   123,     8,
+     158,    68,   168,   169,   167,    38,   190,    57,   120,   121,
+     122,    58,   123,    42,    59,    43,   124,     6,    60,   197,
+      61,    68,   125,   126,   132,   133,   134,    44,   161,    45,
+     124,    36,    37,    38,   135,   185,   125,   126,   187,     7,
+      62,    63,    64,   146,   147,   170,   171,   191,    11,    13,
+     175,   184,    78,   172,   171,    16,   187,    15,   136,   137,
+     181,   171,   160,    26,    68,    27,    28,    29,    79,    80,
+      81,    82,    83,    73,    30,    31,    84,    68,    20,    21,
+      85,    86,   120,   121,   122,    25,   123,    33,    35,    46,
+     192,   120,   121,   122,    55,   123,   120,   121,   122,   174,
+     123,    56,    70,    71,   124,    47,    75,    94,    93,   193,
+     125,   126,    95,   124,    48,    49,    50,    51,   124,   125,
+     126,   101,   104,   113,   125,   126,   141,    48,    49,    50,
+      51,   140,   152,    97,    38,   178,   176,   182,   177,   188,
+     106,   194,   102,    72,   151,    77,   180,   155,   164,   196,
+     163
 };
 
 static const yytype_uint8 yycheck[] =
 {
-      38,    57,    58,    24,   111,    98,    76,    15,    13,     7,
-      12,    57,    14,    83,    84,    41,    18,    63,    16,    21,
-       9,    94,    95,    25,   117,    27,    82,    57,     4,    55,
-      38,    39,    40,    63,    42,    22,    62,    35,    57,    95,
-     113,    47,    61,    99,   137,    47,    53,   154,    53,    24,
-      58,    38,    39,    40,    92,    42,    64,    65,    47,    55,
-      98,    55,     0,    38,    39,    40,   136,    42,    62,   176,
-      24,    58,    57,    10,    11,    12,    61,    64,    65,   117,
-      33,     3,   138,    58,    38,    39,    40,   180,    42,    64,
-      65,    34,    35,    36,    47,    48,    49,    50,    51,   137,
-     193,    44,    55,    47,    58,    57,    59,    60,    47,    61,
-      64,    65,    53,   169,    37,    56,   172,    53,    38,    39,
-      40,    54,    42,    66,    67,   181,    46,     9,   149,   167,
-      58,    38,    39,    40,   190,    42,    59,    60,    58,    48,
-      53,    50,   180,    63,    64,    65,    38,    39,    40,    56,
-      42,    58,     7,    47,    46,   193,    47,    64,    65,    38,
-      39,    40,    48,    42,    50,    58,    58,    29,    30,    31,
-      32,    47,    64,    65,    29,    30,    31,    32,    48,    58,
-      50,    51,    52,    56,    57,    64,    65,    56,    57,    59,
-      60,    56,    57,    56,    57,    56,    57,    47,    62,    53,
-      53,    47,    41,    55,    55,    48,    55,    41,    45,    47,
-      12,     8,    48,    61,    45,    62,    48,    16,    48,    46,
-     100,    56,   105,   155,    69,   190,   125,   129,    72
+      38,    57,    58,    24,   100,   113,    78,    15,    13,    22,
+       7,     9,    59,    85,    86,    57,    59,    41,    65,    16,
+      63,    24,    64,   119,     4,    38,    39,    40,    84,    42,
+      38,    39,    40,    57,    42,    38,    39,    40,    35,    42,
+      64,    97,    59,   139,    37,   101,    63,    60,   156,    59,
+      55,    49,    60,    66,    67,    65,    94,    60,    66,    67,
+      24,    49,   100,    66,    67,     0,   138,    59,    61,    62,
+     178,    63,    58,    59,    38,    39,    40,    55,    42,     3,
+      58,   119,    58,    59,   140,    12,   182,    14,    38,    39,
+      40,    18,    42,    50,    21,    52,    60,    55,    25,   195,
+      27,   139,    66,    67,    34,    35,    36,    50,    58,    52,
+      60,    10,    11,    12,    44,   171,    66,    67,   174,    57,
+      47,    48,    49,    96,    97,    58,    59,   183,    49,    49,
+     151,   169,    33,    58,    59,     9,   192,    56,    68,    69,
+      58,    59,   115,    50,   182,    52,    53,    54,    49,    50,
+      51,    52,    53,    64,    61,    62,    57,   195,    60,    55,
+      61,    62,    38,    39,    40,    49,    42,    49,    55,    60,
+      46,    38,    39,    40,    49,    42,    38,    39,    40,    46,
+      42,    49,    55,    55,    60,     7,    57,    57,    49,    65,
+      66,    67,    57,    60,    29,    30,    31,    32,    60,    66,
+      67,    41,    50,    63,    66,    67,    49,    29,    30,    31,
+      32,    41,    45,    64,    12,     8,    50,    16,    50,    45,
+      74,    50,    71,    46,   102,    56,   157,   107,   131,   192,
+     127
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     4,    69,    70,    47,     0,    53,    55,     3,    71,
-      73,    47,    72,    47,    74,    54,     9,    76,    56,    57,
-      58,    53,    72,    77,    81,    47,    48,    50,    51,    52,
-      59,    60,    75,    47,    61,    53,    10,    11,    12,    82,
-      83,    90,    48,    50,    48,    50,    58,     7,    29,    30,
-      31,    32,    78,    79,    72,    47,    47,    14,    18,    21,
-      25,    27,    47,    90,    91,    92,    94,    97,    53,    53,
-      75,    62,    61,    55,    84,    84,    33,    47,    48,    49,
-      50,    51,    55,    59,    60,    94,    99,   100,   101,   102,
-      99,    47,    55,    55,    55,    62,    95,    13,    53,    41,
-      73,    89,    48,    80,    78,     9,    72,    85,    86,    87,
-      88,    61,   102,    55,    99,   102,   102,    15,    38,    39,
-      40,    42,    58,    64,    65,   104,    37,    59,    60,   103,
-      34,    35,    36,    44,    66,    67,   105,    24,    41,    47,
-      93,    94,    98,    99,    98,    98,    99,    92,    99,    76,
-      45,    57,    63,    88,    61,    53,    56,    79,    98,    56,
-      92,   100,   101,   102,    92,    99,    56,    57,    56,    57,
-      56,    63,    46,    90,    48,    48,     8,    79,    86,    56,
-      16,    22,    94,    99,    96,    99,    45,    79,    92,    99,
-      46,    63,    48,    24,    96,    92
+       0,     4,    71,    72,    49,     0,    55,    57,     3,    73,
+      75,    49,    74,    49,    76,    56,     9,    78,    58,    59,
+      60,    55,    74,    79,    83,    49,    50,    52,    53,    54,
+      61,    62,    77,    49,    63,    55,    10,    11,    12,    84,
+      85,    92,    50,    52,    50,    52,    60,     7,    29,    30,
+      31,    32,    80,    81,    74,    49,    49,    14,    18,    21,
+      25,    27,    47,    48,    49,    92,    93,    94,    96,    99,
+      55,    55,    77,    64,    63,    57,    86,    86,    33,    49,
+      50,    51,    52,    53,    57,    61,    62,    96,   101,   102,
+     103,   104,   101,    49,    57,    57,    57,    64,    97,    13,
+      55,    41,    75,    91,    50,    82,    80,     9,    74,    87,
+      88,    89,    90,    63,   104,    57,   101,   104,   104,    15,
+      38,    39,    40,    42,    60,    66,    67,   106,    37,    61,
+      62,   105,    34,    35,    36,    44,    68,    69,   107,    24,
+      41,    49,    95,    96,   100,   101,   100,   100,   101,    94,
+     101,    78,    45,    59,    65,    90,    63,    55,    58,    81,
+     100,    58,    94,   102,   103,   104,    94,   101,    58,    59,
+      58,    59,    58,    65,    46,    92,    50,    50,     8,    81,
+      88,    58,    16,    22,    96,   101,    98,   101,    45,    81,
+      94,   101,    46,    65,    50,    24,    98,    94
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    68,    69,    70,    70,    71,    72,    72,    73,    73,
-      74,    74,    75,    75,    75,    75,    75,    75,    75,    75,
-      76,    76,    77,    77,    78,    78,    79,    79,    79,    79,
-      80,    80,    81,    81,    82,    83,    83,    84,    84,    85,
-      85,    85,    86,    86,    87,    88,    89,    90,    91,    91,
-      92,    92,    92,    92,    92,    92,    92,    92,    92,    92,
-      93,    93,    94,    95,    95,    95,    96,    96,    97,    97,
-      98,    98,    98,    99,    99,   100,   100,   101,   101,   102,
-     102,   102,   102,   102,   102,   102,   102,   102,   102,   103,
-     103,   103,   104,   104,   104,   104,   104,   104,   104,   105,
-     105,   105,   105,   105,   105
+       0,    70,    71,    72,    72,    73,    74,    74,    75,    75,
+      76,    76,    77,    77,    77,    77,    77,    77,    77,    77,
+      78,    78,    79,    79,    80,    80,    81,    81,    81,    81,
+      82,    82,    83,    83,    84,    85,    85,    86,    86,    87,
+      87,    87,    88,    88,    89,    90,    91,    92,    93,    93,
+      94,    94,    94,    94,    94,    94,    94,    94,    94,    94,
+      94,    94,    95,    95,    96,    97,    97,    97,    98,    98,
+      99,    99,   100,   100,   100,   101,   101,   102,   102,   103,
+     103,   104,   104,   104,   104,   104,   104,   104,   104,   104,
+     104,   105,   105,   105,   106,   106,   106,   106,   106,   106,
+     106,   107,   107,   107,   107,   107,   107
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -1170,11 +1174,11 @@ static const yytype_int8 yyr2[] =
        3,     5,     0,     3,     3,     3,     5,     0,     3,     0,
        1,     3,     1,     1,     2,     3,     3,     3,     1,     3,
        0,     3,     1,     1,     4,     4,     6,     8,     4,     4,
-       1,     3,     2,     0,     3,     4,     2,     3,     1,     4,
-       0,     1,     3,     1,     3,     1,     3,     1,     3,     1,
-       1,     1,     1,     1,     3,     4,     2,     2,     2,     1,
-       1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1
+       1,     1,     1,     3,     2,     0,     3,     4,     2,     3,
+       1,     4,     0,     1,     3,     1,     3,     1,     3,     1,
+       3,     1,     1,     1,     1,     1,     3,     4,     2,     2,
+       2,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+       1,     1,     1,     1,     1,     1,     1
 };
 
 
@@ -1765,7 +1769,7 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* programstruct: program_head ';' program_body '.'  */
-#line 504 "yacc_pascal.y"
+#line 509 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ProgramStruct;
         ProgramStmt * program_struct = new ProgramStmt();
@@ -1774,11 +1778,11 @@ yyreduce:
         LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'");
         *program = program_struct;
     }
-#line 1778 "yacc_pascal.cpp"
+#line 1782 "yacc_pascal.cpp"
     break;
 
   case 3: /* program_head: PROGRAM IDENTIFIER '(' idlist ')'  */
-#line 520 "yacc_pascal.y"
+#line 525 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ProgramHead;
         (yyval.program_head) = new ProgramHeadStmt();
@@ -1787,11 +1791,11 @@ yyreduce:
         free((yyvsp[-3].string));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER '(' idlist ')'");
     }
-#line 1791 "yacc_pascal.cpp"
+#line 1795 "yacc_pascal.cpp"
     break;
 
   case 4: /* program_head: PROGRAM IDENTIFIER  */
-#line 529 "yacc_pascal.y"
+#line 534 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ProgramHead;
         (yyval.program_head) = new ProgramHeadStmt();
@@ -1799,11 +1803,11 @@ yyreduce:
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
         free((yyvsp[0].string));
     }
-#line 1803 "yacc_pascal.cpp"
+#line 1807 "yacc_pascal.cpp"
     break;
 
   case 5: /* program_body: const_declarations var_declarations subprogram_declarations compound_statement  */
-#line 545 "yacc_pascal.y"
+#line 550 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ProgramBody;
         ProgramBodyStmt* program_body = new ProgramBodyStmt();
@@ -1829,11 +1833,11 @@ yyreduce:
         (yyval.program_body) = program_body;
         LOG_DEBUG("DEBUG program_body -> const_declarations var_declarations subprogram_declarations compound_statement");
     }
-#line 1833 "yacc_pascal.cpp"
+#line 1837 "yacc_pascal.cpp"
     break;
 
   case 6: /* idlist: IDENTIFIER  */
-#line 581 "yacc_pascal.y"
+#line 586 "yacc_pascal.y"
     {
         current_rule = CurrentRule::IdList;
         (yyval.id_list) = new std::vector<std::string>();
@@ -1841,11 +1845,11 @@ yyreduce:
         LOG_DEBUG("DEBUG idlist -> IDENTIFIER");
         free((yyvsp[0].string));
     }
-#line 1845 "yacc_pascal.cpp"
+#line 1849 "yacc_pascal.cpp"
     break;
 
   case 7: /* idlist: idlist ',' IDENTIFIER  */
-#line 589 "yacc_pascal.y"
+#line 594 "yacc_pascal.y"
     {
         current_rule = CurrentRule::IdList;
         (yyvsp[-2].id_list)->emplace_back(std::string((yyvsp[0].string)));
@@ -1853,21 +1857,21 @@ yyreduce:
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER");
         free((yyvsp[0].string));
     }
-#line 1857 "yacc_pascal.cpp"
+#line 1861 "yacc_pascal.cpp"
     break;
 
   case 8: /* const_declarations: %empty  */
-#line 605 "yacc_pascal.y"
+#line 610 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ConstDeclarations;
         (yyval.const_decls) = nullptr;
         LOG_DEBUG("DEBUG const_declarations -> empty");
     }
-#line 1867 "yacc_pascal.cpp"
+#line 1871 "yacc_pascal.cpp"
     break;
 
   case 9: /* const_declarations: CONST const_declaration ';'  */
-#line 611 "yacc_pascal.y"
+#line 616 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ConstDeclarations;
         ConstDeclStmt * const_decls = new ConstDeclStmt();
@@ -1886,11 +1890,11 @@ yyreduce:
         }
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
     }
-#line 1890 "yacc_pascal.cpp"
+#line 1894 "yacc_pascal.cpp"
     break;
 
   case 10: /* const_declaration: IDENTIFIER '=' const_value  */
-#line 638 "yacc_pascal.y"
+#line 643 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ConstDeclaration;
         std::vector<std::pair<std::string, ValueStmt *> *> * const_decls = new std::vector<std::pair<std::string, ValueStmt *> *>();
@@ -1899,22 +1903,22 @@ yyreduce:
         free((yyvsp[-2].string));
         (yyval.kv_pair_list) = const_decls;
     }
-#line 1903 "yacc_pascal.cpp"
+#line 1907 "yacc_pascal.cpp"
     break;
 
   case 11: /* const_declaration: const_declaration ';' IDENTIFIER '=' const_value  */
-#line 647 "yacc_pascal.y"
+#line 652 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ConstDeclaration;
         (yyvsp[-4].kv_pair_list)->emplace_back(new std::pair<std::string, ValueStmt *>((yyvsp[-2].string), (yyvsp[0].value)));
         free((yyvsp[-2].string));
         (yyval.kv_pair_list) = (yyvsp[-4].kv_pair_list); // 不需要删除
     }
-#line 1914 "yacc_pascal.cpp"
+#line 1918 "yacc_pascal.cpp"
     break;
 
   case 12: /* const_value: INTEGER  */
-#line 664 "yacc_pascal.y"
+#line 669 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
@@ -1922,11 +1926,11 @@ yyreduce:
         fill_number_stmt(num_value->number, (yyvsp[0].number));
         (yyval.value) = num_value;
     }
-#line 1926 "yacc_pascal.cpp"
+#line 1930 "yacc_pascal.cpp"
     break;
 
   case 13: /* const_value: '+' INTEGER  */
-#line 672 "yacc_pascal.y"
+#line 677 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
@@ -1934,11 +1938,11 @@ yyreduce:
         fill_number_stmt(num_value->number, (yyvsp[0].number));
         (yyval.value) = num_value;
     }
-#line 1938 "yacc_pascal.cpp"
+#line 1942 "yacc_pascal.cpp"
     break;
 
   case 14: /* const_value: '-' INTEGER  */
-#line 680 "yacc_pascal.y"
+#line 685 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
@@ -1946,11 +1950,11 @@ yyreduce:
         fill_number_stmt(num_value->number, ((yyvsp[0].number)) * -1);
         (yyval.value) = num_value;
     }
-#line 1950 "yacc_pascal.cpp"
+#line 1954 "yacc_pascal.cpp"
     break;
 
   case 15: /* const_value: REAL  */
-#line 688 "yacc_pascal.y"
+#line 693 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
@@ -1958,11 +1962,11 @@ yyreduce:
         fill_number_stmt(num_value->number, (yyvsp[0].real));
         (yyval.value) = num_value;
     }
-#line 1962 "yacc_pascal.cpp"
+#line 1966 "yacc_pascal.cpp"
     break;
 
   case 16: /* const_value: '+' REAL  */
-#line 696 "yacc_pascal.y"
+#line 701 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
@@ -1970,11 +1974,11 @@ yyreduce:
         fill_number_stmt(num_value->number, (yyvsp[0].real));
         (yyval.value) = num_value;
     }
-#line 1974 "yacc_pascal.cpp"
+#line 1978 "yacc_pascal.cpp"
     break;
 
   case 17: /* const_value: '-' REAL  */
-#line 704 "yacc_pascal.y"
+#line 709 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
@@ -1982,11 +1986,11 @@ yyreduce:
         fill_number_stmt(num_value->number, ((yyvsp[0].real)) * -1);
         (yyval.value) = num_value;
     }
-#line 1986 "yacc_pascal.cpp"
+#line 1990 "yacc_pascal.cpp"
     break;
 
   case 18: /* const_value: CHAR  */
-#line 712 "yacc_pascal.y"
+#line 717 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
@@ -1995,11 +1999,11 @@ yyreduce:
         LOG_DEBUG("DEBUG const_value -> CHAR, value: %c", (yyvsp[0].charactor));
         (yyval.value) = num_value;
     }
-#line 1999 "yacc_pascal.cpp"
+#line 2003 "yacc_pascal.cpp"
     break;
 
   case 19: /* const_value: STRING  */
-#line 721 "yacc_pascal.y"
+#line 726 "yacc_pascal.y"
     {
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Str;
@@ -2008,30 +2012,30 @@ yyreduce:
         free((yyvsp[0].string));
         (yyval.value) = num_value;
     }
-#line 2012 "yacc_pascal.cpp"
+#line 2016 "yacc_pascal.cpp"
     break;
 
   case 20: /* var_declarations: %empty  */
-#line 740 "yacc_pascal.y"
+#line 745 "yacc_pascal.y"
     {
         (yyval.var_decls) = nullptr;
         LOG_DEBUG("DEBUG var_declarations -> empty");
     }
-#line 2021 "yacc_pascal.cpp"
+#line 2025 "yacc_pascal.cpp"
     break;
 
   case 21: /* var_declarations: VAR var_declaration ';'  */
-#line 745 "yacc_pascal.y"
+#line 750 "yacc_pascal.y"
     {
         current_rule = CurrentRule::VarDeclarations;
         (yyval.var_decls) = (yyvsp[-1].var_decls);
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
     }
-#line 2031 "yacc_pascal.cpp"
+#line 2035 "yacc_pascal.cpp"
     break;
 
   case 22: /* var_declaration: idlist ':' type  */
-#line 759 "yacc_pascal.y"
+#line 764 "yacc_pascal.y"
     {
         current_rule = CurrentRule::VarDeclaration;
         std::vector<VarDeclStmt *> * var_decls = new std::vector<VarDeclStmt *>();
@@ -2047,11 +2051,11 @@ yyreduce:
         (yyval.var_decls) = var_decls;
         LOG_DEBUG("DEBUG var_declaration -> idlist ':' type");
     }
-#line 2051 "yacc_pascal.cpp"
+#line 2055 "yacc_pascal.cpp"
     break;
 
   case 23: /* var_declaration: var_declaration ';' idlist ':' type  */
-#line 775 "yacc_pascal.y"
+#line 780 "yacc_pascal.y"
     {
         current_rule = CurrentRule::VarDeclaration;
         VarDeclStmt * var_decl = new VarDeclStmt();
@@ -2066,11 +2070,11 @@ yyreduce:
         (yyval.var_decls) = (yyvsp[-4].var_decls);
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type");
     }
-#line 2070 "yacc_pascal.cpp"
+#line 2074 "yacc_pascal.cpp"
     break;
 
   case 24: /* type: basic_type  */
-#line 797 "yacc_pascal.y"
+#line 802 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Type;
         VarDeclStmt * type_stmt = new VarDeclStmt();
@@ -2080,11 +2084,11 @@ yyreduce:
         (yyval.var_decl) = type_stmt;
         LOG_DEBUG("DEBUG type -> basic_type");
     }
-#line 2084 "yacc_pascal.cpp"
+#line 2088 "yacc_pascal.cpp"
     break;
 
   case 25: /* type: ARRAY '[' period_list ']' OF basic_type  */
-#line 807 "yacc_pascal.y"
+#line 812 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Type;
         VarDeclStmt * type_stmt = new VarDeclStmt();
@@ -2097,47 +2101,47 @@ yyreduce:
         (yyval.var_decl) = type_stmt;
         LOG_DEBUG("DEBUG type -> ARRAY '[' period_list ']' OF basic_type");
     }
-#line 2101 "yacc_pascal.cpp"
+#line 2105 "yacc_pascal.cpp"
     break;
 
   case 26: /* basic_type: INTEGER_KW  */
-#line 827 "yacc_pascal.y"
+#line 832 "yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::INT;
             LOG_DEBUG("DEBUG basic_type -> INTEGER_KW");
         }
-#line 2110 "yacc_pascal.cpp"
+#line 2114 "yacc_pascal.cpp"
     break;
 
   case 27: /* basic_type: REAL_KW  */
-#line 832 "yacc_pascal.y"
+#line 837 "yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::REAL;
             LOG_DEBUG("DEBUG basic_type -> REAL_KW");
         }
-#line 2119 "yacc_pascal.cpp"
+#line 2123 "yacc_pascal.cpp"
     break;
 
   case 28: /* basic_type: BOOLEAN_KW  */
-#line 837 "yacc_pascal.y"
+#line 842 "yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::BOOLEAN;
             LOG_DEBUG("DEBUG basic_type -> BOOLEAN_KW");
         }
-#line 2128 "yacc_pascal.cpp"
+#line 2132 "yacc_pascal.cpp"
     break;
 
   case 29: /* basic_type: CHAR_KW  */
-#line 842 "yacc_pascal.y"
+#line 847 "yacc_pascal.y"
         {
             (yyval.basic_type) = BasicType::CHAR;
             LOG_DEBUG("DEBUG basic_type -> CHAR_KW");
         }
-#line 2137 "yacc_pascal.cpp"
+#line 2141 "yacc_pascal.cpp"
     break;
 
   case 30: /* period_list: INTEGER DOUBLE_DOT INTEGER  */
-#line 856 "yacc_pascal.y"
+#line 861 "yacc_pascal.y"
         {
             (yyval.period_list) = new std::vector<PeriodStmt *>();
             PeriodStmt * period = new PeriodStmt();
@@ -2147,11 +2151,11 @@ yyreduce:
             // debug
             LOG_DEBUG("DEBUG period_list -> INTEGER '..' INTEGER");
         }
-#line 2151 "yacc_pascal.cpp"
+#line 2155 "yacc_pascal.cpp"
     break;
 
   case 31: /* period_list: period_list ',' INTEGER DOUBLE_DOT INTEGER  */
-#line 866 "yacc_pascal.y"
+#line 871 "yacc_pascal.y"
         {
             PeriodStmt * period = new PeriodStmt();
             period->begin = (yyvsp[-2].number);
@@ -2161,20 +2165,20 @@ yyreduce:
             // debug
             LOG_DEBUG("DEBUG period_list -> period_list ',' INTEGER '..' INTEGER");
         }
-#line 2165 "yacc_pascal.cpp"
+#line 2169 "yacc_pascal.cpp"
     break;
 
   case 32: /* subprogram_declarations: %empty  */
-#line 883 "yacc_pascal.y"
+#line 888 "yacc_pascal.y"
         {
             (yyval.func_decl_list) = nullptr;
             LOG_DEBUG("DEBUG subprogram_declarations -> empty");
         }
-#line 2174 "yacc_pascal.cpp"
+#line 2178 "yacc_pascal.cpp"
     break;
 
   case 33: /* subprogram_declarations: subprogram_declarations subprogram ';'  */
-#line 888 "yacc_pascal.y"
+#line 893 "yacc_pascal.y"
         {
             current_rule = CurrentRule::SubprogramDeclarations;
             if((yyvsp[-2].func_decl_list) == nullptr){
@@ -2187,11 +2191,11 @@ yyreduce:
             }
             LOG_DEBUG("DEBUG subprogram_declarations -> subprogram_declarations subprogram ';'");
         }
-#line 2191 "yacc_pascal.cpp"
+#line 2195 "yacc_pascal.cpp"
     break;
 
   case 34: /* subprogram: subprogram_head ';' subprogram_body  */
-#line 910 "yacc_pascal.y"
+#line 915 "yacc_pascal.y"
         {
             current_rule = CurrentRule::Subprogram;
             FuncDeclStmt * subprogram = new FuncDeclStmt();
@@ -2200,11 +2204,11 @@ yyreduce:
             (yyval.func_decl) = subprogram;
             LOG_DEBUG("DEBUG subprogram -> subprogram_head ';' subprogram_body");
         }
-#line 2204 "yacc_pascal.cpp"
+#line 2208 "yacc_pascal.cpp"
     break;
 
   case 35: /* subprogram_head: PROCEDURE IDENTIFIER formal_parameter  */
-#line 928 "yacc_pascal.y"
+#line 933 "yacc_pascal.y"
         {
             current_rule = CurrentRule::SubprogramHead;
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
@@ -2220,11 +2224,11 @@ yyreduce:
             free((yyvsp[-1].string));
             LOG_DEBUG("DEBUG subprogram_head -> PROGRAM IDENTIFIER formal_parameter");
         }
-#line 2224 "yacc_pascal.cpp"
+#line 2228 "yacc_pascal.cpp"
     break;
 
   case 36: /* subprogram_head: FUNCTION IDENTIFIER formal_parameter ':' basic_type  */
-#line 944 "yacc_pascal.y"
+#line 949 "yacc_pascal.y"
         {
             current_rule = CurrentRule::SubprogramHead;
             FuncHeadDeclStmt * sub_head = new FuncHeadDeclStmt();
@@ -2240,86 +2244,86 @@ yyreduce:
             free((yyvsp[-3].string));
             LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type");
         }
-#line 2244 "yacc_pascal.cpp"
+#line 2248 "yacc_pascal.cpp"
     break;
 
   case 37: /* formal_parameter: %empty  */
-#line 968 "yacc_pascal.y"
+#line 973 "yacc_pascal.y"
         {
             (yyval.var_decls) = nullptr;
             LOG_DEBUG("DEBUG formal_parameter -> empty");
         }
-#line 2253 "yacc_pascal.cpp"
+#line 2257 "yacc_pascal.cpp"
     break;
 
   case 38: /* formal_parameter: '(' parameter_list ')'  */
-#line 973 "yacc_pascal.y"
+#line 978 "yacc_pascal.y"
         {
             current_rule = CurrentRule::FormalParameter;
             (yyval.var_decls) = (yyvsp[-1].var_decls);
             LOG_DEBUG("DEBUG formal_parameter -> '(' parameter_list ')'");
         }
-#line 2263 "yacc_pascal.cpp"
+#line 2267 "yacc_pascal.cpp"
     break;
 
   case 39: /* parameter_list: %empty  */
-#line 989 "yacc_pascal.y"
+#line 994 "yacc_pascal.y"
     {
         (yyval.var_decls) = nullptr;
         LOG_DEBUG("DEBUG parameter_list -> empty");
     }
-#line 2272 "yacc_pascal.cpp"
+#line 2276 "yacc_pascal.cpp"
     break;
 
   case 40: /* parameter_list: parameter  */
-#line 994 "yacc_pascal.y"
+#line 999 "yacc_pascal.y"
         {
             (yyval.var_decls) = new std::vector<VarDeclStmt *>();
             (yyval.var_decls)->emplace_back((yyvsp[0].var_decl));
             LOG_DEBUG("DEBUG parameter_list -> parameter");
         }
-#line 2282 "yacc_pascal.cpp"
+#line 2286 "yacc_pascal.cpp"
     break;
 
   case 41: /* parameter_list: parameter_list ';' parameter  */
-#line 1000 "yacc_pascal.y"
+#line 1005 "yacc_pascal.y"
         {
             (yyvsp[-2].var_decls)->emplace_back((yyvsp[0].var_decl));
             (yyval.var_decls) = (yyvsp[-2].var_decls);
             LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
         }
-#line 2292 "yacc_pascal.cpp"
+#line 2296 "yacc_pascal.cpp"
     break;
 
   case 42: /* parameter: var_parameter  */
-#line 1014 "yacc_pascal.y"
+#line 1019 "yacc_pascal.y"
         {
             (yyval.var_decl) = (yyvsp[0].var_decl);
             LOG_DEBUG("DEBUG parameter -> var_parameter");
         }
-#line 2301 "yacc_pascal.cpp"
+#line 2305 "yacc_pascal.cpp"
     break;
 
   case 43: /* parameter: value_parameter  */
-#line 1019 "yacc_pascal.y"
+#line 1024 "yacc_pascal.y"
         {
             (yyval.var_decl) = (yyvsp[0].var_decl);
             LOG_DEBUG("DEBUG parameter -> value_parameter");
         }
-#line 2310 "yacc_pascal.cpp"
+#line 2314 "yacc_pascal.cpp"
     break;
 
   case 44: /* var_parameter: VAR value_parameter  */
-#line 1032 "yacc_pascal.y"
+#line 1037 "yacc_pascal.y"
         {
             (yyval.var_decl) = (yyvsp[0].var_decl);
             LOG_DEBUG("DEBUG var_parameter -> VAR value_parameter");
         }
-#line 2319 "yacc_pascal.cpp"
+#line 2323 "yacc_pascal.cpp"
     break;
 
   case 45: /* value_parameter: idlist ':' basic_type  */
-#line 1046 "yacc_pascal.y"
+#line 1051 "yacc_pascal.y"
         {
             VarDeclStmt* var_decl = new VarDeclStmt();
             var_decl->id.insert(var_decl->id.end(), (yyvsp[-2].id_list)->begin(), (yyvsp[-2].id_list)->end());
@@ -2330,11 +2334,11 @@ yyreduce:
             (yyval.var_decl) = var_decl;
             LOG_DEBUG("DEBUG value_parameter -> idlist ':' basic_type");
         }
-#line 2334 "yacc_pascal.cpp"
+#line 2338 "yacc_pascal.cpp"
     break;
 
   case 46: /* subprogram_body: const_declarations var_declarations compound_statement  */
-#line 1064 "yacc_pascal.y"
+#line 1069 "yacc_pascal.y"
     {
         current_rule = CurrentRule::SubprogramBody;
         FuncBodyDeclStmt * func_body = new FuncBodyDeclStmt();
@@ -2354,30 +2358,30 @@ yyreduce:
         (yyval.func_body) = func_body;
         LOG_DEBUG("DEBUG subprogram_body -> const_declarations var_declarations compound_statement");
     }
-#line 2358 "yacc_pascal.cpp"
+#line 2362 "yacc_pascal.cpp"
     break;
 
   case 47: /* compound_statement: BEGIN_TOKEN statement_list END  */
-#line 1092 "yacc_pascal.y"
+#line 1097 "yacc_pascal.y"
     {
         current_rule = CurrentRule::CompoundStatement;
         (yyval.stmt_list) = (yyvsp[-1].stmt_list);
         LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
     }
-#line 2368 "yacc_pascal.cpp"
+#line 2372 "yacc_pascal.cpp"
     break;
 
   case 48: /* statement_list: statement  */
-#line 1105 "yacc_pascal.y"
+#line 1110 "yacc_pascal.y"
     {
         (yyval.stmt_list) = (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG statement_list -> statement");
     }
-#line 2377 "yacc_pascal.cpp"
+#line 2381 "yacc_pascal.cpp"
     break;
 
   case 49: /* statement_list: statement_list ';' statement  */
-#line 1110 "yacc_pascal.y"
+#line 1115 "yacc_pascal.y"
     {
         // copy the vector
         current_rule = CurrentRule::StatementList;
@@ -2390,20 +2394,20 @@ yyreduce:
         delete (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
     }
-#line 2394 "yacc_pascal.cpp"
+#line 2398 "yacc_pascal.cpp"
     break;
 
   case 50: /* statement: %empty  */
-#line 1135 "yacc_pascal.y"
+#line 1140 "yacc_pascal.y"
     {
         (yyval.stmt_list) = nullptr;
         LOG_DEBUG("DEBUG statement -> empty");
     }
-#line 2403 "yacc_pascal.cpp"
+#line 2407 "yacc_pascal.cpp"
     break;
 
   case 51: /* statement: variable ASSIGNOP expression  */
-#line 1140 "yacc_pascal.y"
+#line 1145 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         AssignStmt * assign_stmt = new AssignStmt();
@@ -2413,31 +2417,31 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> variable ASSIGNOP expression");
     }
-#line 2417 "yacc_pascal.cpp"
+#line 2421 "yacc_pascal.cpp"
     break;
 
   case 52: /* statement: procedure_call  */
-#line 1163 "yacc_pascal.y"
+#line 1168 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         stmt_list->emplace_back((yyvsp[0].func_call_stmt));
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> procedure_call");
     }
-#line 2428 "yacc_pascal.cpp"
+#line 2432 "yacc_pascal.cpp"
     break;
 
   case 53: /* statement: compound_statement  */
-#line 1170 "yacc_pascal.y"
+#line 1175 "yacc_pascal.y"
     {
         (yyval.stmt_list) = (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG statement -> compound_statement");
     }
-#line 2437 "yacc_pascal.cpp"
+#line 2441 "yacc_pascal.cpp"
     break;
 
   case 54: /* statement: WHILE expression DO statement  */
-#line 1175 "yacc_pascal.y"
+#line 1180 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         WhileStmt * while_stmt = new WhileStmt();
@@ -2452,11 +2456,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> WHILE expression DO statement");
     }
-#line 2456 "yacc_pascal.cpp"
+#line 2460 "yacc_pascal.cpp"
     break;
 
   case 55: /* statement: IF expression THEN statement  */
-#line 1190 "yacc_pascal.y"
+#line 1195 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         IfStmt * if_stmt = new IfStmt();
@@ -2471,11 +2475,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> IF expression THEN statement");
     }
-#line 2475 "yacc_pascal.cpp"
+#line 2479 "yacc_pascal.cpp"
     break;
 
   case 56: /* statement: IF expression THEN statement ELSE statement  */
-#line 1205 "yacc_pascal.y"
+#line 1210 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         IfStmt * if_stmt = new IfStmt();
@@ -2496,11 +2500,11 @@ yyreduce:
         delete (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG statement -> IF expression THEN statement ELSE statement");
     }
-#line 2500 "yacc_pascal.cpp"
+#line 2504 "yacc_pascal.cpp"
     break;
 
   case 57: /* statement: FOR IDENTIFIER ASSIGNOP expression TO expression DO statement  */
-#line 1226 "yacc_pascal.y"
+#line 1231 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         ForStmt * for_stmt = new ForStmt();
@@ -2518,11 +2522,11 @@ yyreduce:
         delete (yyvsp[0].stmt_list);
         LOG_DEBUG("DEBUG statement -> FOR IDENTIFIER ASSIGNOP expression TO expression DO statement");
     }
-#line 2522 "yacc_pascal.cpp"
+#line 2526 "yacc_pascal.cpp"
     break;
 
   case 58: /* statement: READ '(' variable_list ')'  */
-#line 1244 "yacc_pascal.y"
+#line 1249 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         ReadFuncStmt * read_stmt = new ReadFuncStmt();
@@ -2534,11 +2538,11 @@ yyreduce:
         (yyval.stmt_list) = stmt_list;
         LOG_DEBUG("DEBUG statement -> READ '(' variable_list ')'");
     }
-#line 2538 "yacc_pascal.cpp"
+#line 2542 "yacc_pascal.cpp"
     break;
 
   case 59: /* statement: WRITE '(' expression_list ')'  */
-#line 1256 "yacc_pascal.y"
+#line 1261 "yacc_pascal.y"
     {
         std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
         WriteFuncStmt * write_stmt = new WriteFuncStmt();
@@ -2552,11 +2556,35 @@ yyreduce:
         delete (yyvsp[-1].expr_list);
         LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'");
     }
-#line 2556 "yacc_pascal.cpp"
+#line 2560 "yacc_pascal.cpp"
     break;
 
-  case 60: /* variable_list: variable  */
-#line 1278 "yacc_pascal.y"
+  case 60: /* statement: BREAK  */
+#line 1275 "yacc_pascal.y"
+    {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        BreakStmt * break_stmt = new BreakStmt();
+        stmt_list->emplace_back(break_stmt);
+        (yyval.stmt_list) = stmt_list;
+        LOG_DEBUG("DEBUG statement -> BREAK");
+    }
+#line 2572 "yacc_pascal.cpp"
+    break;
+
+  case 61: /* statement: CONTINUE  */
+#line 1283 "yacc_pascal.y"
+    {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        ContinueStmt * continue_stmt = new ContinueStmt();
+        stmt_list->emplace_back(continue_stmt);
+        (yyval.stmt_list) = stmt_list;
+        LOG_DEBUG("DEBUG statement -> CONTINUE");
+    }
+#line 2584 "yacc_pascal.cpp"
+    break;
+
+  case 62: /* variable_list: variable  */
+#line 1300 "yacc_pascal.y"
     {
         current_rule = CurrentRule::VariableList;
         std::vector<LValStmt *> * lval_list = new std::vector<LValStmt *>();
@@ -2564,22 +2592,22 @@ yyreduce:
         (yyval.lval_list) = lval_list;
         LOG_DEBUG("DEBUG variable_list -> variable");
     }
-#line 2568 "yacc_pascal.cpp"
+#line 2596 "yacc_pascal.cpp"
     break;
 
-  case 61: /* variable_list: variable_list ',' variable  */
-#line 1286 "yacc_pascal.y"
+  case 63: /* variable_list: variable_list ',' variable  */
+#line 1308 "yacc_pascal.y"
     {
         current_rule = CurrentRule::VariableList;
         (yyvsp[-2].lval_list)->emplace_back((yyvsp[0].lval));
         (yyval.lval_list) = (yyvsp[-2].lval_list);
         LOG_DEBUG("DEBUG variable_list -> variable_list ',' variable");
     }
-#line 2579 "yacc_pascal.cpp"
+#line 2607 "yacc_pascal.cpp"
     break;
 
-  case 62: /* variable: IDENTIFIER id_varpart  */
-#line 1300 "yacc_pascal.y"
+  case 64: /* variable: IDENTIFIER id_varpart  */
+#line 1322 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Variable;
         (yyval.lval) = new LValStmt();
@@ -2593,20 +2621,20 @@ yyreduce:
         free((yyvsp[-1].string));
         LOG_DEBUG("DEBUG variable -> IDENTIFIER id_varpart");
     }
-#line 2597 "yacc_pascal.cpp"
+#line 2625 "yacc_pascal.cpp"
     break;
 
-  case 63: /* id_varpart: %empty  */
-#line 1335 "yacc_pascal.y"
+  case 65: /* id_varpart: %empty  */
+#line 1357 "yacc_pascal.y"
     {
         (yyval.expr_list) = nullptr;
         LOG_DEBUG("DEBUG id_varpart -> empty");
     }
-#line 2606 "yacc_pascal.cpp"
+#line 2634 "yacc_pascal.cpp"
     break;
 
-  case 64: /* id_varpart: '[' expression_list ']'  */
-#line 1340 "yacc_pascal.y"
+  case 66: /* id_varpart: '[' expression_list ']'  */
+#line 1362 "yacc_pascal.y"
     {
         current_rule = CurrentRule::IdVarpart;
         if((yyvsp[-1].expr_list) != nullptr){
@@ -2616,11 +2644,11 @@ yyreduce:
         }
         LOG_DEBUG("DEBUG id_varpart -> '[' expression_list ']'");
     }
-#line 2620 "yacc_pascal.cpp"
+#line 2648 "yacc_pascal.cpp"
     break;
 
-  case 65: /* id_varpart: '[' expression BRACE_PAIR array_index_expression  */
-#line 1350 "yacc_pascal.y"
+  case 67: /* id_varpart: '[' expression BRACE_PAIR array_index_expression  */
+#line 1372 "yacc_pascal.y"
     {
         current_rule = CurrentRule::IdVarpart;
         if((yyvsp[0].expr_list) != nullptr){
@@ -2632,11 +2660,11 @@ yyreduce:
         std::reverse((yyval.expr_list)->begin(), (yyval.expr_list)->end());
         LOG_DEBUG("DEBUG id_varpart -> '[' expression BRACE_PAIR array_index_expression");
     }
-#line 2636 "yacc_pascal.cpp"
+#line 2664 "yacc_pascal.cpp"
     break;
 
-  case 66: /* array_index_expression: expression ']'  */
-#line 1371 "yacc_pascal.y"
+  case 68: /* array_index_expression: expression ']'  */
+#line 1393 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ArrayIndexExpression;
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
@@ -2644,22 +2672,22 @@ yyreduce:
         (yyval.expr_list) = expr_list;
         LOG_DEBUG("DEBUG array_index_expression -> expression_list");
     }
-#line 2648 "yacc_pascal.cpp"
+#line 2676 "yacc_pascal.cpp"
     break;
 
-  case 67: /* array_index_expression: expression BRACE_PAIR array_index_expression  */
-#line 1379 "yacc_pascal.y"
+  case 69: /* array_index_expression: expression BRACE_PAIR array_index_expression  */
+#line 1401 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ArrayIndexExpression;
         (yyvsp[0].expr_list)->emplace_back((yyvsp[-2].expr));
         (yyval.expr_list) = (yyvsp[0].expr_list);
         LOG_DEBUG("DEBUG array_index_expression -> array_index_expression BRACE_PAIR expression ']'");
     }
-#line 2659 "yacc_pascal.cpp"
+#line 2687 "yacc_pascal.cpp"
     break;
 
-  case 68: /* procedure_call: IDENTIFIER  */
-#line 1397 "yacc_pascal.y"
+  case 70: /* procedure_call: IDENTIFIER  */
+#line 1419 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ProcedureCall;
         FuncCallStmt * proc_call = new FuncCallStmt();
@@ -2668,11 +2696,11 @@ yyreduce:
         free((yyvsp[0].string));
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER");
     }
-#line 2672 "yacc_pascal.cpp"
+#line 2700 "yacc_pascal.cpp"
     break;
 
-  case 69: /* procedure_call: IDENTIFIER '(' expression_list ')'  */
-#line 1406 "yacc_pascal.y"
+  case 71: /* procedure_call: IDENTIFIER '(' expression_list ')'  */
+#line 1428 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ProcedureCall;
         FuncCallStmt * proc_call = new FuncCallStmt();
@@ -2687,20 +2715,20 @@ yyreduce:
         free((yyvsp[-3].string));
         LOG_DEBUG("DEBUG procedure_call -> IDENTIFIER '(' expression_list ')'");
     }
-#line 2691 "yacc_pascal.cpp"
+#line 2719 "yacc_pascal.cpp"
     break;
 
-  case 70: /* expression_list: %empty  */
-#line 1454 "yacc_pascal.y"
+  case 72: /* expression_list: %empty  */
+#line 1476 "yacc_pascal.y"
                   {
         (yyval.expr_list) = nullptr;
         LOG_DEBUG("DEBUG expression_list -> empty");
     }
-#line 2700 "yacc_pascal.cpp"
+#line 2728 "yacc_pascal.cpp"
     break;
 
-  case 71: /* expression_list: expression  */
-#line 1459 "yacc_pascal.y"
+  case 73: /* expression_list: expression  */
+#line 1481 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ExpressionList;
         std::vector<ExprStmt *> * expr_list = new std::vector<ExprStmt *>();
@@ -2708,22 +2736,22 @@ yyreduce:
         (yyval.expr_list) = expr_list;
         LOG_DEBUG("DEBUG expression_list -> expression");
     }
-#line 2712 "yacc_pascal.cpp"
+#line 2740 "yacc_pascal.cpp"
     break;
 
-  case 72: /* expression_list: expression_list ',' expression  */
-#line 1467 "yacc_pascal.y"
+  case 74: /* expression_list: expression_list ',' expression  */
+#line 1489 "yacc_pascal.y"
     {
         current_rule = CurrentRule::ExpressionList;
         (yyvsp[-2].expr_list)->emplace_back((yyvsp[0].expr));
         (yyval.expr_list) = (yyvsp[-2].expr_list);
         LOG_DEBUG("DEBUG expression_list -> expression_list ',' expression");
     }
-#line 2723 "yacc_pascal.cpp"
+#line 2751 "yacc_pascal.cpp"
     break;
 
-  case 73: /* expression: simple_expression  */
-#line 1482 "yacc_pascal.y"
+  case 75: /* expression: simple_expression  */
+#line 1504 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Expression;
         ExprStmt * expr = new ExprStmt();
@@ -2735,11 +2763,11 @@ yyreduce:
         (yyval.expr) = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression");
     }
-#line 2739 "yacc_pascal.cpp"
+#line 2767 "yacc_pascal.cpp"
     break;
 
-  case 74: /* expression: expression relop simple_expression  */
-#line 1494 "yacc_pascal.y"
+  case 76: /* expression: expression relop simple_expression  */
+#line 1516 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Expression;
         ExprStmt * expr = (yyvsp[-2].expr);
@@ -2750,11 +2778,11 @@ yyreduce:
         (yyval.expr) = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression");
     }
-#line 2754 "yacc_pascal.cpp"
+#line 2782 "yacc_pascal.cpp"
     break;
 
-  case 75: /* simple_expression: term  */
-#line 1515 "yacc_pascal.y"
+  case 77: /* simple_expression: term  */
+#line 1537 "yacc_pascal.y"
     {
         current_rule = CurrentRule::SimpleExpression;
         AddExprStmt * add_expr = new AddExprStmt();
@@ -2765,11 +2793,11 @@ yyreduce:
         (yyval.add_expr) = add_expr;
         LOG_DEBUG("DEBUG simple_expression -> term");
     }
-#line 2769 "yacc_pascal.cpp"
+#line 2797 "yacc_pascal.cpp"
     break;
 
-  case 76: /* simple_expression: simple_expression addop term  */
-#line 1526 "yacc_pascal.y"
+  case 78: /* simple_expression: simple_expression addop term  */
+#line 1548 "yacc_pascal.y"
     {
         current_rule = CurrentRule::SimpleExpression;
         AddExprStmt * add_expr = (yyvsp[-2].add_expr);
@@ -2780,11 +2808,11 @@ yyreduce:
         (yyval.add_expr) = add_expr;
         LOG_DEBUG("DEBUG simple_expression -> simple_expression %lld term\n", (yyvsp[-1].number));
     }
-#line 2784 "yacc_pascal.cpp"
+#line 2812 "yacc_pascal.cpp"
     break;
 
-  case 77: /* term: factor  */
-#line 1546 "yacc_pascal.y"
+  case 79: /* term: factor  */
+#line 1568 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Term;
         MulExprStmt * mul_expr = new MulExprStmt();
@@ -2795,11 +2823,11 @@ yyreduce:
         (yyval.mul_expr) = mul_expr;
         LOG_DEBUG("DEBUG term -> factor");
     }
-#line 2799 "yacc_pascal.cpp"
+#line 2827 "yacc_pascal.cpp"
     break;
 
-  case 78: /* term: term mulop factor  */
-#line 1557 "yacc_pascal.y"
+  case 80: /* term: term mulop factor  */
+#line 1579 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Term;
         MulExprStmt * mul_expr = (yyvsp[-2].mul_expr);
@@ -2810,11 +2838,11 @@ yyreduce:
         (yyval.mul_expr) = mul_expr;
         LOG_DEBUG("DEBUG term -> term mulop factor");
     }
-#line 2814 "yacc_pascal.cpp"
+#line 2842 "yacc_pascal.cpp"
     break;
 
-  case 79: /* factor: INTEGER  */
-#line 1577 "yacc_pascal.y"
+  case 81: /* factor: INTEGER  */
+#line 1599 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -2828,11 +2856,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> INTEGER");
     }
-#line 2832 "yacc_pascal.cpp"
+#line 2860 "yacc_pascal.cpp"
     break;
 
-  case 80: /* factor: REAL  */
-#line 1617 "yacc_pascal.y"
+  case 82: /* factor: REAL  */
+#line 1639 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -2846,11 +2874,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> REAL");
     }
-#line 2850 "yacc_pascal.cpp"
+#line 2878 "yacc_pascal.cpp"
     break;
 
-  case 81: /* factor: BOOLEAN  */
-#line 1657 "yacc_pascal.y"
+  case 83: /* factor: BOOLEAN  */
+#line 1679 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -2865,11 +2893,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> BOOLEAN");
     }
-#line 2869 "yacc_pascal.cpp"
+#line 2897 "yacc_pascal.cpp"
     break;
 
-  case 82: /* factor: CHAR  */
-#line 1672 "yacc_pascal.y"
+  case 84: /* factor: CHAR  */
+#line 1694 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -2883,11 +2911,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> CHAR");
     }
-#line 2887 "yacc_pascal.cpp"
+#line 2915 "yacc_pascal.cpp"
     break;
 
-  case 83: /* factor: variable  */
-#line 1686 "yacc_pascal.y"
+  case 85: /* factor: variable  */
+#line 1708 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -2900,11 +2928,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> variable");
     }
-#line 2904 "yacc_pascal.cpp"
+#line 2932 "yacc_pascal.cpp"
     break;
 
-  case 84: /* factor: '(' expression ')'  */
-#line 1699 "yacc_pascal.y"
+  case 86: /* factor: '(' expression ')'  */
+#line 1721 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -2915,11 +2943,11 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '(' expression ')'");
     }
-#line 2919 "yacc_pascal.cpp"
+#line 2947 "yacc_pascal.cpp"
     break;
 
-  case 85: /* factor: IDENTIFIER '(' expression_list ')'  */
-#line 1710 "yacc_pascal.y"
+  case 87: /* factor: IDENTIFIER '(' expression_list ')'  */
+#line 1732 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = new UnaryExprStmt();
@@ -2940,11 +2968,11 @@ yyreduce:
         free((yyvsp[-3].string));
         LOG_DEBUG("DEBUG factor -> IDENTIFIER '(' expression_list ')'");
     }
-#line 2944 "yacc_pascal.cpp"
+#line 2972 "yacc_pascal.cpp"
     break;
 
-  case 86: /* factor: NOT factor  */
-#line 1731 "yacc_pascal.y"
+  case 88: /* factor: NOT factor  */
+#line 1753 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = (yyvsp[0].unary_expr);
@@ -2952,21 +2980,21 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> NOT factor");
     }
-#line 2956 "yacc_pascal.cpp"
+#line 2984 "yacc_pascal.cpp"
     break;
 
-  case 87: /* factor: '+' factor  */
-#line 1739 "yacc_pascal.y"
+  case 89: /* factor: '+' factor  */
+#line 1761 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         (yyval.unary_expr) = (yyvsp[0].unary_expr);
         LOG_DEBUG("DEBUG factor -> '+' factor");
     }
-#line 2966 "yacc_pascal.cpp"
+#line 2994 "yacc_pascal.cpp"
     break;
 
-  case 88: /* factor: '-' factor  */
-#line 1745 "yacc_pascal.y"
+  case 90: /* factor: '-' factor  */
+#line 1767 "yacc_pascal.y"
     {
         current_rule = CurrentRule::Factor;
         UnaryExprStmt * unary_expr = (yyvsp[0].unary_expr);
@@ -2974,107 +3002,107 @@ yyreduce:
         (yyval.unary_expr) = unary_expr;
         LOG_DEBUG("DEBUG factor -> '-' factor");
     }
-#line 2978 "yacc_pascal.cpp"
+#line 3006 "yacc_pascal.cpp"
     break;
 
-  case 89: /* addop: '+'  */
-#line 1755 "yacc_pascal.y"
+  case 91: /* addop: '+'  */
+#line 1777 "yacc_pascal.y"
             { (yyval.number) = 0; }
-#line 2984 "yacc_pascal.cpp"
+#line 3012 "yacc_pascal.cpp"
     break;
 
-  case 90: /* addop: '-'  */
-#line 1755 "yacc_pascal.y"
+  case 92: /* addop: '-'  */
+#line 1777 "yacc_pascal.y"
                               { (yyval.number) = 1; }
-#line 2990 "yacc_pascal.cpp"
+#line 3018 "yacc_pascal.cpp"
     break;
 
-  case 91: /* addop: OR  */
-#line 1755 "yacc_pascal.y"
+  case 93: /* addop: OR  */
+#line 1777 "yacc_pascal.y"
                                                { (yyval.number) = 2; }
-#line 2996 "yacc_pascal.cpp"
+#line 3024 "yacc_pascal.cpp"
     break;
 
-  case 92: /* relop: '='  */
-#line 1760 "yacc_pascal.y"
+  case 94: /* relop: '='  */
+#line 1782 "yacc_pascal.y"
             { (yyval.number) = 0; }
-#line 3002 "yacc_pascal.cpp"
+#line 3030 "yacc_pascal.cpp"
     break;
 
-  case 93: /* relop: NE  */
-#line 1760 "yacc_pascal.y"
+  case 95: /* relop: NE  */
+#line 1782 "yacc_pascal.y"
                              { (yyval.number) = 1; }
-#line 3008 "yacc_pascal.cpp"
+#line 3036 "yacc_pascal.cpp"
     break;
 
-  case 94: /* relop: '<'  */
-#line 1760 "yacc_pascal.y"
+  case 96: /* relop: '<'  */
+#line 1782 "yacc_pascal.y"
                                                { (yyval.number) = 2; }
-#line 3014 "yacc_pascal.cpp"
+#line 3042 "yacc_pascal.cpp"
     break;
 
-  case 95: /* relop: LE  */
-#line 1760 "yacc_pascal.y"
+  case 97: /* relop: LE  */
+#line 1782 "yacc_pascal.y"
                                                                 { (yyval.number) = 3; }
-#line 3020 "yacc_pascal.cpp"
+#line 3048 "yacc_pascal.cpp"
     break;
 
-  case 96: /* relop: '>'  */
-#line 1760 "yacc_pascal.y"
+  case 98: /* relop: '>'  */
+#line 1782 "yacc_pascal.y"
                                                                                   { (yyval.number) = 4; }
-#line 3026 "yacc_pascal.cpp"
+#line 3054 "yacc_pascal.cpp"
     break;
 
-  case 97: /* relop: GE  */
-#line 1760 "yacc_pascal.y"
+  case 99: /* relop: GE  */
+#line 1782 "yacc_pascal.y"
                                                                                                    { (yyval.number) = 5; }
-#line 3032 "yacc_pascal.cpp"
+#line 3060 "yacc_pascal.cpp"
     break;
 
-  case 98: /* relop: IN  */
-#line 1760 "yacc_pascal.y"
+  case 100: /* relop: IN  */
+#line 1782 "yacc_pascal.y"
                                                                                                                     { (yyval.number) = 6; }
-#line 3038 "yacc_pascal.cpp"
+#line 3066 "yacc_pascal.cpp"
     break;
 
-  case 99: /* mulop: '*'  */
-#line 1765 "yacc_pascal.y"
+  case 101: /* mulop: '*'  */
+#line 1787 "yacc_pascal.y"
             { (yyval.number) = 0; }
-#line 3044 "yacc_pascal.cpp"
+#line 3072 "yacc_pascal.cpp"
     break;
 
-  case 100: /* mulop: '/'  */
-#line 1765 "yacc_pascal.y"
+  case 102: /* mulop: '/'  */
+#line 1787 "yacc_pascal.y"
                               { (yyval.number) = 1; }
-#line 3050 "yacc_pascal.cpp"
-    break;
-
-  case 101: /* mulop: DIV  */
-#line 1765 "yacc_pascal.y"
-                                                { (yyval.number) = 1; }
-#line 3056 "yacc_pascal.cpp"
-    break;
-
-  case 102: /* mulop: MOD  */
-#line 1765 "yacc_pascal.y"
-                                                                  { (yyval.number) = 2; }
-#line 3062 "yacc_pascal.cpp"
-    break;
-
-  case 103: /* mulop: AND  */
-#line 1765 "yacc_pascal.y"
-                                                                                    { (yyval.number) = 3; }
-#line 3068 "yacc_pascal.cpp"
-    break;
-
-  case 104: /* mulop: ANDTHEN  */
-#line 1765 "yacc_pascal.y"
-                                                                                                          { (yyval.number) = 4; }
-#line 3074 "yacc_pascal.cpp"
-    break;
-
-
 #line 3078 "yacc_pascal.cpp"
+    break;
+
+  case 103: /* mulop: DIV  */
+#line 1787 "yacc_pascal.y"
+                                                { (yyval.number) = 1; }
+#line 3084 "yacc_pascal.cpp"
+    break;
+
+  case 104: /* mulop: MOD  */
+#line 1787 "yacc_pascal.y"
+                                                                  { (yyval.number) = 2; }
+#line 3090 "yacc_pascal.cpp"
+    break;
+
+  case 105: /* mulop: AND  */
+#line 1787 "yacc_pascal.y"
+                                                                                    { (yyval.number) = 3; }
+#line 3096 "yacc_pascal.cpp"
+    break;
+
+  case 106: /* mulop: ANDTHEN  */
+#line 1787 "yacc_pascal.y"
+                                                                                                          { (yyval.number) = 4; }
+#line 3102 "yacc_pascal.cpp"
+    break;
+
+
+#line 3106 "yacc_pascal.cpp"
 
       default: break;
     }
@@ -3272,7 +3300,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 1768 "yacc_pascal.y"
+#line 1790 "yacc_pascal.y"
 
 // 此处书写相关函数，会添加在生成的代码中
 extern void scan_string(const char *str, yyscan_t scanner);
