@@ -26,8 +26,8 @@ std::shared_ptr<ir::Instruction> binary_comp(std::shared_ptr<ir::Value> lhs,
 }
 
 std::shared_ptr<ir::Instruction> opt_binary_inst(std::shared_ptr<ir::BinaryInst> inst) {
-    std::shared_ptr<ir::Value> lhs = try_get_value(inst->get_operand(0));
-    std::shared_ptr<ir::Value> rhs = try_get_value(inst->get_operand(1));
+    std::shared_ptr<ir::Value> lhs = try_get_value(inst->get_operand(0).lock());
+    std::shared_ptr<ir::Value> rhs = try_get_value(inst->get_operand(1).lock());
     if (lhs->get_val_id() == ir::Value::ValueID::Literal &&
         rhs->get_val_id() == ir::Value::ValueID::Literal) {
             // 两个操作数都是常数, 可以进行计算

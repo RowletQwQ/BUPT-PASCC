@@ -12,8 +12,8 @@ set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
 # 当所有函数都写完时，打开这个编译选项
 
-add_compile_options(-g)
-# add_compile_options(-g -fsanitize=address)
+#add_compile_options(-g)
+add_compile_options(-g -fsanitize=address)
 
 # add_compile_options(-Wall -Wextra -Wpedantic -Werror -g -fsanitize=address)
 
@@ -41,5 +41,5 @@ MESSAGE(STATUS "SRC_PATH: " ${SRC_PATH})
 
 ADD_EXECUTABLE(IR_TEST ${SRC_FILES} ${MAIN_SRC})
 
-#target_link_libraries(IR_TEST -fsanitize=address)
+target_link_libraries(IR_TEST -fsanitize=address)
 

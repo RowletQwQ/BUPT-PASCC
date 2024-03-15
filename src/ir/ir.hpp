@@ -435,13 +435,13 @@ public:
      * @brief 添加基本块
      * @param bb 基本块
     */
-    void add_basic_block(std::shared_ptr<BasicBlock> bb) { basic_blocks_.push_back(bb); }
+    void add_basic_block(std::shared_ptr<BasicBlock> bb) { basic_blocks_.emplace_back(bb); }
 
     /**
      * @brief 添加局部标识符
      * @param l 局部标识符
     */
-    void add_local_identifier(std::shared_ptr<LocalIdentifier> l) { local_identifiers_.push_back(l); }
+    void add_local_identifier(std::shared_ptr<LocalIdentifier> l) { local_identifiers_.emplace_back(l); }
 
     std::vector<std::shared_ptr<LocalIdentifier> > local_identifiers_; // 局部标识符
     std::vector<std::shared_ptr<BasicBlock> > basic_blocks_; // 基本块
@@ -463,17 +463,17 @@ public:
      * @brief 添加指令
      *  
     */
-    void add_instruction(std::shared_ptr<Instruction> i) { instructions_.push_back(i); }
+    void add_instruction(std::shared_ptr<Instruction> i) { instructions_.emplace_back(i); }
 
     /**
      * @brief 添加前驱基本块
      * 
     */
-    void add_pre_bb(std::weak_ptr<BasicBlock> bb) { pre_bbs_.push_back(bb); }
+    void add_pre_bb(std::weak_ptr<BasicBlock> bb) { pre_bbs_.emplace_back(bb); }
     /**
      * @brief 添加后继基本块
     */
-    void add_succ_bb(std::weak_ptr<BasicBlock> bb) { succ_bbs_.push_back(bb); }
+    void add_succ_bb(std::weak_ptr<BasicBlock> bb) { succ_bbs_.emplace_back(bb); }
 
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
@@ -550,7 +550,7 @@ public:
      * @brief 设置操作数
      * 
     */
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    void set_operand(unsigned i, std::weak_ptr<Value> val) {
         operands_[i] = val;
     }
     
@@ -566,7 +566,7 @@ public:
      * @brief 获取操作数
      * 
     */
-    virtual std::shared_ptr<Value> get_operand(unsigned i) = 0;
+    virtual std::weak_ptr<Value> get_operand(unsigned i) = 0;
 
     // 以下是判断指令类型的函数
     bool is_call_inst() { return op_id_ == OpID::Call; }
@@ -581,7 +581,7 @@ public:
 
     OpID op_id_; // 操作码
     unsigned num_ops_; // 操作数个数
-    std::vector<std::shared_ptr<Value>> operands_; // 操作数
+    std::vector<std::weak_ptr<Value>> operands_; // 操作数
     std::vector<std::list<Use>::iterator> use_pos_; // 与操作数数组一一对应，是对应的操作数的 uselist 里面，与当前指令相关的 use 的迭代器
     std::vector<std::shared_ptr<ir::Instruction> >::iterator pos_in_bb_; // 在 bb 的指令 list 的位置迭代器, 最多只能有一个
     std::weak_ptr<BasicBlock> bb_; // 所属基本块
@@ -612,14 +612,14 @@ public:
     }
     ~BinaryInst() = default;
     virtual std::string print() override {
-        return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
+        return operands_[0].lock()->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1].lock()->print();
     }
 
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
 
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
     /**
@@ -655,14 +655,14 @@ public:
     ~UnaryInst() = default;
     virtual std::string print() override {
         if (op_id_ == Instruction::Bracket) {
-            return "(" + operands_[0]->print() + ")"; 
+            return "(" + operands_[0].lock()->print() + ")"; 
         } else if (op_id_ == Instruction::Null) {
-            if (operands_[0]->type_->tid_ == Type::FunctionTID) {
-                return operands_[0]->name_ + "()";
+            if (operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
+                return operands_[0].lock()->name_ + "()";
             }
-            return operands_[0]->print();
+            return operands_[0].lock()->print();
         } else {
-            return Instruction::op2str_[op_id_] + operands_[0]->print();
+            return Instruction::op2str_[op_id_] + operands_[0].lock()->print();
         }
     }
 
@@ -670,7 +670,7 @@ public:
         operands_[i] = val;
     }
 
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 
@@ -700,7 +700,7 @@ public:
     ~CompareInst() = default;
 
     virtual std::string print() override {
-        return operands_[0]->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1]->print();
+        return operands_[0].lock()->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1].lock()->print();
     }
 
     static bool can_be_compared(const Type *t1, const Type *t2);
@@ -709,7 +709,7 @@ public:
         operands_[i] = val;
     }
 
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 
@@ -739,12 +739,12 @@ public:
     }
     ~StoreInst() = default;
     virtual std::string print() override {
-        return operands_[0]->print() + " = " + operands_[1]->print();
+        return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -771,12 +771,12 @@ public:
     }
     ~LoadInst() = default;
     virtual std::string print() override {
-        return operands_[0]->print() + "[" + operands_[1]->print() + "]";
+        return operands_[0].lock()->print() + "[" + operands_[1].lock()->print() + "]";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -797,7 +797,7 @@ public:
     virtual std::string print() override {
         std::string ans = "scanf(\"";
         for (int i = 0; i < operands_.size(); i++) {
-            std::string placeholder = operands_[i]->type_->placeholder();
+            std::string placeholder = operands_[i].lock()->type_->placeholder();
             ans = ans + placeholder;
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
@@ -805,7 +805,7 @@ public:
         }
         ans = ans + "\", ";
         for (int i = 0; i < operands_.size(); i++) {
-            ans = ans + "&" + operands_[i]->print();
+            ans = ans + "&" + operands_[i].lock()->print();
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
             }
@@ -816,7 +816,7 @@ public:
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -837,12 +837,12 @@ public:
     virtual std::string print() override {
         std::string ans = "printf(\"";
         for (int i = 0; i < operands_.size(); i++) {
-            std::string placeholder = operands_[i]->type_->placeholder();
+            std::string placeholder = operands_[i].lock()->type_->placeholder();
             ans = ans + placeholder;
         }
         ans = ans + "\", ";
         for (int i = 0; i < operands_.size(); i++) {
-            ans = ans + operands_[i]->print();
+            ans = ans + operands_[i].lock()->print();
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
             }
@@ -853,7 +853,7 @@ public:
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -883,10 +883,10 @@ public:
     }
     ~CallInst() = default;
     virtual std::string print() override {
-        std::string ret = operands_[num_ops_ - 1]->name_;
+        std::string ret = operands_[num_ops_ - 1].lock()->name_;
         ret += "(";
         for (int i = 0; i < num_ops_ - 1; i++) {
-            ret = ret + operands_[i]->print();
+            ret = ret + operands_[i].lock()->print();
             if (i != num_ops_ - 2) {
                 ret = ret + ", ";
             }
@@ -897,7 +897,7 @@ public:
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -921,12 +921,12 @@ public:
     }
     ~ReturnInst() = default;
     virtual std::string print() override {
-        return "return " + operands_[0]->print();
+        return "return " + operands_[0].lock()->print();
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -950,7 +950,7 @@ public:
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -974,7 +974,7 @@ public:
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -1007,15 +1007,15 @@ public:
     bool is_loop_cond_; // 是否为循环条件
     virtual std::string print() override {
         if (!is_loop_cond_) {
-            return "if (" + operands_[0]->print() + ")";
+            return "if (" + operands_[0].lock()->print() + ")";
         } else {
-            return "while (" + operands_[0]->print() + ")";
+            return "while (" + operands_[0].lock()->print() + ")";
         }
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
-    std::shared_ptr<Value> get_operand(unsigned i) override {
+    std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
 };
@@ -1036,7 +1036,7 @@ public:
      * @param g 全局标识符
     */
     void add_global_identifier(std::shared_ptr<GlobalIdentifier> g) { 
-        global_identifiers_.push_back(g); 
+        global_identifiers_.emplace_back(g); 
 
     }
 
@@ -1044,10 +1044,26 @@ public:
      * @brief 添加函数
      * @param f 函数
     */
-    void add_function(std::shared_ptr<Function> f) { functions_.push_back(f); }
+    void add_function(std::shared_ptr<Function> f) { functions_.emplace_back(f); }
+
+    /**
+     * @brief 添加常量
+     * @param l 常量
+     */
+    void add_literal(std::shared_ptr<Literal> l) { all_literals_.emplace_back(l); }
+
+    /**
+     * @brief 添加指令
+     * @param i 指令
+    */
+    void add_instruction(std::shared_ptr<Instruction> i) { all_instructions_.emplace_back(i); }
 
     std::vector<std::shared_ptr<GlobalIdentifier> > global_identifiers_; // 全局标识符, 包括全局变量和常量
     std::vector<std::shared_ptr<Function> > functions_; // 函数
+    // 为防止循环引用，这里保存生成过程中会出现的所有指令
+    std::vector<std::shared_ptr<Instruction> > all_instructions_;
+    // 下面保存所有的常量
+    std::vector<std::shared_ptr<Literal> > all_literals_;
 };
 
 
