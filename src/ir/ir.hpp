@@ -962,12 +962,12 @@ public:
     /**
      * @brief Construct a new Continue Inst object
      * 
-     * @param cont_bb 跳转的基本块
+     * @param jmp_bb 跳转的基本块
      * @param bb 所属基本块
      */
-    ContinueInst(std::shared_ptr<BasicBlock> cont_bb, std::weak_ptr<BasicBlock> bb)
+    ContinueInst(std::shared_ptr<BasicBlock> jmp_bb, std::weak_ptr<BasicBlock> bb)
       : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Continue, 1, bb) {
-        set_operand(0, cont_bb);
+        set_operand(0, jmp_bb);
       }
     ~ContinueInst() = default;
     virtual std::string print() override {
@@ -987,11 +987,13 @@ public:
      * @brief Construct a new Continue Inc Inst object
      * 
      * @param cont_bb 循环所在的基本块（需要执行这个基本块的最后一条指令）
+     * @param jmp_bb 跳转的基本块
      * @param bb 所属基本块
      */
-    ContinueIncInst(std::shared_ptr<BasicBlock> cont_bb, std::weak_ptr<BasicBlock> bb)
-      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::ContinueInc, 1, bb) {
+    ContinueIncInst(std::shared_ptr<BasicBlock> cont_bb, std::shared_ptr<BasicBlock> jmp_bb,std::weak_ptr<BasicBlock> bb)
+      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::ContinueInc, 2, bb) {
         set_operand(0, cont_bb);
+        set_operand(1, jmp_bb);
       }
     ~ContinueIncInst() = default;
     virtual std::string print() override {

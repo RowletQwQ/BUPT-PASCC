@@ -526,7 +526,7 @@ void IRGenerator::visit(ContinueStmt &stmt) {
     if (this->scope_.is_while_stmt()) {
         inst = std::make_shared<ContinueInst>(this->scope_.get_loop_cond().lock(), this->scope_.current_f_->basic_blocks_.back());
     } else {
-        inst = std::make_shared<ContinueIncInst>(this->scope_.get_loop_body().lock(), this->scope_.current_f_->basic_blocks_.back());
+        inst = std::make_shared<ContinueIncInst>(this->scope_.get_loop_body().lock(), this->scope_.get_loop_cond().lock(), this->scope_.current_f_->basic_blocks_.back());
     }   
     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
     inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
