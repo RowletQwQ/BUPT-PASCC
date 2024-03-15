@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <dirent.h>
 
 
 
@@ -41,23 +42,6 @@ void init_env()
             common::g_log = new common::Log(common::WARN);
             break;
     }
-    if (G_SETTINGS.output_file.empty())
-    {
-        size_t pos = G_SETTINGS.input_file.find_last_of('.');
-        if (pos == std::string::npos)
-        {
-            G_SETTINGS.output_file = G_SETTINGS.input_file + ".c";
-        }
-        else
-        {
-            G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
-        }
-
-        LOG_DEBUG("Output file: %s", G_SETTINGS.output_file.c_str());
-    }
-
-    
-    
 }
 
 int main(int argc, char *argv[])
@@ -66,40 +50,66 @@ int main(int argc, char *argv[])
     G_SETTINGS.parse_args(argc, argv);
     // 初始化环境
     init_env();
-
-    // 从输入文件中读取代码
-    std::ifstream input_file(G_SETTINGS.input_file);
-    if (!input_file.is_open())
-    {
-        LOG_FATAL("Can't open input file: %s", G_SETTINGS.input_file.c_str());
-    }
-    
-    std::stringstream buffer;
-    buffer << input_file.rdbuf();
-    std::string code = buffer.str();
-    input_file.close();
-
-    // 第一步：词法分析 and 语法分析
-    LOG_DEBUG("Start parsing code...");
-    ProgramStmt* program_stmt;
-    code_parse(code.c_str(), &program_stmt);
-    LOG_DEBUG("Parsing code done.");
-    // 第二步: 语义分析 & 生成中间代码
-    LOG_DEBUG("Start generating intermediate code...");
-    
-    std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
-    try {
-        visitor->visit(*program_stmt);
-        visitor->show_result();
-        ir::Module ir = visitor->get_ir();
-    } catch (const std::exception &e){
-        LOG_FATAL("Error: %s", e.what());
-        delete program_stmt;
+    const std::string folderPath = G_SETTINGS.input_file;
+    std::vector<std::string> files;
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(folderPath.c_str())) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+        std::string fileName = ent->d_name;
+        if (fileName != "." && fileName != "..") {
+            files.push_back(fileName);
+        }
+        }
+        closedir(dir);
+    } else {
+        std::cerr << "ERROR : Could not open directory." << std::endl;
         return 1;
     }
-    
-    delete program_stmt;
 
-    LOG_DEBUG("Generating intermediate code done.");
+    std::sort(files.begin(), files.end());
+    for (size_t i = 0; i < files.size(); i++) {
+        // 识别出第fileIndex个 以 .pas 结尾的文件
+        if (files[i].find(".pas") == std::string::npos) {
+            files.erase(files.begin() + i);
+            i--;
+        }
+    }
+
+    for(auto &file: files) {
+        std::string fileName = folderPath + "/" + file;
+        std::ifstream ifs(fileName);
+        std::stringstream ss;
+        ss << ifs.rdbuf();
+        std::string content = ss.str();
+        ifs.close();
+        // 第一步：词法分析 and 语法分析
+        LOG_DEBUG("Start parsing code..., File: %s", fileName.c_str());
+        ProgramStmt *program = nullptr;
+        code_parse(content.c_str(), &program);
+        if (program == nullptr) {
+            LOG_FATAL("ERROR : Parsing failed.");
+            break;
+        } else {
+            LOG_INFO("File %s Parsing succeeded.", fileName.c_str());
+        }
+        
+        LOG_DEBUG("Parsing code done. File: %s", fileName.c_str());
+        // 第二步: 语义分析 & 生成中间代码
+        LOG_DEBUG("Start generating intermediate code... File: %s", fileName.c_str());
+
+        try {
+            std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
+            visitor->visit(*program);
+            visitor->show_result();
+            ir::Module ir = visitor->get_ir();
+        } catch (const std::exception& e) {
+            delete program;
+            LOG_FATAL("ERROR : %s", e.what());
+            break;
+        }
+        delete program;
+    }
+    
     return 0;
 }

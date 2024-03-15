@@ -1,6 +1,7 @@
 import os
 import subprocess
 import argparse
+import sys
 
 parser = argparse.ArgumentParser(description='Test script.')
 parser.add_argument('--test_dir', type=str, default='../hidden_set',
@@ -14,9 +15,10 @@ for file in os.listdir(test_dir):
     if os.path.isfile(os.path.join(test_dir, file)) and file.endswith('.pas'):
         print(f'Testing {file}')
         try:
-            subprocess.check_output(['../bin/IR_TEST', '-i', os.path.join(test_dir, file), '-d', '4'], stderr=subprocess.STDOUT)
+            subprocess.run(['../bin/IR_TEST', '-i', os.path.join(test_dir, file),'-d','4'], check=True)
             print(f'Testing {file} done')
         except subprocess.CalledProcessError as e:
+            print(f'Testing {file} failed')
             exit_status = e.returncode
 
 exit(exit_status)

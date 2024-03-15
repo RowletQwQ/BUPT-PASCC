@@ -38,7 +38,7 @@ add_executable(BISON_TEST
     ${LOG_SOURCE_FILES}
 )
 
-target_link_libraries(BISON_TEST ${BISON_LIBRARIES} -fsanitize=address)
+target_link_libraries(BISON_TEST ${BISON_LIBRARIES} -fsanitize=address -pthread)
 # 项目架构 
 # |---src
 #          |---token
