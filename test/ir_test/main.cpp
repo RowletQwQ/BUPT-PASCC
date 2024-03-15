@@ -63,9 +63,12 @@ void init_env()
 int main(int argc, char *argv[])
 {
     // 解析命令行参数
+    LOG_DEBUG("Start Parsing args:");
     G_SETTINGS.parse_args(argc, argv);
     // 初始化环境
     init_env();
+
+    LOG_DEBUG("Start Reading input file: %s", G_SETTINGS.input_file.c_str());
 
     // 从输入文件中读取代码
     std::ifstream input_file(G_SETTINGS.input_file);
