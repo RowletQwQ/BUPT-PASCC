@@ -26,8 +26,8 @@ std::shared_ptr<ir::Instruction> binary_comp(std::shared_ptr<ir::Value> lhs,
 }
 
 std::shared_ptr<ir::Instruction> opt_binary_inst(std::shared_ptr<ir::BinaryInst> inst) {
-    std::shared_ptr<ir::Value> lhs = try_get_value(inst->get_operand(0));
-    std::shared_ptr<ir::Value> rhs = try_get_value(inst->get_operand(1));
+    std::shared_ptr<ir::Value> lhs = try_get_value(inst->get_operand(0).lock());
+    std::shared_ptr<ir::Value> rhs = try_get_value(inst->get_operand(1).lock());
     if (lhs->get_val_id() == ir::Value::ValueID::Literal &&
         rhs->get_val_id() == ir::Value::ValueID::Literal) {
             // 两个操作数都是常数, 可以进行计算
@@ -50,7 +50,7 @@ void ConstExprOpt::optimize(ir::Module &program) {
     // 遍历基本块，找到所有表达式
     for (auto &func : program.functions_) {
         for(auto &bb: func->basic_blocks_) {
-            for(auto &inst: bb->instructions_) {
+            for(auto &inst: bb.lock()->instructions_) {
                 if (inst->is_expr()) {
                     if(inst->is_binary_inst()) {
                         // 二元表达式, 试着将操作数转换为常数

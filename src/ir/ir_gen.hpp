@@ -139,7 +139,7 @@ public:
             std::cout << "基本块如下:" << std::endl;
             std::cout << "\n";
             for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
-                std::shared_ptr<BasicBlock> bb = func.lock()->basic_blocks_[j];
+                std::shared_ptr<BasicBlock> bb = func.lock()->basic_blocks_[j].lock();
                 std::cout << "第 " << j + 1 << " 个基本块信息如下：" << std::endl;
                 std::cout << "基本块名：" << bb->name_ << std::endl;
                 std::cout << "指令列表如下：" << std::endl;

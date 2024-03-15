@@ -53,7 +53,7 @@ Instruction::Instruction(const std::string name, std::shared_ptr<Type> ty, OpID 
         init();
 }
 void Instruction::init() {
-    operands_.resize(num_ops_, nullptr); // 此句不能删去！否则operands_为空时无法用set_operand设置操作数，而只能用push_back设置操作数！
+    operands_.resize(num_ops_, std::weak_ptr<Value>()); // 此句不能删去！否则operands_为空时无法用set_operand设置操作数，而只能用push_back设置操作数！
     use_pos_.resize(num_ops_);
 }
 
