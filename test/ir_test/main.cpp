@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
     try {
         visitor->visit(*program_stmt);
+        LOG_DEBUG("Start showing result... File: %s", G_SETTINGS.input_file.c_str());
         visitor->show_result();
         ir::Module ir = visitor->get_ir();
     } catch (const std::exception &e){
