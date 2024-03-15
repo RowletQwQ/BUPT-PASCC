@@ -41,4 +41,4 @@ enable_testing()
 
 # 添加可执行文件
 add_test(NAME test_bison COMMAND ${PROJECT_SOURCE_DIR}/bin/BISON_TEST ${PROJECT_SOURCE_DIR}/open_set)
-add_test(NAME test_ir COMMAND python ${PROJECT_SOURCE_DIR}/test/ir_test/test.py --test_dir ${PROJECT_SOURCE_DIR}/open_set)
+add_test(NAME test_ir COMMAND ${PROJECT_SOURCE_DIR}/bin/IR_TEST --i ${PROJECT_SOURCE_DIR}/open_set -d 4)
