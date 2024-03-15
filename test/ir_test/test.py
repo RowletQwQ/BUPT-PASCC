@@ -16,14 +16,15 @@ for file in os.listdir(test_dir):
         print(f'Testing {file}')
         output = ''
         try:
-            output = subprocess.check_output(['../bin/IR_TEST', '-i', os.path.join(test_dir, file)], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(['../bin/IR_TEST', '-i', os.path.join(test_dir, file),'-d','4'], stderr=subprocess.STDOUT)
             print(output.decode('utf-8'))
             sys.stdout.flush()
             print(f'Testing {file} done')
         except subprocess.CalledProcessError as e:
-            print(f'Testing {file} failed')
+            print(e.stderr.decode('utf-8'))
             print(e.output.decode('utf-8'))
             sys.stdout.flush()
+            print(f'Testing {file} failed')
             exit_status = e.returncode
 
 exit(exit_status)
