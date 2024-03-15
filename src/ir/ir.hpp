@@ -1095,4 +1095,68 @@ public:
 };
 
 
+/**
+ * @brief 作用域类
+ * 
+*/
+class Scope {
+public:
+    // 进入一个新的作用域
+    void enter();
+
+    // 进入循环作用域
+    void enter_loop(std::weak_ptr<BasicBlock> cond,std::weak_ptr<BasicBlock> body_bb, 
+        std::weak_ptr<BasicBlock> brk_bb, bool is_while_stmt);
+
+    // 获取循环作用域的循环体
+    std::weak_ptr<BasicBlock> get_loop_body();
+
+    // 获取循环作用域的循环跳出
+    std::weak_ptr<BasicBlock> get_loop_brk();
+
+    // 获取循环作用域的循环条件
+    std::weak_ptr<BasicBlock> get_loop_cond();
+
+    // 检测是否在循环作用域
+    bool is_in_loop() { 
+        return loop_cond_stack_.size() > 0;
+    }
+
+    // 离开循环作用域
+    void leave_loop();
+
+    // 离开一个作用域
+    void leave();
+
+    // 检测是否在全局作用域
+    bool is_global();
+
+    bool is_while_stmt() {
+        return is_while_stmt_;
+    }
+
+    // 加入一个符号
+    void push(const std::string &name, std::shared_ptr<Value> value);
+
+    // 查找一个符号
+    std::shared_ptr<Value> find(const std::string &name);
+
+    // 当前作用域的函数
+    std::shared_ptr<Function> current_f_ = nullptr;
+
+    // 打印作用域的符号
+    void print();
+private:
+    // 栈式存储分配
+    // 是一个 vector, 每个元素相当于作用域 map, 作用域 map 中存储了当前作用域的符号
+    std::vector<std::map<std::string, std::shared_ptr<Value>>> symbols_;
+
+    // 循环栈
+    std::vector<std::weak_ptr<BasicBlock>> loop_cond_stack_;
+    std::vector<std::weak_ptr<BasicBlock>> loop_body_stack_;
+    std::vector<std::weak_ptr<BasicBlock>> loop_brk_stack_;
+    bool is_while_stmt_ = false;
+};
+
+
 } // namespace ir
