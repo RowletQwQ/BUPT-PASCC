@@ -18,6 +18,8 @@ for file in os.listdir(test_dir):
             print(output.decode('utf-8'))
             print(f'Testing {file} done')
         except subprocess.CalledProcessError as e:
+            print(f'Testing {file} failed')
+            print(output.decode('utf-8'))
             print(e.output.decode('utf-8'))
             exit_status = e.returncode
 
