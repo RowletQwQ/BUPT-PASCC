@@ -72,5 +72,8 @@ jobs:
       if: steps.test.outcome == 'failure'
       uses: actions/upload-artifact@v2
       with:
-        name: /home/runner/work/BUPT-PASCC/BUPT-PASCC/build/Testing/Temporary/LastTest.log
-        path: LastTest.log
+        name: LastTest.log
+        path: /home/runner/work/BUPT-PASCC/BUPT-PASCC/build/Testing/Temporary/LastTest.log
+    - name: Fail if test failed
+      run: exit 1
+      if: steps.test.outcome == 'failure'
