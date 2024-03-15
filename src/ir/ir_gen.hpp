@@ -21,6 +21,23 @@ public:
     // 进入一个新的作用域
     void enter();
 
+    // 进入循环作用域
+    void enter_loop(std::weak_ptr<BasicBlock> body_bb, std::weak_ptr<BasicBlock> brk_bb);
+
+    // 获取循环作用域的循环体
+    std::weak_ptr<BasicBlock> get_loop_body();
+
+    // 获取循环作用域的循环跳出
+    std::weak_ptr<BasicBlock> get_loop_brk();
+
+    // 检测是否在循环作用域
+    bool is_in_loop() { 
+        return loop_stack_.size() > 0;
+    }
+
+    // 离开循环作用域
+    void leave_loop();
+
     // 离开一个作用域
     void leave();
 
@@ -42,6 +59,9 @@ private:
     // 栈式存储分配
     // 是一个 vector, 每个元素相当于作用域 map, 作用域 map 中存储了当前作用域的符号
     std::vector<std::map<std::string, std::shared_ptr<Value>>> symbols_;
+
+    // 循环栈
+    std::vector<std::pair<std::weak_ptr<BasicBlock>, std::weak_ptr<BasicBlock>>> loop_stack_;
 };
 
 
@@ -75,6 +95,8 @@ public:
     void visit(WhileStmt &stmt) override;
     void visit(ReadFuncStmt &stmt) override;
     void visit(WriteFuncStmt &stmt) override;
+    void visit(BreakStmt &stmt) override;
+    void visit(ContinueStmt &stmt) override;
     void visit(ProgramHeadStmt &stmt) override;
     void visit(ProgramBodyStmt &stmt) override;
     void visit(ProgramStmt &stmt) override;

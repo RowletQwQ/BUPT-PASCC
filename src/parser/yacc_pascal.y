@@ -379,6 +379,8 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     ANDTHEN
     DOUBLE_DOT
     BRACE_PAIR
+    BREAK
+    CONTINUE
 
 %define api.pure full
 /* %define parse.error verbose */
@@ -428,6 +430,9 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     MulExprStmt *                                   mul_expr;
     UnaryExprStmt *                                 unary_expr;
     PrimaryExprStmt *                               primary_expr;
+
+    BreakStmt *                                     break_stmt;
+    ContinueStmt *                                  continue_stmt;
 
     char *                                          string;
     long long                                       number;
@@ -1266,6 +1271,23 @@ statement : /*empty*/
         delete $3;
         LOG_DEBUG("DEBUG statement -> WRITE '(' expression_list ')'");
     }
+    | BREAK
+    {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        BreakStmt * break_stmt = new BreakStmt();
+        stmt_list->emplace_back(break_stmt);
+        $$ = stmt_list;
+        LOG_DEBUG("DEBUG statement -> BREAK");
+    }
+    | CONTINUE
+    {
+        std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+        ContinueStmt * continue_stmt = new ContinueStmt();
+        stmt_list->emplace_back(continue_stmt);
+        $$ = stmt_list;
+        LOG_DEBUG("DEBUG statement -> CONTINUE");
+    }
+    ;
 
 /*
 * no : 4.2

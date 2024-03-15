@@ -115,6 +115,8 @@ OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 "do"                                   RETURN_TOKEN(DO);
 "read"                                RETURN_TOKEN(READ);
 "readln"                            RETURN_TOKEN(READLN);
+"break"                             RETURN_TOKEN(BREAK);
+"continue"                       RETURN_TOKEN(CONTINUE);
 "write"                               RETURN_TOKEN(WRITE);
 "writeln"                            RETURN_TOKEN(WRITELN);
 "char"                                RETURN_TOKEN(CHAR_KW);
