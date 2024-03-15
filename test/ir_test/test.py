@@ -14,7 +14,8 @@ for file in os.listdir(test_dir):
     if os.path.isfile(os.path.join(test_dir, file)) and file.endswith('.pas'):
         print(f'Testing {file}')
         try:
-            output = subprocess.check_output(['../bin/IR_TEST', '-i', os.path.join(test_dir, file), '-d', '4'], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(['../bin/IR_TEST', '-i', os.path.join(test_dir, file)], stderr=subprocess.STDOUT)
+            print(output.decode('utf-8'))
             print(f'Testing {file} done')
         except subprocess.CalledProcessError as e:
             print(e.output.decode('utf-8'))
