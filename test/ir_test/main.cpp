@@ -80,12 +80,12 @@ int main(int argc, char *argv[])
     input_file.close();
 
     // 第一步：词法分析 and 语法分析
-    LOG_DEBUG("Start parsing code...");
+    LOG_DEBUG("Start parsing code..., File: %s", G_SETTINGS.input_file.c_str());
     ProgramStmt* program_stmt;
     code_parse(code.c_str(), &program_stmt);
-    LOG_DEBUG("Parsing code done.");
+    LOG_DEBUG("Parsing code done. File: %s", G_SETTINGS.input_file.c_str());
     // 第二步: 语义分析 & 生成中间代码
-    LOG_DEBUG("Start generating intermediate code...");
+    LOG_DEBUG("Start generating intermediate code... File: %s", G_SETTINGS.input_file.c_str());
     
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
     try {
@@ -93,13 +93,13 @@ int main(int argc, char *argv[])
         visitor->show_result();
         ir::Module ir = visitor->get_ir();
     } catch (const std::exception &e){
-        LOG_FATAL("Error: %s", e.what());
+        LOG_FATAL("Error When Parsing File %s: %s", G_SETTINGS.input_file.c_str(), e.what());
         delete program_stmt;
         return 1;
     }
     
     delete program_stmt;
 
-    LOG_DEBUG("Generating intermediate code done.");
+    LOG_DEBUG("Generating intermediate code done. File: %s", G_SETTINGS.input_file.c_str());
     return 0;
 }
