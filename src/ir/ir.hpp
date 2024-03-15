@@ -444,7 +444,7 @@ public:
     void add_local_identifier(std::shared_ptr<LocalIdentifier> l) { local_identifiers_.emplace_back(l); }
 
     std::vector<std::shared_ptr<LocalIdentifier> > local_identifiers_; // 局部标识符
-    std::vector<std::shared_ptr<BasicBlock> > basic_blocks_; // 基本块
+    std::vector<std::weak_ptr<BasicBlock> > basic_blocks_; // 基本块
     std::vector<std::shared_ptr<Argument> > args_; // 参数列表
     std::weak_ptr<FunctionType> func_type_; // 函数类型
 };
@@ -1058,12 +1058,20 @@ public:
     */
     void add_instruction(std::shared_ptr<Instruction> i) { all_instructions_.emplace_back(i); }
 
+    /**
+     * @brief 添加基本块
+     * @param bb 基本块
+    */
+    void add_basic_block(std::shared_ptr<BasicBlock> bb) { all_basic_blocks_.emplace_back(bb); }
+
     std::vector<std::shared_ptr<GlobalIdentifier> > global_identifiers_; // 全局标识符, 包括全局变量和常量
     std::vector<std::shared_ptr<Function> > functions_; // 函数
     // 为防止循环引用，这里保存生成过程中会出现的所有指令
     std::vector<std::shared_ptr<Instruction> > all_instructions_;
     // 下面保存所有的常量
     std::vector<std::shared_ptr<Literal> > all_literals_;
+    // 下面保存所有的基本块
+    std::vector<std::shared_ptr<BasicBlock> > all_basic_blocks_;
 };
 
 
