@@ -50,7 +50,7 @@ void ConstExprOpt::optimize(ir::Module &program) {
     // 遍历基本块，找到所有表达式
     for (auto &func : program.functions_) {
         for(auto &bb: func->basic_blocks_) {
-            for(auto &inst: bb.lock()->instructions_) {
+            for(auto &inst: bb->instructions_) {
                 if (inst->is_expr()) {
                     if(inst->is_binary_inst()) {
                         // 二元表达式, 试着将操作数转换为常数

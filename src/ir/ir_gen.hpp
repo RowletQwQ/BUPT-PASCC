@@ -22,7 +22,8 @@ public:
     void enter();
 
     // 进入循环作用域
-    void enter_loop(std::weak_ptr<BasicBlock> body_bb, std::weak_ptr<BasicBlock> brk_bb);
+    void enter_loop(std::weak_ptr<BasicBlock> cond,std::weak_ptr<BasicBlock> body_bb, 
+        std::weak_ptr<BasicBlock> brk_bb, bool is_while_stmt);
 
     // 获取循环作用域的循环体
     std::weak_ptr<BasicBlock> get_loop_body();
@@ -30,9 +31,12 @@ public:
     // 获取循环作用域的循环跳出
     std::weak_ptr<BasicBlock> get_loop_brk();
 
+    // 获取循环作用域的循环条件
+    std::weak_ptr<BasicBlock> get_loop_cond();
+
     // 检测是否在循环作用域
     bool is_in_loop() { 
-        return loop_stack_.size() > 0;
+        return loop_cond_stack_.size() > 0;
     }
 
     // 离开循环作用域
@@ -43,6 +47,10 @@ public:
 
     // 检测是否在全局作用域
     bool is_global();
+
+    bool is_while_stmt() {
+        return is_while_stmt_;
+    }
 
     // 加入一个符号
     void push(const std::string &name, std::shared_ptr<Value> value);
@@ -61,7 +69,10 @@ private:
     std::vector<std::map<std::string, std::shared_ptr<Value>>> symbols_;
 
     // 循环栈
-    std::vector<std::pair<std::weak_ptr<BasicBlock>, std::weak_ptr<BasicBlock>>> loop_stack_;
+    std::vector<std::weak_ptr<BasicBlock>> loop_cond_stack_;
+    std::vector<std::weak_ptr<BasicBlock>> loop_body_stack_;
+    std::vector<std::weak_ptr<BasicBlock>> loop_brk_stack_;
+    bool is_while_stmt_ = false;
 };
 
 
@@ -139,7 +150,7 @@ public:
             std::cout << "基本块如下:" << std::endl;
             std::cout << "\n";
             for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
-                std::shared_ptr<BasicBlock> bb = func.lock()->basic_blocks_[j].lock();
+                std::shared_ptr<BasicBlock> bb = func.lock()->basic_blocks_[j];
                 std::cout << "第 " << j + 1 << " 个基本块信息如下：" << std::endl;
                 std::cout << "基本块名：" << bb->name_ << std::endl;
                 std::cout << "指令列表如下：" << std::endl;

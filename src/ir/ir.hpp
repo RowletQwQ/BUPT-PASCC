@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <list>
 #include <memory>
 #include <string>
@@ -413,7 +414,7 @@ public:
  * @brief 函数类
  * 
 */
-class Function : public Value {
+class Function : public Value, public std::enable_shared_from_this<Function> {
 public:
     Function(std::shared_ptr<FunctionType> type, const std::string name, std::vector<std::string> arg_name);
     ~Function() = default;
@@ -435,7 +436,7 @@ public:
      * @brief 添加基本块
      * @param bb 基本块
     */
-    void add_basic_block(std::shared_ptr<BasicBlock> bb) { basic_blocks_.emplace_back(bb); }
+    void add_basic_block(std::shared_ptr<BasicBlock> bb);
 
     /**
      * @brief 添加局部标识符
@@ -444,7 +445,7 @@ public:
     void add_local_identifier(std::shared_ptr<LocalIdentifier> l) { local_identifiers_.emplace_back(l); }
 
     std::vector<std::shared_ptr<LocalIdentifier> > local_identifiers_; // 局部标识符
-    std::vector<std::weak_ptr<BasicBlock> > basic_blocks_; // 基本块
+    std::vector<std::shared_ptr<BasicBlock> > basic_blocks_; // 基本块
     std::vector<std::shared_ptr<Argument> > args_; // 参数列表
     std::weak_ptr<FunctionType> func_type_; // 函数类型
 };
@@ -497,6 +498,7 @@ public:
         Br,
         Break,
         Continue,
+        ContinueInc,
 
         // Binary Operation
         Add, 
@@ -960,16 +962,42 @@ public:
     /**
      * @brief Construct a new Continue Inst object
      * 
-     * @param cont_bb 跳转的基本块
+     * @param jmp_bb 跳转的基本块
      * @param bb 所属基本块
      */
-    ContinueInst(std::shared_ptr<BasicBlock> cont_bb,std::weak_ptr<BasicBlock> bb)
+    ContinueInst(std::shared_ptr<BasicBlock> jmp_bb, std::weak_ptr<BasicBlock> bb)
       : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::Continue, 1, bb) {
-        set_operand(0, cont_bb);
+        set_operand(0, jmp_bb);
       }
     ~ContinueInst() = default;
     virtual std::string print() override {
         return "continue";
+    }
+    void set_operand(unsigned i, std::shared_ptr<Value> val) {
+        operands_[i] = val;
+    }
+    std::weak_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
+};
+
+class ContinueIncInst : public Instruction {
+public:
+    /**
+     * @brief Construct a new Continue Inc Inst object
+     * 
+     * @param cont_bb 循环所在的基本块（需要执行这个基本块的最后一条指令）
+     * @param jmp_bb 跳转的基本块
+     * @param bb 所属基本块
+     */
+    ContinueIncInst(std::shared_ptr<BasicBlock> cont_bb, std::shared_ptr<BasicBlock> jmp_bb,std::weak_ptr<BasicBlock> bb)
+      : Instruction(std::make_shared<Type>(Type::VoidTID), OpID::ContinueInc, 2, bb) {
+        set_operand(0, cont_bb);
+        set_operand(1, jmp_bb);
+      }
+    ~ContinueIncInst() = default;
+    virtual std::string print() override {
+        return "continue_inc";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -1058,20 +1086,12 @@ public:
     */
     void add_instruction(std::shared_ptr<Instruction> i) { all_instructions_.emplace_back(i); }
 
-    /**
-     * @brief 添加基本块
-     * @param bb 基本块
-    */
-    void add_basic_block(std::shared_ptr<BasicBlock> bb) { all_basic_blocks_.emplace_back(bb); }
-
     std::vector<std::shared_ptr<GlobalIdentifier> > global_identifiers_; // 全局标识符, 包括全局变量和常量
     std::vector<std::shared_ptr<Function> > functions_; // 函数
     // 为防止循环引用，这里保存生成过程中会出现的所有指令
     std::vector<std::shared_ptr<Instruction> > all_instructions_;
     // 下面保存所有的常量
     std::vector<std::shared_ptr<Literal> > all_literals_;
-    // 下面保存所有的基本块
-    std::vector<std::shared_ptr<BasicBlock> > all_basic_blocks_;
 };
 
 
