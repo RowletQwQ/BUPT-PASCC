@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
 # 当所有函数都写完时，打开这个编译选项
 # add_compile_options(-Wall -Wextra -Wpedantic -Werror -g -fsanitize=address)
-
+add_compile_options(-g -fsanitize=address)
 project(PASCC)
 
 
@@ -30,7 +30,7 @@ MESSAGE(STATUS "SRC_PATH: " ${SRC_PATH})
 ADD_EXECUTABLE(pascc ${SRC_FILES} ${MAIN_SRC})
 
 target_include_directories(pascc PUBLIC ${PROJECT_SOURCE_DIR}/src)
-# target_link_libraries(pascc -fsanitize=address)
+target_link_libraries(pascc -fsanitize=address)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/test/bison_test)
 add_subdirectory(${PROJECT_SOURCE_DIR}/test/ir_test)
