@@ -21,7 +21,6 @@ for file in os.listdir(test_dir):
             sys.stdout.flush()
             print(f'Testing {file} done')
         except subprocess.CalledProcessError as e:
-            print(e.stderr.decode('utf-8'))
             print(e.output.decode('utf-8'))
             sys.stdout.flush()
             print(f'Testing {file} failed')
