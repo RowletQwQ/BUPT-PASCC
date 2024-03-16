@@ -1,5 +1,6 @@
 import os
 import subprocess
+import shutil
 
 class Colors:
     YELLOW = '\033[33m'
@@ -21,7 +22,7 @@ def compile_and_run(directory):
                 subprocess.run(['../bin/pascc', '-i', file], check=True)
                 subprocess.run(['fpc', file], check=True)
                 os.rename(file[:-4], file[:-4] + "_fpc")
-                subprocess.run(['gcc', file[:-4] + ".c", '-o', file[:-4] + "_gcc"], check=True)
+                subprocess.run(['gcc', file[:-4] + ".c", '-o', file[:-4] + "_gcc",'-g','-fsanitize=address'], check=True)
             except subprocess.CalledProcessError:
                 ce_files.append(file)
                 print(f"Error: Compilation failed for {file}")
@@ -69,11 +70,54 @@ os.chdir('../hidden_set')
 hidden_ce, hidden_wa, hidden_tle, hidden_re = compile_and_run('.')
 os.chdir('..')
 for file in os.listdir('open_set'):
-    if file.endswith('.c') or file.endswith('.out') or file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
+    if file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
         os.remove(f'open_set/{file}')
 for file in os.listdir('hidden_set'):
-    if file.endswith('.c') or file.endswith('.out') or file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
+    if file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
         os.remove(f'hidden_set/{file}')
+
+error_dir = 'judge/error_files'
+
+# 创建存放错误文件的目录
+os.makedirs(error_dir, exist_ok=True)
+
+# 先清空错误文件夹
+for file in os.listdir(error_dir):
+    os.remove(f'{error_dir}/{file}')
+
+for set_name in ['open_set']:
+    for file in os.listdir(set_name):
+        if file.endswith('.c'):
+            # 如果文件名在错误列表中，将其移动到新位置
+            if file[:-1] + 'pas' in open_ce or file[:-1] + 'pas' in open_wa or file[:-1] + 'pas' in open_tle or file[:-1] + 'pas' in open_re:
+                shutil.move(f'{set_name}/{file}', f'{error_dir}/{file}')
+            # 否则，删除文件
+            else:
+                os.remove(f'{set_name}/{file}')
+        if file.endswith('.out'):
+            # 如果文件名在错误列表中，将其移动到新位置
+            if file[:-8] + 'pas' in open_ce or file[:-8] + 'pas' in open_wa or file[:-8] + 'pas' in open_tle or file[:-8] + 'pas' in open_re:
+                shutil.move(f'{set_name}/{file}', f'{error_dir}/{file}')
+            # 否则，删除文件
+            else:
+                os.remove(f'{set_name}/{file}')
+                
+for set_name in ['hidden_set']:
+    for file in os.listdir(set_name):
+        if file.endswith('.c'):
+            # 如果文件名在错误列表中，将其移动到新位置
+            if file[:-1] + 'pas' in hidden_ce or file[:-1] + 'pas' in hidden_wa or file[:-1] + 'pas' in hidden_tle or file[:-1] + 'pas' in hidden_re:
+                shutil.move(f'{set_name}/{file}', f'{error_dir}/{file}')
+            # 否则，删除文件
+            else:
+                os.remove(f'{set_name}/{file}')
+        if file.endswith('.out'):
+            # 如果文件名在错误列表中，将其移动到新位置
+            if file[:-8] + 'pas' in hidden_ce or file[:-8] + 'pas' in hidden_wa or file[:-8] + 'pas' in hidden_tle or file[:-8] + 'pas' in hidden_re:
+                shutil.move(f'{set_name}/{file}', f'{error_dir}/{file}')
+            # 否则，删除文件
+            else:
+                os.remove(f'{set_name}/{file}')
 
 print("Open set:")
 if len(open_ce) == 0 and len(open_wa) == 0 and len(open_tle) == 0 and len(open_re) == 0:
