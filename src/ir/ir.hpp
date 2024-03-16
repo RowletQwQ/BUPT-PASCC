@@ -688,6 +688,7 @@ public:
         }
     }
 
+
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
@@ -943,7 +944,7 @@ public:
     }
     ~ReturnInst() = default;
     virtual std::string print() override {
-        return "return " + operands_[0].lock()->print();
+        return "return " + operands_[0].lock()->print()+"";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -1058,20 +1059,11 @@ public:
         if (!is_loop_cond_) {
             res += "if (";
             res += operands_[0].lock()->print();
-            res += ") {";
-            res += operands_[1].lock()->print();
-            res += "}";
-            if (operands_[2].lock()) {
-                res += " else {";
-                res += operands_[2].lock()->print();
-                res += "}";
-            }
+            res += ")";
         } else {
             res += "while (";
             res += operands_[0].lock()->print();
-            res += ") {";
-            res += operands_[1].lock()->print();
-            res += "} ";
+            res += ")";
         }
         return res;
     }
