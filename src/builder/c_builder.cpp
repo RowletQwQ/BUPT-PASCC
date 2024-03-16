@@ -37,7 +37,7 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
         // 2.1 遍历指令操作数，检查栈顶元素是否是当前指令的某个操作数，如果是则弹栈，否则入栈
         for (const auto &operand : inst->operands_)
         {
-                while (!stack.empty() && stack.back() == operand) {
+                while (!stack.empty() && stack.back().get() == operand.lock().get()) {
                     stack.pop_back();
                 }
         }
