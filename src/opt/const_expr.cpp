@@ -7,6 +7,44 @@
 
 namespace opt {
 
+
+
+std::shared_ptr<ir::Literal> compute(std::shared_ptr<ir::Literal> l1, std::shared_ptr<ir::Literal> l2, ir::Instruction::OpID op) {
+    // ir::Type::TID l_type = l1->type_->get_tid();
+    // ir::Type::TID r_type = l2->type_->get_tid();
+    // auto result_type = std::max(l_type, r_type);
+    // if (result_type == ir::Type::TID::RealTID) {
+    //     switch (op) {
+    //         case ir::Instruction::OpID::Add:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_real() + l2->get_real());
+    //         case ir::Instruction::OpID::Sub:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_real() - l2->get_real());
+    //         case ir::Instruction::OpID::Mul:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_real() * l2->get_real());
+    //         case ir::Instruction::OpID::Div:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_real() / l2->get_real());
+    //         default:
+    //             break;
+    //     }
+    // } else {
+    //     switch(op) {
+    //         case ir::Instruction::OpID::Add:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_int() + l2->get_int());
+    //         case ir::Instruction::OpID::Sub:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_int() - l2->get_int());
+    //         case ir::Instruction::OpID::Mul:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_int() * l2->get_int());
+    //         case ir::Instruction::OpID::Div:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_int() / l2->get_int());
+    //         case ir::Instruction::OpID::Mod:
+    //             return std::make_shared<ir::Literal>(result_type, l1->get_int() % l2->get_int());
+    //         default:
+    //             break;
+    //     }
+    // }
+    return nullptr;
+}
+
 //TODO: 实现常数表达式优化
 std::shared_ptr<ir::Value> try_get_value(std::shared_ptr<ir::Value> val) {
     if(val->get_val_id() == ir::Value::ValueID::Literal) {
@@ -23,6 +61,7 @@ std::shared_ptr<ir::Instruction> binary_comp(std::shared_ptr<ir::Value> lhs,
             rhs->get_val_id() != ir::Value::ValueID::Literal) {
                 return nullptr;
         }
+        throw std::runtime_error("Not implemented yet");
 }
 
 std::shared_ptr<ir::Instruction> opt_binary_inst(std::shared_ptr<ir::BinaryInst> inst) {
@@ -51,19 +90,12 @@ void ConstExprOpt::optimize(ir::Module &program) {
     for (auto &func : program.functions_) {
         for(auto &bb: func->basic_blocks_) {
             for(auto &inst: bb->instructions_) {
-                if (inst->is_expr()) {
-                    if(inst->is_binary_inst()) {
-                        // 二元表达式, 试着将操作数转换为常数
-                        auto result = opt_binary_inst(std::dynamic_pointer_cast<ir::BinaryInst>(inst));
-                        if(result) {
-                            // 替换原指令
-                            inst = result;
-                        }
-                    }
+                if (inst->is_assign_inst()) {
+                    
                 }
             }
         }
     }
 }
 
-}
+} // namespace opt

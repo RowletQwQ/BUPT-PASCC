@@ -1,4 +1,5 @@
 #include "ir/ir.hpp"
+#include <deque>
 #include <iterator>
 #include <memory>
 #include <iostream>
@@ -95,6 +96,14 @@ bool BinaryInst::can_compute(const Type *t1, const Type *t2) {
 
 void Function::add_basic_block(std::shared_ptr<BasicBlock> bb) {
     basic_blocks_.emplace_back(bb);
+}
+
+std::string BasicBlock::print() {
+    std::string s;
+    for (auto &inst : instructions_) {
+        s += inst->print() + "\t";
+    }
+    return s;
 }
 
 } // namespace ir
