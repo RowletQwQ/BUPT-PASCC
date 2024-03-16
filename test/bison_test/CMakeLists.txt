@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(PASCC_TEST)
-add_compile_options(-g -fsanitize=address)
+add_compile_options(-fsanitize=address)
 set(CMAKE_CXX_STANDARD 17)
 
 
