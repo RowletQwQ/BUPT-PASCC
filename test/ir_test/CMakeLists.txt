@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 # 当所有函数都写完时，打开这个编译选项
 
 #add_compile_options(-g)
-add_compile_options(-g -fsanitize=address)
+add_compile_options(-fsanitize=address)
 
 # add_compile_options(-Wall -Wextra -Wpedantic -Werror -g -fsanitize=address)
 

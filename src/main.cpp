@@ -21,6 +21,28 @@ void code_parse(const char *code, ProgramStmt **program_stmt);
 
 void init_env()
 {
+    if (G_SETTINGS.output_file.empty())
+    {
+        size_t pos = G_SETTINGS.input_file.find_last_of('.');
+        if (pos == std::string::npos)
+        {
+            G_SETTINGS.output_file = G_SETTINGS.input_file + ".c";
+        }
+        else
+        {
+            G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
+        }
+
+        LOG_DEBUG("Output file: %s", G_SETTINGS.output_file.c_str());
+        // 检测文件是否存在
+        std::ifstream file(G_SETTINGS.output_file);
+        if (file.is_open())
+        {
+            LOG_WARN("Output file already exists: %s", G_SETTINGS.output_file.c_str());
+            LOG_WARN("Program exited.");
+            exit(0);
+        }
+    }
     switch (G_SETTINGS.log_level)
     {
         case 0:
@@ -42,22 +64,6 @@ void init_env()
             common::g_log = new common::Log(common::WARN);
             break;
     }
-    if (G_SETTINGS.output_file.empty())
-    {
-        size_t pos = G_SETTINGS.input_file.find_last_of('.');
-        if (pos == std::string::npos)
-        {
-            G_SETTINGS.output_file = G_SETTINGS.input_file + ".c";
-        }
-        else
-        {
-            G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
-        }
-
-        LOG_DEBUG("Output file: %s", G_SETTINGS.output_file.c_str());
-    }
-
-    
     
 }
 
