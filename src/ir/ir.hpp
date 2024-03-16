@@ -254,6 +254,8 @@ public:
 class Literal : public Value {
 public:
     Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, ValueID::Literal, name) {}
+    virtual long get_int() = 0;
+    virtual double get_real() = 0;
     ~Literal() = default;
 };
 
@@ -264,8 +266,10 @@ public:
 class LiteraltInt : public Literal {
 public:
     LiteraltInt(std::shared_ptr<Type> type, int val) : Literal(type), val_(val) {}
-    int val_;
     virtual std::string print() override { return std::to_string(val_); }
+    virtual long get_int() override { return val_; }
+    virtual double get_real() override { return val_; }
+    int val_;
 };
 
 
@@ -278,6 +282,8 @@ public:
     LiteralLong(std::shared_ptr<Type> type, long long val) : Literal(type), val_(val) {}
     long long val_;
     virtual std::string print() override { return std::to_string(val_); }
+    virtual long get_int() override { return val_; }
+    virtual double get_real() override { return val_; }
 };
 
 /**
@@ -289,6 +295,8 @@ public:
     LiteralFloat(std::shared_ptr<Type> type, float val) : Literal(type), val_(val) {}
     float val_;
     virtual std::string print() override { return std::to_string(val_); }
+    virtual long get_int() override { return val_; }
+    virtual double get_real() override { return val_; }
 };
 
 /**
@@ -300,6 +308,8 @@ public:
     LiteralDouble(std::shared_ptr<Type> type, double val) : Literal(type), val_(val) {}
     double val_;
     virtual std::string print() override { return std::to_string(val_); }
+    virtual long get_int() override { return val_; }
+    virtual double get_real() override { return val_; }
 };
 
 /**
@@ -311,6 +321,8 @@ public:
     LiteralBool(std::shared_ptr<Type> type, bool val) : Literal(type), val_(val) {}
     bool val_;
     virtual std::string print() override { return val_ ? "true" : "false"; }
+    virtual long get_int() override { return val_; }
+    virtual double get_real() override { return val_; }
 };
 
 /**
@@ -322,6 +334,8 @@ public:
     LiteralChar(std::shared_ptr<Type> type, char val) : Literal(type), val_(val) {}
     char val_;
     virtual std::string print() override { return "'" + std::string(1, val_) + "'";}
+    virtual long get_int() override { return val_; }
+    virtual double get_real() override { return val_; }
 };
 
 /**
@@ -333,6 +347,8 @@ public:
     LiteralString(std::shared_ptr<Type> type, const std::string val) : Literal(type), val_(val) {}
     std::string val_;
     virtual std::string print() override { return "\"" + val_ + "\"";}
+    virtual long get_int() override { throw "string can't be converted to integer"; }
+    virtual double get_real() override { throw "string can't be converted to real"; }
 };
 
 /**
@@ -356,6 +372,8 @@ public:
         ret = ret + "}";
         return ret;
     }
+    virtual long get_int() override { throw "array can't be converted to integer"; }
+    virtual double get_real() override { throw "array can't be converted to real"; }
     std::vector<std::shared_ptr<Literal> > const_array;
 };
 
@@ -459,7 +477,7 @@ class BasicBlock : public Value {
 public:
     explicit BasicBlock(const std::string name) : Value(std::make_shared<Type>(Type::BlockTID), ValueID::BasicBlock, name) {}
     ~BasicBlock() = default;
-    virtual std::string print() override {return "";}
+    virtual std::string print() override;
     /**
      * @brief 添加指令
      *  
@@ -475,6 +493,8 @@ public:
      * @brief 添加后继基本块
     */
     void add_succ_bb(std::weak_ptr<BasicBlock> bb) { succ_bbs_.emplace_back(bb); }
+
+    void pop_back_inst(int n) { instructions_.erase(instructions_.end() - n, instructions_.end()); }
 
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
@@ -667,6 +687,7 @@ public:
             return Instruction::op2str_[op_id_] + operands_[0].lock()->print();
         }
     }
+
 
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -923,7 +944,7 @@ public:
     }
     ~ReturnInst() = default;
     virtual std::string print() override {
-        return "return " + operands_[0].lock()->print();
+        return "return " + operands_[0].lock()->print()+"";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -1034,11 +1055,17 @@ public:
     ~BranchInst() = default;
     bool is_loop_cond_; // 是否为循环条件
     virtual std::string print() override {
+        std::string res;
         if (!is_loop_cond_) {
-            return "if (" + operands_[0].lock()->print() + ")";
+            res += "if (";
+            res += operands_[0].lock()->print();
+            res += ")";
         } else {
-            return "while (" + operands_[0].lock()->print() + ")";
+            res += "while (";
+            res += operands_[0].lock()->print();
+            res += ")";
         }
+        return res;
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;

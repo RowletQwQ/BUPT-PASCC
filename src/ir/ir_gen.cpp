@@ -187,6 +187,7 @@ void IRGenerator::visit(RelExprStmt &stmt) {
             }
             // 新建指令，并赋予基本块信息
             std::shared_ptr<CompareInst> inst = std::make_shared<CompareInst>(op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(2); // 弹出两个操作数
             this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
             inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
             this->module_.all_instructions_.emplace_back(inst);
@@ -216,6 +217,7 @@ void IRGenerator::visit(AddExprStmt &stmt) {
             auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
             auto inst_type = std::make_shared<Type>(inst_type_id);
             std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(2); // 弹出两个操作数
             this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
             inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
             this->module_.all_instructions_.emplace_back(inst);
@@ -248,6 +250,7 @@ void IRGenerator::visit(MulExprStmt &stmt) {
             auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
             auto inst_type = std::make_shared<Type>(inst_type_id);
             std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(2); // 弹出两个操作数
             this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
             inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
             this->module_.all_instructions_.emplace_back(inst);
@@ -266,6 +269,7 @@ void IRGenerator::visit(UnaryExprStmt &stmt) {
             throw common::IRGenException("不支持的一元运算操作符");
         }
         std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, op, val, this->scope_.current_f_->basic_blocks_.back());
+        this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
         this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
         inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
         this->module_.all_instructions_.emplace_back(inst);
@@ -278,6 +282,7 @@ void IRGenerator::visit(PrimaryExprStmt &stmt) {
         stmt.expr->accept(*this);
         std::shared_ptr<Value> val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
         std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Bracket, val, this->scope_.current_f_->basic_blocks_.back());
+        this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
         this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
         inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
         this->module_.all_instructions_.emplace_back(inst);
@@ -338,6 +343,7 @@ void IRGenerator::visit(FuncCallStmt &stmt) {
         arg->accept(*this);
         args.emplace_back(this->scope_.current_f_->basic_blocks_.back()->instructions_.back());
     }
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(args.size()); // 弹出参数
 
     // 构建函数调用指令
     std::shared_ptr<CallInst> inst = std::make_shared<CallInst>(val, args, this->scope_.current_f_->basic_blocks_.back());
@@ -490,6 +496,7 @@ void IRGenerator::visit(LValStmt &stmt) {
         for (int i = 0; i < stmt.array_index.size(); i++) {
             stmt.array_index[i] -> accept(*this);
             std::shared_ptr<Value> idx = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+            this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
             // 如果 index 是最后一个, 那就将目标类型视作数组元素类型
             if (i == int(stmt.array_index.size()) - 1) {
                 ArrayType *at = (ArrayType *)val->type_.get();
@@ -504,6 +511,9 @@ void IRGenerator::visit(LValStmt &stmt) {
                 this->module_.all_instructions_.emplace_back(inst);
             }
             val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+            if (i != int(stmt.array_index.size()) - 1) {
+                this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
+            }
         }
     }
 }
@@ -538,11 +548,10 @@ void IRGenerator::visit(AssignStmt &stmt) {
     std::shared_ptr<Instruction> val;
     stmt.lval->accept(*this);
     val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     // 判断构造的 val 是不是一个函数名
     bool is_return = false;
-    if (this->scope_.current_f_->basic_blocks_.back()->instructions_.back()->op_id_ == Instruction::OpID::Null && 
-    this->scope_.current_f_->basic_blocks_.back()->instructions_.back()->operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
+    if (val->op_id_ == Instruction::OpID::Null && val->operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
         is_return = true;
     }
 
@@ -550,7 +559,7 @@ void IRGenerator::visit(AssignStmt &stmt) {
     std::shared_ptr<Value> ptr;
     stmt.expr->accept(*this);
     ptr = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
-
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     // 构建赋值指令 or 返回指令
     if (!is_return) {
         inst = std::make_shared<StoreInst>(val, ptr, this->scope_.current_f_->basic_blocks_.back());
@@ -568,6 +577,7 @@ void IRGenerator::visit(IfStmt &stmt) {
     // 得到 if 的条件
     stmt.expr->accept(*this);
     std::shared_ptr<Instruction> cond_inst = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
 
     // if 会多产生两个基本块
     std::shared_ptr<BasicBlock> cur_bb = this->scope_.current_f_->basic_blocks_.back(); // 当前基本块
@@ -602,7 +612,9 @@ void IRGenerator::visit(ForStmt &stmt) {
     assert (id != nullptr);
     stmt.begin->accept(*this);
     std::shared_ptr<Value> begin_val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+
     std::shared_ptr<StoreInst> store_inst = std::make_shared<StoreInst>(id, begin_val, this->scope_.current_f_->basic_blocks_.back());
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(store_inst);
     store_inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
     this->module_.all_instructions_.emplace_back(store_inst);
@@ -616,6 +628,7 @@ void IRGenerator::visit(ForStmt &stmt) {
     cond_bb->add_pre_bb(cur_bb);
     stmt.end->accept(*this);
     std::shared_ptr<Value> end_val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     std::shared_ptr<Instruction> cond_inst = std::make_shared<CompareInst>(Instruction::OpID::Le, id, end_val, cond_bb);
     cond_bb->instructions_.emplace_back(cond_inst);
     cond_inst->set_pos_in_bb(std::prev(cond_bb->instructions_.end()));
@@ -648,6 +661,7 @@ void IRGenerator::visit(ForStmt &stmt) {
 
     // 补充上面的 if 指令
     std::shared_ptr<BranchInst> branch_inst = std::make_shared<BranchInst>(cond_inst, body_bb, nxt_bb, cond_bb, true);
+    cond_bb->pop_back_inst(1); // 弹出条件判断操作数
     cond_bb->instructions_.emplace_back(branch_inst);
     branch_inst->set_pos_in_bb(std::prev(cond_bb->instructions_.end()));
     this->module_.all_instructions_.emplace_back(branch_inst);
@@ -664,6 +678,7 @@ void IRGenerator::visit(WhileStmt &stmt) {
     cond_bb->add_pre_bb(cur_bb);
     stmt.expr->accept(*this);
     std::shared_ptr<Instruction> cond_inst = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     // 再新建一个循环体基本块
     std::shared_ptr<BasicBlock> body_bb = std::make_shared<BasicBlock>("body_basic_block");
     // 最后新建一个循环外的基本块
@@ -697,6 +712,7 @@ void IRGenerator::visit(ReadFuncStmt &stmt) {
         lval->accept(*this);
         args.emplace_back(this->scope_.current_f_->basic_blocks_.back()->instructions_.back());
     }
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(args.size()); // 弹出参数
     std::shared_ptr<ReadInst> inst = std::make_shared<ReadInst>(args, this->scope_.current_f_->basic_blocks_.back());
     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
     inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
@@ -709,6 +725,7 @@ void IRGenerator::visit(WriteFuncStmt &stmt) {
         expr->accept(*this);
         args.emplace_back(this->scope_.current_f_->basic_blocks_.back()->instructions_.back());
     }
+    this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(args.size()); // 弹出参数
     std::shared_ptr<WriteInst> inst = std::make_shared<WriteInst>(args, this->scope_.current_f_->basic_blocks_.back());
     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
     inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
