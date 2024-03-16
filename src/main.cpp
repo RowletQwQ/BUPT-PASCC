@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
 
     visitor->visit(*program_stmt);
-    visitor->show_result();
+    //visitor->show_result();
     ir::Module ir = visitor->get_ir();
 
 
