@@ -27,7 +27,7 @@ std::map<Instruction::OpID, std::string> Instruction::op2str_ = {
     {Instruction::OpID::Or, "||"},
     {Instruction::OpID::OrElse, "OrElse"},
     {Instruction::OpID::AndThen, "AndThen"},
-    {Instruction::OpID::Not, "!"},
+    {Instruction::OpID::Not, "~"},
     {Instruction::OpID::BitReverse, "~"},
     {Instruction::OpID::LogicalNot, "LogicalNot"},
     {Instruction::OpID::Bracket, "()"},

@@ -87,7 +87,7 @@ void CBuilder::build(ir::Module &program)
             }
             else
             {
-                out << s.substr(0, ps) << " " << global->name_ << s.substr(ps + 1) << "\n";
+                out << s.substr(0, ps) << " " << global->name_ << s.substr(ps + 1) << ";\n";
             }
         }
     }
@@ -115,13 +115,22 @@ void CBuilder::build(ir::Module &program)
             }
             if (local->is_const_ && !isFuncParam )
             {
-                out << local->type_->print() << " " << local->name_ << " = " << local->init_val_->print() << ";\n";
+                out << "const " + local->type_->print() << " " << local->name_ << " = " << local->init_val_->print() << ";\n";
             }
             else
             {
-                if (!isFuncParam )
+                if (!isFuncParam)
                 {
-                    out << local->type_->print() << " " << local->name_ << ";\n";
+                    std::string s = local->type_->print();
+                    int ps = s.find(" ");
+                    if (ps == std::string::npos)
+                    {
+                        out << local->type_->print() << " " << local->name_ << ";\n";
+                    }
+                    else
+                    {
+                        out << s.substr(0, ps) << " " << local->name_ << s.substr(ps + 1) << ";\n";
+                    }
                 }
             }
         }
