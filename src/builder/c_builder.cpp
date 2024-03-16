@@ -1,4 +1,5 @@
 #include "builder/c_builder.hpp"
+#include "common/log/log.hpp"
 #include "ir/ir.hpp"
 #include "ir/ir_gen.hpp"
 #include <unordered_set>
@@ -137,10 +138,12 @@ void CBuilder::build(ir::Module &program)
         }
         out << "}\n";
     }
-    std::cout << out.str() << std::endl;
+    code_ = out.str();
+    LOG_DEBUG("CBuilder: code generated");
 }
 void CBuilder::output(std::ofstream &out)
 {
+    out << code_;
 }
 
 }

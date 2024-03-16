@@ -214,8 +214,12 @@ void IRGenerator::visit(AddExprStmt &stmt) {
                 LOG_ERROR("不支持的二元运算操作符, 左侧表达式：%s, 右侧表达式：%s", lhs->print().c_str(), rhs->print().c_str());
                 throw common::IRGenException("不支持的二元运算操作符");
             }
-            auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
-            auto inst_type = std::make_shared<Type>(inst_type_id);
+            std::shared_ptr<Type> inst_type;
+            if (lhs->type_->get_tid() > rhs->type_->get_tid()) {
+                inst_type = lhs->type_;
+            } else {
+                inst_type = rhs->type_;
+            }
             std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
             this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(2); // 弹出两个操作数
             this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
@@ -247,8 +251,12 @@ void IRGenerator::visit(MulExprStmt &stmt) {
                 throw common::IRGenException("不支持的二元运算操作符");
             }
 
-            auto inst_type_id = std::max(lhs->type_->get_tid(), rhs->type_->get_tid()); // 选择更大的类型
-            auto inst_type = std::make_shared<Type>(inst_type_id);
+            std::shared_ptr<Type> inst_type;
+            if (lhs->type_->get_tid() > rhs->type_->get_tid()) {
+                inst_type = lhs->type_;
+            } else {
+                inst_type = rhs->type_;
+            }
             std::shared_ptr<BinaryInst> inst = std::make_shared<BinaryInst>(inst_type, op, lhs, rhs, this->scope_.current_f_->basic_blocks_.back());
             this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(2); // 弹出两个操作数
             this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
