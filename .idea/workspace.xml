@@ -21,6 +21,7 @@
     <list default="true" id="bfaf7171-dd90-408c-b194-0cb76831e951" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/builder/c_builder.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/builder/c_builder.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ir/ir.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/ir/ir.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,7 +91,8 @@
       <workItem from="1710558971223" duration="8114000" />
       <workItem from="1710567476742" duration="967000" />
       <workItem from="1710573497939" duration="17000" />
-      <workItem from="1710575142381" duration="302000" />
+      <workItem from="1710575142381" duration="6503000" />
+      <workItem from="1710581749157" duration="2516000" />
     </task>
     <servers />
   </component>
@@ -101,5 +103,16 @@
     <isAutomaticCheckingOnLaunch value="false" />
     <isAutomaticFoundErrors value="true" />
     <isAutomaticReloadCMake value="true" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

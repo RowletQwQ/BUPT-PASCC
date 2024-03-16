@@ -5,16 +5,15 @@
 #include <sstream>
 namespace builder
 {
-    std::unordered_set<std::shared_ptr<ir::BasicBlock>> processed_bbs;
     std::stringstream output;
-// 处理基本块,这里的参数是传引用还是
+    std::unordered_set<const ir::BasicBlock *>processed_bbs;
+// 处理基本块
 void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out)
 {
 
     // 检查是否已经处理过该基本块
-    if (processed_bbs.find(bb) != processed_bbs.end())
+    if (processed_bbs.find(bb.get()) != processed_bbs.end())
     {
-
         return;
     }
     // 判断基本块是否为空
@@ -22,43 +21,15 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
     {
         return;
     }
-
     // 标记为已处理
-    processed_bbs.insert(bb);
-
-    // 1. 判断基本块有无前驱基本块，如果有，加入左大括号
-    if (bb->pre_bbs_.size() > 0)
-        out << "{ \n";
-    // 2. 遍历基本块中指令列表,建立栈
-    std::vector<std::shared_ptr<ir::Instruction>> stack;
+    processed_bbs.insert(bb.get());
+    // 2. 遍历基本块中指令列表
     for (int k = 0; k < bb->instructions_.size(); k++)
     {
         std::shared_ptr<ir::Instruction> inst = bb->instructions_[k];
-        // 2.1 遍历指令操作数，检查栈顶元素是否是当前指令的某个操作数，如果是则弹栈，否则入栈
-        for (const auto &operand : inst->operands_)
-        {
-                while (!stack.empty() && stack.back().get() == operand.lock().get()) {
-                    stack.pop_back();
-                }
-        }
-        stack.push_back(inst);
+        out << inst->print() << "\n";
     }
-    // 2.2 弹栈，从栈底开始弹出元素并输出到stream中,注意分号和大括号
-    std::vector<std::shared_ptr<ir::Instruction>> tempStackVector;
-        while (!stack.empty())
-        {
-            tempStackVector.push_back(stack.back());
-            stack.pop_back();
-        }
-
-        while (!tempStackVector.empty())
-        {
-            std::shared_ptr<ir::Instruction> inst = tempStackVector.back();
-            out << inst->print() << "\n";
-            tempStackVector.pop_back();
-        }
-
-        // 3. 遍历后续基本块
+    // 3. 遍历后续基本块
     for (int k = 0; k < bb->succ_bbs_.size(); k++)
     {
         std::weak_ptr<ir::BasicBlock> nextBlock = bb->succ_bbs_[k];
@@ -68,8 +39,6 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
             HandleBasicBlock(nextBlockShared,out);
         }
     }
-    // 4. 加入右大括号
-    out << "} \n";
 }
 
 void CBuilder::build(ir::Module &program)
