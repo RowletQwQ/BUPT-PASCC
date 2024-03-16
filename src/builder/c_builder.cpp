@@ -35,7 +35,7 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
     for (int k = 0; k < bb->instructions_.size(); k++)
     {
         std::shared_ptr<ir::Instruction> inst = bb->instructions_[k];
-        if(bb->name_=="cond_basic_block"){
+        if(inst->op_id_== ir::Instruction::OpID::Br){
             out << inst->print() << "\n";
         }
         else{
@@ -44,9 +44,7 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
 
 
     }
-    if(bb->name_=="body_basic_block"||bb->name_=="then_basic_block"||bb->name_=="else_basic_block"){
-        out<<"}\n";
-    }
+
     // 3. 遍历后续基本块
     for (int k = 0; k < bb->succ_bbs_.size(); k++)
     {
@@ -56,6 +54,9 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
         {
             HandleBasicBlock(nextBlockShared,out);
         }
+    }
+    if(bb->name_=="body_basic_block"||bb->name_=="then_basic_block"||bb->name_=="else_basic_block"){
+        out<<"}\n";
     }
 }
 
