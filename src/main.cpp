@@ -111,11 +111,9 @@ int main(int argc, char *argv[])
         LOG_DEBUG("Optimizing intermediate code done.");
     }
 
-    // TODO: 删除
-    return 0;
+//    return 0;
     // 第四步: 生成目标代码
     std::ofstream output_file(G_SETTINGS.output_file);
-    // TODO
     LOG_DEBUG("Start generating target code...");
     std::unique_ptr<builder::CBuilder> builder = std::make_unique<builder::CBuilder>();
     builder->build(ir);

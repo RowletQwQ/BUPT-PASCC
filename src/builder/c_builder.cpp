@@ -2,16 +2,19 @@
 #include "ir/ir.hpp"
 #include "ir/ir_gen.hpp"
 #include <unordered_set>
+#include <sstream>
 namespace builder
 {
     std::unordered_set<std::shared_ptr<ir::BasicBlock>> processed_bbs;
+    std::stringstream output;
 // 处理基本块,这里的参数是传引用还是
-void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::ofstream& out)
+void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out)
 {
 
     // 检查是否已经处理过该基本块
     if (processed_bbs.find(bb) != processed_bbs.end())
     {
+
         return;
     }
     // 判断基本块是否为空
@@ -34,16 +37,9 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::ofstream& out)
         // 2.1 遍历指令操作数，检查栈顶元素是否是当前指令的某个操作数，如果是则弹栈，否则入栈
         for (const auto &operand : inst->operands_)
         {
-            // 将 std::weak_ptr<ir::Value> 转换为 std::shared_ptr<ir::Instruction>
-            auto operandInstruction = std::dynamic_pointer_cast<ir::Instruction>(operand.lock());
-            // 检查转换后的操作数是否为空
-            if (operandInstruction)
-            {
-                while (!stack.empty() && stack.back() == operandInstruction)
-                {
+                while (!stack.empty() && stack.back() == operand) {
                     stack.pop_back();
                 }
-            }
         }
         stack.push_back(inst);
     }
@@ -79,7 +75,8 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::ofstream& out)
 void CBuilder::build(ir::Module &program)
 {
     // 1. 初始化 stream
-    std::ofstream out("G_SETTINGS.output_file");
+    std::stringstream out;
+//    std::ofstream out("G_SETTINGS.output_file");
     // 2. 加上 C 语言的头文件
     out << "#include <stdio.h>";
     out << "\n";
@@ -89,7 +86,7 @@ void CBuilder::build(ir::Module &program)
         if (global->is_const_)
         {
             out << "const " + global->type_->print() << " " << global->name_ << " = " << global->init_val_->print()
-                << "\n";
+                << ";\n";
         }
         else
         {
@@ -97,7 +94,7 @@ void CBuilder::build(ir::Module &program)
             int ps = s.find(" ");
             if (ps == std::string::npos)
             {
-                out << global->type_->print() << " " << global->name_ << "\n";
+                out << global->type_->print() << " " << global->name_ << ";\n";
             }
             else
             {
@@ -152,6 +149,7 @@ void CBuilder::build(ir::Module &program)
         }
         out << "}\n";
     }
+    std::cout << out.str() << std::endl;
 }
 void CBuilder::output(std::ofstream &out)
 {

@@ -19,15 +19,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bfaf7171-dd90-408c-b194-0cb76831e951" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/BUPT-PASCC.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/BUPT-PASCC2.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/.gitkeep" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/builder/c_builder.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/builder/c_builder.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,7 +95,7 @@
       <updated>1710557617248</updated>
       <workItem from="1710557619129" duration="63000" />
       <workItem from="1710557704289" duration="10000" />
-      <workItem from="1710558971223" duration="4163000" />
+      <workItem from="1710558971223" duration="7796000" />
     </task>
     <servers />
   </component>
