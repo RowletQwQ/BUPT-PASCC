@@ -119,6 +119,6 @@ int main(int argc, char *argv[])
     builder->build(ir);
     builder->output(output_file);
     LOG_DEBUG("Generating target code done.");
-
+    delete program_stmt;
     return 0;
 }

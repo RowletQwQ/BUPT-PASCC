@@ -688,6 +688,7 @@ public:
         }
     }
 
+
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
     }
@@ -761,7 +762,7 @@ public:
     }
     ~StoreInst() = default;
     virtual std::string print() override {
-        return operands_[0].lock()->print() + " = " + operands_[1].lock()->print()+";";
+        return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -832,7 +833,7 @@ public:
                 ans = ans + ", ";
             }
         }
-        ans = ans + ");";
+        ans = ans + ")";
         return ans;
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
@@ -869,7 +870,7 @@ public:
                 ans = ans + ", ";
             }
         }
-        ans = ans + ");";
+        ans = ans + ")";
         return ans;
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
@@ -913,7 +914,7 @@ public:
                 ret = ret + ", ";
             }
         }
-        ret += ");";
+        ret += ")";
         return ret;
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
@@ -943,7 +944,7 @@ public:
     }
     ~ReturnInst() = default;
     virtual std::string print() override {
-        return "return " + operands_[0].lock()->print()+";";
+        return "return " + operands_[0].lock()->print()+"";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -967,7 +968,7 @@ public:
       }
     ~BreakInst() = default;
     virtual std::string print() override {
-        return "break;";
+        return "break";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -991,7 +992,7 @@ public:
       }
     ~ContinueInst() = default;
     virtual std::string print() override {
-        return "continue;";
+        return "continue";
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
         operands_[i] = val;
@@ -1058,13 +1059,11 @@ public:
         if (!is_loop_cond_) {
             res += "if (";
             res += operands_[0].lock()->print();
-            res += ") ";
+            res += ")";
         } else {
             res += "while (";
             res += operands_[0].lock()->print();
-            res += ") ";
-            res += operands_[1].lock()->print();
-            res += "} ";
+            res += ")";
         }
         return res;
     }

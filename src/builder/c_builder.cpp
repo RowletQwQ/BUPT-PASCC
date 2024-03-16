@@ -11,6 +11,7 @@ namespace builder
 void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out)
 {
 
+
     // 检查是否已经处理过该基本块
     if (processed_bbs.find(bb.get()) != processed_bbs.end())
     {
@@ -23,11 +24,28 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
     }
     // 标记为已处理
     processed_bbs.insert(bb.get());
+
+    if(bb->name_=="body_basic_block"||bb->name_=="then_basic_block"){
+        out<<"{\n";
+    }
+    if(bb->name_=="else_basic_block"){
+        out<<"else{\n";
+    }
     // 2. 遍历基本块中指令列表
     for (int k = 0; k < bb->instructions_.size(); k++)
     {
         std::shared_ptr<ir::Instruction> inst = bb->instructions_[k];
-        out << inst->print() << "\n";
+        if(bb->name_=="cond_basic_block"){
+            out << inst->print() << "\n";
+        }
+        else{
+            out << inst->print() << ";\n";
+        }
+
+
+    }
+    if(bb->name_=="body_basic_block"||bb->name_=="then_basic_block"||bb->name_=="else_basic_block"){
+        out<<"}\n";
     }
     // 3. 遍历后续基本块
     for (int k = 0; k < bb->succ_bbs_.size(); k++)
