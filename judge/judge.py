@@ -55,6 +55,12 @@ def compile_and_run(directory):
                         if f1.read() != f2.read():
                             print(f"Error: Output mismatch for {file}")
                             wa_files.append(file)
+                            print(f"Stdout for {file[:-4]}_fpc:")
+                            with open(file[:-4] + "_fpc.out", 'r') as f:
+                                print(f.read())
+                            print(f"Stdout for {file[:-4]}_gcc:")
+                            with open(file[:-4] + "_gcc.out", 'r') as f:
+                                print(f.read())
             except subprocess.CalledProcessError:
                 re_files.append(file)
                 print(f"Error: Command failed for {file}")
