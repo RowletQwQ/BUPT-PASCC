@@ -1,4 +1,4 @@
-test_dir=../hidden_set
+test_dir=../open_set
 output_dir=../test/ir_test/output
 cd ../../bin
 for file in $test_dir/*; do
