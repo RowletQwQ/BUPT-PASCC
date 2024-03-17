@@ -17,10 +17,10 @@ void HandleBasicBlock(std::string prefix, std::shared_ptr<ir::BasicBlock> bb, st
         return;
     }
     // 判断基本块是否为空
-    if (bb->instructions_.empty())
-    {
-        return;
-    }
+    // if (bb->instructions_.empty())
+    // {
+    //     return;
+    // }
     // 标记为已处理
     processed_bbs.insert(bb.get());
 
