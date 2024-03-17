@@ -259,6 +259,7 @@ public:
     DataType data_type; // 变量的类型,基本类型或者数组类型
     BasicType basic_type; // 对应的基本类型
     int type_size; // 如果是基本类型，需要指定类型大小
+    bool is_var; // 是否为引用传递（在函数头中使用）
     std::vector<std::unique_ptr<PeriodStmt>> array_range; // 各维度数组定义取值
     void accept(StmtVisitor &visitor) override;
  };

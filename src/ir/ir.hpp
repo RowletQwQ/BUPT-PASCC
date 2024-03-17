@@ -50,13 +50,14 @@ public:
         FunctionTID,
         BlockTID, 
     };
-    explicit Type(TID tid) : tid_(tid) {}
+    explicit Type(TID tid,bool is_pointer = false) : tid_(tid), is_pointer_(is_pointer) {}
     ~Type() = default;
     virtual std::string print() { return "";}
     virtual std::string placeholder() { return "";}
     virtual bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
     virtual TID get_tid() const { return tid_; }
     TID tid_;
+    bool is_pointer_;
 };
 
 /**
@@ -64,7 +65,7 @@ public:
 */
 class VoidType : public Type {
 public:
-    explicit VoidType() : Type(Type::VoidTID) {}
+    explicit VoidType() : Type(Type::VoidTID, false) {}
     virtual std::string print() override { return "void"; }
     virtual std::string placeholder() override { return ""; }
 };
@@ -75,7 +76,7 @@ public:
 */
 class IntegerType : public Type {
 public:
-    explicit IntegerType(unsigned num_bits) : Type(Type::IntegerTID), num_bits_(num_bits) {}
+    explicit IntegerType(unsigned num_bits, bool is_pointer) : Type(Type::IntegerTID, is_pointer), num_bits_(num_bits) {}
     unsigned num_bits_; // 位数: 32 or 64, int or long long 
     virtual std::string print() override {
         return num_bits_ == 32 ? "int" : "long long";
@@ -91,7 +92,7 @@ public:
 */
 class RealType : public Type {
 public:
-    explicit RealType(unsigned num_bits) : Type(Type::RealTID), num_bits_(num_bits) {}
+    explicit RealType(unsigned num_bits, bool is_pointer) : Type(Type::RealTID, is_pointer), num_bits_(num_bits) {}
     unsigned num_bits_; // 位数: 32 or 64, float or double
     virtual std::string print() override {
         return num_bits_ == 32 ? "float" : "double";
@@ -107,7 +108,7 @@ public:
 */
 class BooleanType : public Type {
 public:
-    explicit BooleanType() : Type(Type::BooleanTID) {}
+    explicit BooleanType(bool is_pointer) : Type(Type::BooleanTID, is_pointer) {}
     virtual std::string print() override { return "int"; } // c 语言中没有 bool 类型
     virtual std::string placeholder() override { return "%d"; }
 };
@@ -118,7 +119,7 @@ public:
 */
 class CharType : public Type {
 public:
-    explicit CharType() : Type(Type::CharTID) {}
+    explicit CharType(bool is_pointer) : Type(Type::CharTID, is_pointer) {}
     virtual std::string print() override { return "char"; }
     virtual std::string placeholder() override { return "%c"; }
 };
@@ -129,7 +130,7 @@ public:
 */
 class StringType : public Type {
 public:
-    explicit StringType() : Type(Type::StringTID) {}
+    explicit StringType() : Type(Type::StringTID, false) {}
     virtual std::string print() override { return "const char *"; }
     virtual std::string placeholder() override { return "%s"; }
 };
@@ -140,7 +141,7 @@ public:
 */
 class ArrayType : public Type {
 public:
-    explicit ArrayType(std::shared_ptr<Type> elem_type, std::vector<unsigned> dims_elem_num) : Type(Type::ArrayTID), elem_type_(elem_type), dims_elem_num_(dims_elem_num) {}
+    explicit ArrayType(std::shared_ptr<Type> elem_type, std::vector<unsigned> dims_elem_num) : Type(Type::ArrayTID, false), elem_type_(elem_type), dims_elem_num_(dims_elem_num) {}
     virtual std::string print() override {
         std::string type_str = elem_type_->print();
         type_str = type_str + " ";
@@ -405,6 +406,9 @@ public:
     LocalIdentifier(std::shared_ptr<Type> type, const std::string name, bool is_const, std::shared_ptr<Literal> init_val);  
     ~LocalIdentifier() = default;
     virtual std::string print() override {
+        if (type_->is_pointer_) {
+            return "*" + name_;
+        }
         return name_;
     }
 
@@ -440,7 +444,11 @@ public:
         std::string type_str = func_type_.lock()->result_->print();
         std::string ret = type_str + " " + name_ + "(";
         for (int i = 0; i < args_.size(); i++) {
-            ret = ret + args_[i]->type_->print() + " " + args_[i]->name_;
+            ret += args_[i]->type_->print();
+            if(args_[i]->type_->is_pointer_) {
+                ret += "*";
+            }
+            ret += " " + args_[i]->name_;
             if (i != args_.size() - 1) {
                 ret = ret + ", ";
             }
@@ -495,6 +503,7 @@ public:
     void add_succ_bb(std::weak_ptr<BasicBlock> bb) { succ_bbs_.emplace_back(bb); }
 
     void pop_back_inst(int n) { instructions_.erase(instructions_.end() - n, instructions_.end()); }
+
 
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
@@ -687,6 +696,9 @@ public:
             if (operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
                 return operands_[0].lock()->name_ + "()";
             }
+            if (operands_[0].lock()->type_->is_pointer_) {
+                return operands_[0].lock()->print();
+            }
             return operands_[0].lock()->print();
         } else {
             // 如果组成的表达式最前面是连续3个-, 就让他们空格开
@@ -776,6 +788,8 @@ public:
         // 如果发现存储的是一个函数, 那么左值就是函数名_
         if (operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
             return operands_[0].lock()->name_ + "_" + " = " + operands_[1].lock()->print();
+        } else if (operands_[0].lock()->type_->is_pointer_) {
+            return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
         }
         return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
     }
@@ -833,22 +847,6 @@ public:
     }
     ~ReadInst() = default;
     virtual std::string print() override {
-        // 处理特殊情况：如果发现某个参数是一个函数
-        bool is_func = false;
-        for (int i = 0; i < operands_.size(); i++) {
-            if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
-                is_func = true;
-                break;
-            }
-        }
-        if (is_func) {
-            if (operands_.size() != 1) {
-                throw "read can only have one function as its argument";
-            }
-            std::string placeholder = operands_[0].lock()->type_->placeholder();
-            return "int v;\nscanf(\"" + placeholder + "\", &v);\n" + "return v";
-        }
-
         std::string ans = "scanf(\"";
         for (int i = 0; i < operands_.size(); i++) {
             std::string placeholder = operands_[i].lock()->type_->placeholder();
@@ -860,6 +858,11 @@ public:
         ans = ans + "\", ";
         for (int i = 0; i < operands_.size(); i++) {
             ans = ans + "&" + operands_[i].lock()->print();
+            if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
+                ans.pop_back();
+                ans.pop_back();
+                ans = ans + "_";
+            }
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
             }
@@ -939,10 +942,15 @@ public:
     virtual std::string print() override {
         std::string ret = operands_[num_ops_ - 1].lock()->name_;
         ret += "(";
+        std::shared_ptr<Function> func = std::dynamic_pointer_cast<Function>(operands_[num_ops_ - 1].lock());
         for (int i = 0; i < num_ops_ - 1; i++) {
-            ret = ret + operands_[i].lock()->print();
+            if (func->args_[i]->type_->is_pointer_) {
+                ret += "&";
+            }
+            ret += operands_[i].lock()->print();
+            
             if (i != num_ops_ - 2) {
-                ret = ret + ", ";
+                ret += ", ";
             }
         }
         ret += ")";

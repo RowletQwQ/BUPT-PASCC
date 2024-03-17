@@ -35,10 +35,11 @@ def compile_and_run(directory):
                     with open(file[:-4] + "_fpc.out", 'w') as f:
                         subprocess.run(['./'+file[:-4] + "_fpc"], input=input_data, text=True, stdout=f, check=True)
                     with open(file[:-4] + "_gcc.out", 'w') as f:
-                        subprocess.run(['./'+file[:-4] + "_gcc"], input=input_data, text=True, stdout=f, check=True, timeout=5)
+                        subprocess.run(['./'+file[:-4] + "_gcc"], input=input_data, text=True, stdout=f, check=True, timeout=10)
                     with open(file[:-4] + "_fpc.out", 'r') as f1, open(file[:-4] + "_gcc.out", 'r') as f2:
                         if f1.read() != f2.read():
                             print(f"Error: Output mismatch for {file}")
+                            wa_files.append(file)
                             print(f"Stdout for {file[:-4]}_fpc:")
                             with open(file[:-4] + "_fpc.out", 'r') as f:
                                 print(f.read())
@@ -49,11 +50,17 @@ def compile_and_run(directory):
                     with open(file[:-4] + "_fpc.out", 'w') as f:
                         subprocess.run(['./'+file[:-4] + "_fpc"], text=True, stdout=f, check=True)
                     with open(file[:-4] + "_gcc.out", 'w') as f:
-                        subprocess.run(['./'+file[:-4] + "_gcc"], text=True, stdout=f, check=True, timeout=5)
+                        subprocess.run(['./'+file[:-4] + "_gcc"], text=True, stdout=f, check=True, timeout=10)
                     with open(file[:-4] + "_fpc.out", 'r') as f1, open(file[:-4] + "_gcc.out", 'r') as f2:
                         if f1.read() != f2.read():
                             print(f"Error: Output mismatch for {file}")
                             wa_files.append(file)
+                            print(f"Stdout for {file[:-4]}_fpc:")
+                            with open(file[:-4] + "_fpc.out", 'r') as f:
+                                print(f.read())
+                            print(f"Stdout for {file[:-4]}_gcc:")
+                            with open(file[:-4] + "_gcc.out", 'r') as f:
+                                print(f.read())
             except subprocess.CalledProcessError:
                 re_files.append(file)
                 print(f"Error: Command failed for {file}")

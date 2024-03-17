@@ -4,6 +4,7 @@
 #include "ast/visitor.hpp"
 #include "ast/stmt.hpp"
 
+#include <fstream>
 #include <memory>
 #include <vector>
 #include <map>
@@ -117,7 +118,11 @@ public:
     Scope scope_; // 作用域
     Module module_; // 中间代码
 
-    void show_result() {
+    void show_result(std::ofstream &out) {
+        // 保存原始的 cout buffer
+        std::streambuf* oldCoutStreamBuf = std::cout.rdbuf();
+        // 重定向 cout 到文件
+        std::cout.rdbuf(out.rdbuf());
         std::cout << "全局标识符如下:" << std::endl;
 
         for (const auto &global : module_.global_identifiers_) {
@@ -149,6 +154,10 @@ public:
             }
             std::cout << "基本块如下:" << std::endl;
             std::cout << "\n";
+            std::map<BasicBlock *, int> bb_map;
+            for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
+                bb_map[func.lock()->basic_blocks_[j].get()] = j + 1;
+            }
             for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
                 std::shared_ptr<BasicBlock> bb = func.lock()->basic_blocks_[j];
                 std::cout << "第 " << j + 1 << " 个基本块信息如下：" << std::endl;
@@ -156,13 +165,25 @@ public:
                 std::cout << "指令列表如下：" << std::endl;
                 for (int k = 0; k < bb->instructions_.size(); k++) {
                     std::shared_ptr<Instruction> inst = bb->instructions_[k];
-                    std::cout << inst->print() << "\t";
+                    std::cout << "\t" << inst->print() << "\n";
                 }
                 std::cout << "\n\n";
+                std::cout << "前驱基本块如下" << std::endl;
+                for(auto &tmp: bb->pre_bbs_) {
+                    std::cout << bb_map[tmp.lock().get()] << " ";
+                }
+                std::cout << "\n";
+                std::cout << "后继基本块如下" << std::endl;
+                for(auto &tmp: bb->succ_bbs_) {
+                    std::cout << bb_map[tmp.lock().get()] << " ";
+                }
+                std::cout << "\n";
             }
             
             std::cout << "----------------------------------------------------------------------------------------------------------" << "\n";
         }
+        // 恢复原始的 cout buffer
+        std::cout.rdbuf(oldCoutStreamBuf);
     }
     
     IRGenerator() {

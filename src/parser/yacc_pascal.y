@@ -137,6 +137,7 @@ void fill_number_stmt(std::unique_ptr<NumberStmt> &num_value, char char_val){
     num_value->is_char = true;
     num_value->is_unsigned = false;
     num_value->char_val = char_val;
+    LOG_DEBUG("DEBUG fill_number_stmt -> char_val: %c", char_val);
 }
 
 void fill_number_stmt(NumberStmt* num_value, long long int_val){
@@ -145,6 +146,7 @@ void fill_number_stmt(NumberStmt* num_value, long long int_val){
     num_value->is_char = false;
     num_value->is_unsigned = false;
     num_value->int_val = int_val;
+    LOG_DEBUG("DEBUG fill_number_stmt -> int_val: %lld", int_val);
 }
 
 void fill_number_stmt(NumberStmt* num_value, double real_val){
@@ -727,7 +729,7 @@ const_value: INTEGER
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Str;
         num_value->str = std::make_unique<StrStmt>();
-        num_value->str->val = std::string($1);
+        num_value->str->val = std::string($1).substr(1, std::string($1).length() - 2);
         free($1);
         $$ = num_value;
     }
@@ -1018,11 +1020,13 @@ parameter_list :/* empty */
 parameter: var_parameter
         {
             $$ = $1;
+            $$->is_var = true;
             LOG_DEBUG("DEBUG parameter -> var_parameter");
         }
         | value_parameter
         {
             $$ = $1;
+            $$->is_var = false;
             LOG_DEBUG("DEBUG parameter -> value_parameter");
         }
         ;
@@ -1053,6 +1057,7 @@ value_parameter: idlist ':' basic_type
             var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
             var_decl->data_type = DataType::BasicType;
             var_decl-> basic_type = $3;
+            var_decl->is_var = false;
             // 疑似内存泄漏
             delete $1;
             $$ = var_decl;

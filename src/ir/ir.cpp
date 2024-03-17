@@ -6,7 +6,7 @@
 
 namespace ir {
 // 函数类型类相关函数实现
-FunctionType::FunctionType(std::shared_ptr<Type> result, std::vector<std::shared_ptr<Type> > params) : Type(Type::FunctionTID) {
+FunctionType::FunctionType(std::shared_ptr<Type> result, std::vector<std::shared_ptr<Type> > params) : Type(Type::FunctionTID, false) {
         result_ = result; // 返回值类型
         for (std::shared_ptr<Type> p : params) {
             args_.push_back(p); // 参数列表类型
