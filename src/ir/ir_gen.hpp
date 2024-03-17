@@ -4,6 +4,7 @@
 #include "ast/visitor.hpp"
 #include "ast/stmt.hpp"
 
+#include <fstream>
 #include <memory>
 #include <vector>
 #include <map>
@@ -117,7 +118,11 @@ public:
     Scope scope_; // 作用域
     Module module_; // 中间代码
 
-    void show_result() {
+    void show_result(std::ofstream &out) {
+        // 保存原始的 cout buffer
+        std::streambuf* oldCoutStreamBuf = std::cout.rdbuf();
+        // 重定向 cout 到文件
+        std::cout.rdbuf(out.rdbuf());
         std::cout << "全局标识符如下:" << std::endl;
 
         for (const auto &global : module_.global_identifiers_) {
@@ -163,6 +168,8 @@ public:
             
             std::cout << "----------------------------------------------------------------------------------------------------------" << "\n";
         }
+        // 恢复原始的 cout buffer
+        std::cout.rdbuf(oldCoutStreamBuf);
     }
     
     IRGenerator() {

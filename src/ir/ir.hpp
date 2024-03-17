@@ -496,6 +496,7 @@ public:
 
     void pop_back_inst(int n) { instructions_.erase(instructions_.end() - n, instructions_.end()); }
 
+
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
     std::vector<std::weak_ptr<BasicBlock> > succ_bbs_; // 后继基本块

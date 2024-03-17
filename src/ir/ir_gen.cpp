@@ -660,12 +660,18 @@ void IRGenerator::visit(ForStmt &stmt) {
     }
     // 退出循环
     this->scope_.leave_loop();
+    body_bb->add_succ_bb(cond_bb);
     // 循环体的最后一条指令是循环变量加 1
     std::shared_ptr<UnaryInst> inc_inst = std::make_shared<UnaryInst>(id->type_, Instruction::OpID::Inc, id, body_bb);
-    body_bb->instructions_.emplace_back(inc_inst);
-    inc_inst->set_pos_in_bb(std::prev(body_bb->instructions_.end()));
+    this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inc_inst);
+    inc_inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
     this->module_.all_instructions_.emplace_back(inc_inst);
-    body_bb->add_succ_bb(cond_bb);
+    
+    if(body_bb.get() != this->scope_.current_f_->basic_blocks_.back().get()) {
+        // 循环体中有多个基本块
+        body_bb->name_ = "body_begin_basic_block";
+        this->scope_.current_f_->basic_blocks_.back()->name_ = "body_end_basic_block";
+    }
 
     
     this->scope_.current_f_->add_basic_block(nxt_bb);
@@ -707,6 +713,11 @@ void IRGenerator::visit(WhileStmt &stmt) {
     this->scope_.leave_loop();
     body_bb->add_succ_bb(cond_bb);
 
+    if(body_bb.get() != this->scope_.current_f_->basic_blocks_.back().get()) {
+        // 循环体中有多个基本块
+        body_bb->name_ = "body_begin_basic_block";
+        this->scope_.current_f_->basic_blocks_.back()->name_ = "body_end_basic_block";
+    }
     
     this->scope_.current_f_->add_basic_block(nxt_bb);
 

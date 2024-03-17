@@ -42,6 +42,20 @@ void init_env()
             common::g_log = new common::Log(common::WARN);
             break;
     }
+    if (G_SETTINGS.output_file.empty())
+    {
+        size_t pos = G_SETTINGS.input_file.find_last_of('.');
+        if (pos == std::string::npos)
+        {
+            G_SETTINGS.output_file = G_SETTINGS.input_file + ".ir";
+        }
+        else
+        {
+            G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".ir";
+        }
+
+        LOG_DEBUG("Output file: %s", G_SETTINGS.output_file.c_str());
+    }
 }
 
 int main(int argc, char *argv[])
@@ -101,7 +115,17 @@ int main(int argc, char *argv[])
         try {
             std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
             visitor->visit(*program);
-            visitor->show_result();
+            size_t pos = file.find_last_of('.');
+            if (pos == std::string::npos)
+            {
+                G_SETTINGS.output_file = file + ".ir";
+            }
+            else
+            {
+                G_SETTINGS.output_file = file.substr(0, pos) + ".ir";
+            }
+            std::ofstream out(G_SETTINGS.output_file, std::ios::app);
+            visitor->show_result(out);
             ir::Module ir = visitor->get_ir();
         } catch (const std::exception& e) {
             delete program;
