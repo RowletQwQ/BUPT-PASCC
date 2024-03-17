@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
             {
                 G_SETTINGS.output_file = file.substr(0, pos) + ".ir";
             }
-            std::ofstream out(G_SETTINGS.output_file, std::ios::app);
+            std::ofstream out(G_SETTINGS.output_file, std::ios::out);
             visitor->show_result(out);
             ir::Module ir = visitor->get_ir();
         } catch (const std::exception& e) {

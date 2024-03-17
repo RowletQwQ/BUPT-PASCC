@@ -1020,11 +1020,13 @@ parameter_list :/* empty */
 parameter: var_parameter
         {
             $$ = $1;
+            $$->is_var = true;
             LOG_DEBUG("DEBUG parameter -> var_parameter");
         }
         | value_parameter
         {
             $$ = $1;
+            $$->is_var = false;
             LOG_DEBUG("DEBUG parameter -> value_parameter");
         }
         ;
@@ -1055,6 +1057,7 @@ value_parameter: idlist ':' basic_type
             var_decl->id.insert(var_decl->id.end(), $1->begin(), $1->end());
             var_decl->data_type = DataType::BasicType;
             var_decl-> basic_type = $3;
+            var_decl->is_var = false;
             // 疑似内存泄漏
             delete $1;
             $$ = var_decl;

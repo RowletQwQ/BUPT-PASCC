@@ -154,6 +154,10 @@ public:
             }
             std::cout << "基本块如下:" << std::endl;
             std::cout << "\n";
+            std::map<BasicBlock *, int> bb_map;
+            for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
+                bb_map[func.lock()->basic_blocks_[j].get()] = j + 1;
+            }
             for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
                 std::shared_ptr<BasicBlock> bb = func.lock()->basic_blocks_[j];
                 std::cout << "第 " << j + 1 << " 个基本块信息如下：" << std::endl;
@@ -161,9 +165,19 @@ public:
                 std::cout << "指令列表如下：" << std::endl;
                 for (int k = 0; k < bb->instructions_.size(); k++) {
                     std::shared_ptr<Instruction> inst = bb->instructions_[k];
-                    std::cout << inst->print() << "\t";
+                    std::cout << "\t" << inst->print() << "\n";
                 }
                 std::cout << "\n\n";
+                std::cout << "前驱基本块如下" << std::endl;
+                for(auto &tmp: bb->pre_bbs_) {
+                    std::cout << bb_map[tmp.lock().get()] << " ";
+                }
+                std::cout << "\n";
+                std::cout << "后继基本块如下" << std::endl;
+                for(auto &tmp: bb->succ_bbs_) {
+                    std::cout << bb_map[tmp.lock().get()] << " ";
+                }
+                std::cout << "\n";
             }
             
             std::cout << "----------------------------------------------------------------------------------------------------------" << "\n";
