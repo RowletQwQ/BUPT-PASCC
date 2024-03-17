@@ -495,7 +495,7 @@ void IRGenerator::visit(LValStmt &stmt) {
     }
     assert (val != nullptr);
     if (stmt.array_index.size() == 0) { // 如果不是数组, 就说明是一个普通变量, 如 a、b 等, 当成一个 Null 的一元指令
-        std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back()); 
+        std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back(), val->name_); 
         this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
         inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
         this->module_.all_instructions_.emplace_back(inst);
@@ -569,17 +569,17 @@ void IRGenerator::visit(AssignStmt &stmt) {
     ptr = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
     this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     // 构建赋值指令 or 返回指令
-    if (!is_return) {
+    // if (!is_return) {
         inst = std::make_shared<StoreInst>(val, ptr, this->scope_.current_f_->basic_blocks_.back());
         this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
         inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
         this->module_.all_instructions_.emplace_back(inst);
-    } else {
-        inst = std::make_shared<ReturnInst>(ptr, this->scope_.current_f_->basic_blocks_.back());
-        this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
-        inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
-        this->module_.all_instructions_.emplace_back(inst);
-    }
+    // } else {
+    //     inst = std::make_shared<ReturnInst>(ptr, this->scope_.current_f_->basic_blocks_.back());
+    //     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+    //     inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+    //     this->module_.all_instructions_.emplace_back(inst);
+    // }
 }
 void IRGenerator::visit(IfStmt &stmt) {
     // 得到 if 的条件
