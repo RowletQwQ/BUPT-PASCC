@@ -10,3 +10,4 @@ hidden_set/
 open_set/*.c
 judge/error_files/
 .idea/
+*.ir

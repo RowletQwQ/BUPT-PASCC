@@ -9,10 +9,8 @@ namespace builder
     std::stringstream output;
     std::unordered_set<const ir::BasicBlock *>processed_bbs;
 // 处理基本块
-void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out)
+void HandleBasicBlock(std::string prefix, std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out)
 {
-
-
     // 检查是否已经处理过该基本块
     if (processed_bbs.find(bb.get()) != processed_bbs.end())
     {
@@ -21,26 +19,29 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
     // 判断基本块是否为空
     if (bb->instructions_.empty())
     {
+        if (bb->name_ == "body_basic_block" || bb->name_=="then_basic_block") {
+            out << "{}";
+        }
         return;
     }
     // 标记为已处理
     processed_bbs.insert(bb.get());
 
-    if(bb->name_=="body_basic_block"||bb->name_=="then_basic_block"){
-        out<<"{\n";
+    if(bb->name_=="body_basic_block" || bb->name_=="then_basic_block" || bb->name_ == "body_begin_basic_block"){
+        out<< prefix <<"{\n";
     }
     if(bb->name_=="else_basic_block"){
-        out<<"else{\n";
+        out<< prefix <<"else {\n";
     }
     // 2. 遍历基本块中指令列表
     for (int k = 0; k < bb->instructions_.size(); k++)
     {
         std::shared_ptr<ir::Instruction> inst = bb->instructions_[k];
         if(inst->op_id_== ir::Instruction::OpID::Br){
-            out << inst->print() << "\n";
+            out << prefix << inst->print() << "\n";
         }
         else{
-            out << inst->print() << ";\n";
+            out << prefix <<inst->print() << ";\n";
         }
 
 
@@ -53,11 +54,11 @@ void HandleBasicBlock(std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out
         std::shared_ptr<ir::BasicBlock> nextBlockShared = nextBlock.lock();
         if (nextBlockShared)
         {
-            HandleBasicBlock(nextBlockShared,out);
+            HandleBasicBlock(prefix + "\t", nextBlockShared, out);
         }
     }
-    if(bb->name_=="body_basic_block"||bb->name_=="then_basic_block"||bb->name_=="else_basic_block"){
-        out<<"}\n";
+    if(bb->name_=="body_basic_block"||bb->name_=="then_basic_block"|| bb->name_=="else_basic_block" || bb->name_ == "body_end_basic_block"){
+        out<< prefix <<"}\n";
     }
 }
 
@@ -143,7 +144,7 @@ void CBuilder::build(ir::Module &program)
         for (int j = 0; j < func.lock()->basic_blocks_.size(); j++)
         {
             std::shared_ptr<ir::BasicBlock> bb = func.lock()->basic_blocks_[j];
-            HandleBasicBlock(bb,out);
+            HandleBasicBlock("", bb, out);
         }
         // 4.5 加入函数右大括号（main函数，需要特判）
         if (func.lock()->print() == "int main()")

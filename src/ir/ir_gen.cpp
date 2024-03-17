@@ -12,20 +12,20 @@
 namespace ir {
 
 // 常量
-constexpr unsigned kDefaultRealBitWidth = 64;
+constexpr unsigned kDefaultRealBitWidth = 32;
 constexpr unsigned kDefaultIntegerBitWidth = 32;
 
 // 工具函数
-std::shared_ptr<Type> build_basic_type(BasicType type) {
+std::shared_ptr<Type> build_basic_type(BasicType type, bool is_pointer) {
     switch (type) {
         case BasicType::INT:
-            return std::make_shared<IntegerType>(kDefaultIntegerBitWidth);
+            return std::make_shared<IntegerType>(kDefaultIntegerBitWidth, is_pointer);
         case BasicType::REAL:
-            return std::make_shared<RealType>(kDefaultRealBitWidth);
+            return std::make_shared<RealType>(kDefaultRealBitWidth, is_pointer);
         case BasicType::CHAR:
-            return std::make_shared<CharType>();
+            return std::make_shared<CharType>(is_pointer);
         case BasicType::BOOLEAN:
-            return std::make_shared<BooleanType>();
+            return std::make_shared<BooleanType>(is_pointer);
         case BasicType::VOID:
             return std::make_shared<VoidType>();
     }
@@ -312,13 +312,13 @@ void IRGenerator::visit(NumberStmt &stmt) {
     std::shared_ptr<Type> type; // 类型
     std::shared_ptr<Literal> val; // 值
     if (stmt.is_real) {
-        type = std::make_shared<RealType>(kDefaultRealBitWidth);
+        type = std::make_shared<RealType>(kDefaultRealBitWidth, false);
         val = std::make_shared<LiteralDouble>(type, stmt.real_val);
     } else if (stmt.is_char) {
-        type = std::make_shared<CharType>();
+        type = std::make_shared<CharType>(false);
         val = std::make_shared<LiteralChar>(type, stmt.char_val);
     } else {
-        type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth);
+        type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth, false);
         val = std::make_shared<LiteraltInt>(type, stmt.int_val);
     }
     std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(type, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back()); 
@@ -353,6 +353,17 @@ void IRGenerator::visit(FuncCallStmt &stmt) {
     }
     this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(args.size()); // 弹出参数
 
+    if(args.size() != val->args_.size()) {
+        LOG_ERROR("函数调用参数个数不匹配，函数名：%s", stmt.id.c_str());
+        throw common::IRGenException("函数调用参数个数不匹配");
+    }
+    for (auto i = 0; i < val->args_.size(); i++) {
+        if (!BinaryInst::can_compute(val->args_[i]->type_.get(), args[i]->type_.get())) {
+            LOG_ERROR("函数调用参数类型不匹配，函数名：%s", stmt.id.c_str());
+            throw common::IRGenException("函数调用参数类型不匹配");
+        }
+        args[i]->type_->is_pointer_ = val->args_[i]->type_->is_pointer_;
+    }
     // 构建函数调用指令
     std::shared_ptr<CallInst> inst = std::make_shared<CallInst>(val, args, this->scope_.current_f_->basic_blocks_.back());
     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
@@ -371,10 +382,13 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
         if (value_stmt->type == ValueStmt::ValueType::Number) {
             NumberStmt *num_stmt = value_stmt->number.get();
             if (num_stmt->is_real) {
-                type = std::make_shared<RealType>(kDefaultRealBitWidth);
+                type = std::make_shared<RealType>(kDefaultRealBitWidth,false);
                 val = std::make_shared<LiteralDouble>(type, num_stmt->real_val);
+            } else if (num_stmt->is_char) {
+                type = std::make_shared<CharType>(false);
+                val = std::make_shared<LiteralChar>(type, num_stmt->char_val);
             } else {
-                type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth);
+                type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth,false);
                 val = std::make_shared<LiteraltInt>(type, num_stmt->int_val);
             }
         } else if (value_stmt->type == ValueStmt::ValueType::Str) {
@@ -398,7 +412,7 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
     }    
 }
 void IRGenerator::visit(VarDeclStmt &stmt) {
-    std::shared_ptr<Type> type = build_basic_type(stmt.basic_type); // 类型, 如果是数组, 就是元素类型
+    std::shared_ptr<Type> type = build_basic_type(stmt.basic_type, false); // 类型, 如果是数组, 就是元素类型
     if (stmt.data_type == DataType::BasicType) { // 处理基本类型
         for (const auto &name : stmt.id) {
             if (this->scope_.is_global()) {
@@ -434,7 +448,7 @@ void IRGenerator::visit(VarDeclStmt &stmt) {
 }
 void IRGenerator::visit(FuncHeadDeclStmt &stmt) {
     std::string func_name = stmt.func_name; // 函数名 
-    std::shared_ptr<Type> ret_type = build_basic_type(stmt.ret_type); // 返回值类型
+    std::shared_ptr<Type> ret_type = build_basic_type(stmt.ret_type, false); // 返回值类型
 
     // 记录参数时, 就要进入一个新的作用域
     if (!this->scope_.is_global()) { // 如果不是全局作用域, 就先退出当前作用域
@@ -444,7 +458,7 @@ void IRGenerator::visit(FuncHeadDeclStmt &stmt) {
     std::vector<std::string> args_name; // 参数名
     for (const auto &arg : stmt.args) {
         for (const auto &arg_name : arg->id) {
-            args_type.emplace_back(build_basic_type(arg->basic_type));
+            args_type.emplace_back(build_basic_type(arg->basic_type, arg->is_var));
             args_name.emplace_back(arg_name);
         }
     }
@@ -458,6 +472,11 @@ void IRGenerator::visit(FuncHeadDeclStmt &stmt) {
     // 记录参数
     for (const auto &arg_stmt : stmt.args) {
         arg_stmt->accept(*this);
+        if(arg_stmt->is_var) {
+            // 如果是引用，更改scope中的参数类型
+            std::shared_ptr<Value> val = this->scope_.find(arg_stmt->id[0]);
+            val->type_->is_pointer_ = true;
+        }
     }
 }
 void IRGenerator::visit(FuncBodyDeclStmt &stmt) {
@@ -612,6 +631,7 @@ void IRGenerator::visit(IfStmt &stmt) {
     // 再次新建一个基本块
     std::shared_ptr<BasicBlock> bb = std::make_shared<BasicBlock>("nxt_basic_block");
     this->scope_.current_f_->add_basic_block(bb);
+    cur_bb->add_succ_bb(bb);
     ////this->module_.add_basic_block(bb);
 }
 void IRGenerator::visit(ForStmt &stmt) {
@@ -657,15 +677,23 @@ void IRGenerator::visit(ForStmt &stmt) {
     }
     // 退出循环
     this->scope_.leave_loop();
+    body_bb->add_succ_bb(cond_bb);
     // 循环体的最后一条指令是循环变量加 1
     std::shared_ptr<UnaryInst> inc_inst = std::make_shared<UnaryInst>(id->type_, Instruction::OpID::Inc, id, body_bb);
-    body_bb->instructions_.emplace_back(inc_inst);
-    inc_inst->set_pos_in_bb(std::prev(body_bb->instructions_.end()));
+    this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inc_inst);
+    inc_inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
     this->module_.all_instructions_.emplace_back(inc_inst);
-    body_bb->add_succ_bb(cond_bb);
+    
+    if(body_bb.get() != this->scope_.current_f_->basic_blocks_.back().get()) {
+        // 循环体中有多个基本块
+        body_bb->name_ = "body_begin_basic_block";
+        this->scope_.current_f_->basic_blocks_.back()->name_ = "body_end_basic_block";
+        body_bb->add_succ_bb(this->scope_.current_f_->basic_blocks_.back());
+    }
 
     
     this->scope_.current_f_->add_basic_block(nxt_bb);
+    //cond_bb->add_succ_bb(nxt_bb);
 
     // 补充上面的 if 指令
     std::shared_ptr<BranchInst> branch_inst = std::make_shared<BranchInst>(cond_inst, body_bb, nxt_bb, cond_bb, true);
@@ -673,6 +701,7 @@ void IRGenerator::visit(ForStmt &stmt) {
     cond_bb->instructions_.emplace_back(branch_inst);
     branch_inst->set_pos_in_bb(std::prev(cond_bb->instructions_.end()));
     this->module_.all_instructions_.emplace_back(branch_inst);
+    cond_bb->add_succ_bb(nxt_bb);
 }
 void IRGenerator::visit(WhileStmt &stmt) {
     // 先得到当前基本块
@@ -704,6 +733,12 @@ void IRGenerator::visit(WhileStmt &stmt) {
     this->scope_.leave_loop();
     body_bb->add_succ_bb(cond_bb);
 
+    if(body_bb.get() != this->scope_.current_f_->basic_blocks_.back().get()) {
+        // 循环体中有多个基本块
+        body_bb->name_ = "body_begin_basic_block";
+        this->scope_.current_f_->basic_blocks_.back()->name_ = "body_end_basic_block";
+        body_bb->add_succ_bb(this->scope_.current_f_->basic_blocks_.back());
+    }
     
     this->scope_.current_f_->add_basic_block(nxt_bb);
 
@@ -712,6 +747,7 @@ void IRGenerator::visit(WhileStmt &stmt) {
     cond_bb->instructions_.emplace_back(branch_inst);
     branch_inst->set_pos_in_bb(std::prev(cond_bb->instructions_.end()));
     this->module_.all_instructions_.emplace_back(branch_inst);
+    cond_bb->add_succ_bb(nxt_bb);
 }
 void IRGenerator::visit(ReadFuncStmt &stmt) {
     // 构建参数
@@ -764,7 +800,7 @@ void IRGenerator::visit(ProgramBodyStmt &stmt) {
     }
     std::vector<std::shared_ptr<Type>> main_args_type;
     std::vector<std::string> main_args_name;
-    std::shared_ptr<FunctionType> main_func_type = std::make_shared<FunctionType>(std::make_shared<IntegerType>(kDefaultIntegerBitWidth), main_args_type);
+    std::shared_ptr<FunctionType> main_func_type = std::make_shared<FunctionType>(std::make_shared<IntegerType>(kDefaultIntegerBitWidth,false), main_args_type);
     std::shared_ptr<Function> main_f = std::make_shared<Function>(main_func_type, "main", main_args_name);
     this->module_.add_function(main_f);
     this->scope_.current_f_ = main_f; // 记录当前作用域的函数
