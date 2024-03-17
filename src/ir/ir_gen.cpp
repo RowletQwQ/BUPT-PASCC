@@ -671,6 +671,7 @@ void IRGenerator::visit(ForStmt &stmt) {
         // 循环体中有多个基本块
         body_bb->name_ = "body_begin_basic_block";
         this->scope_.current_f_->basic_blocks_.back()->name_ = "body_end_basic_block";
+        body_bb->add_succ_bb(this->scope_.current_f_->basic_blocks_.back());
     }
 
     
@@ -717,6 +718,7 @@ void IRGenerator::visit(WhileStmt &stmt) {
         // 循环体中有多个基本块
         body_bb->name_ = "body_begin_basic_block";
         this->scope_.current_f_->basic_blocks_.back()->name_ = "body_end_basic_block";
+        body_bb->add_succ_bb(this->scope_.current_f_->basic_blocks_.back());
     }
     
     this->scope_.current_f_->add_basic_block(nxt_bb);

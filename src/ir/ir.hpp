@@ -846,8 +846,9 @@ public:
             if (operands_.size() != 1) {
                 throw "read can only have one function as its argument";
             }
+            std::string func_ret = operands_[0].lock()->name_ + '_';
             std::string placeholder = operands_[0].lock()->type_->placeholder();
-            return "int v;\nscanf(\"" + placeholder + "\", &v);\n" + "return v";
+            return "scanf(\"" + placeholder + "\", &"+func_ret+");\n";
         }
 
         std::string ans = "scanf(\"";
