@@ -373,6 +373,9 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
             if (num_stmt->is_real) {
                 type = std::make_shared<RealType>(kDefaultRealBitWidth);
                 val = std::make_shared<LiteralDouble>(type, num_stmt->real_val);
+            } else if (num_stmt->is_char) {
+                type = std::make_shared<CharType>();
+                val = std::make_shared<LiteralChar>(type, num_stmt->char_val);
             } else {
                 type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth);
                 val = std::make_shared<LiteraltInt>(type, num_stmt->int_val);
