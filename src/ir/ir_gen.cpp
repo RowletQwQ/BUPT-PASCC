@@ -12,7 +12,7 @@
 namespace ir {
 
 // 常量
-constexpr unsigned kDefaultRealBitWidth = 64;
+constexpr unsigned kDefaultRealBitWidth = 32;
 constexpr unsigned kDefaultIntegerBitWidth = 32;
 
 // 工具函数
