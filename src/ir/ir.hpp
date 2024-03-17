@@ -834,22 +834,6 @@ public:
     }
     ~ReadInst() = default;
     virtual std::string print() override {
-        // 处理特殊情况：如果发现某个参数是一个函数
-        bool is_func = false;
-        for (int i = 0; i < operands_.size(); i++) {
-            if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
-                is_func = true;
-                break;
-            }
-        }
-        if (is_func) {
-            if (operands_.size() != 1) {
-                throw "read can only have one function as its argument";
-            }
-            std::string placeholder = operands_[0].lock()->type_->placeholder();
-            return "int v;\nscanf(\"" + placeholder + "\", &v);\n" + "return v";
-        }
-
         std::string ans = "scanf(\"";
         for (int i = 0; i < operands_.size(); i++) {
             std::string placeholder = operands_[i].lock()->type_->placeholder();
@@ -861,6 +845,11 @@ public:
         ans = ans + "\", ";
         for (int i = 0; i < operands_.size(); i++) {
             ans = ans + "&" + operands_[i].lock()->print();
+            if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
+                ans.pop_back();
+                ans.pop_back();
+                ans = ans + "_";
+            }
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
             }

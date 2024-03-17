@@ -11,8 +11,6 @@ namespace builder
 // 处理基本块
 void HandleBasicBlock(std::string prefix, std::shared_ptr<ir::BasicBlock> bb, std::stringstream& out)
 {
-
-
     // 检查是否已经处理过该基本块
     if (processed_bbs.find(bb.get()) != processed_bbs.end())
     {
