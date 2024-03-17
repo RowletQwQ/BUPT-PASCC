@@ -674,6 +674,11 @@ public:
       : Instruction(ty, op, 1, bb) {
         set_operand(0, val);
     }
+    UnaryInst(std::shared_ptr<Type> ty, OpID op, std::shared_ptr<Value> val,
+        std::weak_ptr<BasicBlock> bb, const std::string name)
+      : Instruction(name, ty, op, 1, bb) {
+        set_operand(0, val);
+    }
     ~UnaryInst() = default;
     virtual std::string print() override {
         if (op_id_ == Instruction::Bracket) {
@@ -684,7 +689,13 @@ public:
             }
             return operands_[0].lock()->print();
         } else {
-            return Instruction::op2str_[op_id_] + operands_[0].lock()->print();
+            // 如果组成的表达式最前面是连续3个-, 就让他们空格开
+            std::string ret = Instruction::op2str_[op_id_] + operands_[0].lock()->print();
+            if (ret.length() > 3 && ret[0] == '-' && ret[1] == '-' && ret[2] == '-') {
+                return "- - " + ret.substr(2);
+            } else {
+                return Instruction::op2str_[op_id_] + operands_[0].lock()->print();
+            }
         }
     }
 
@@ -762,6 +773,10 @@ public:
     }
     ~StoreInst() = default;
     virtual std::string print() override {
+        // 如果发现存储的是一个函数, 那么左值就是函数名_
+        if (operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
+            return operands_[0].lock()->name_ + "_" + " = " + operands_[1].lock()->print();
+        }
         return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
     }
     void set_operand(unsigned i, std::shared_ptr<Value> val) {
@@ -818,6 +833,22 @@ public:
     }
     ~ReadInst() = default;
     virtual std::string print() override {
+        // 处理特殊情况：如果发现某个参数是一个函数
+        bool is_func = false;
+        for (int i = 0; i < operands_.size(); i++) {
+            if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
+                is_func = true;
+                break;
+            }
+        }
+        if (is_func) {
+            if (operands_.size() != 1) {
+                throw "read can only have one function as its argument";
+            }
+            std::string placeholder = operands_[0].lock()->type_->placeholder();
+            return "int v;\nscanf(\"" + placeholder + "\", &v);\n" + "return v";
+        }
+
         std::string ans = "scanf(\"";
         for (int i = 0; i < operands_.size(); i++) {
             std::string placeholder = operands_[i].lock()->type_->placeholder();

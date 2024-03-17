@@ -5,5 +5,8 @@ tmp/
 bin/
 .vscode/
 test/ir_test/output/
+test/ir_test/run.sh
 hidden_set/
 open_set/*.c
+judge/error_files/
+.idea/

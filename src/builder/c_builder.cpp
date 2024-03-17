@@ -100,9 +100,14 @@ void CBuilder::build(ir::Module &program)
         // 4.2 加入函数左大括号
         out << "{\n";
         // 4.3 加入局部标识符
+        // 一上来先先加上代表函数的一个变量, 这个变量名字是函数名加上下划线
+        if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) { // 如果不是 procedure
+            std::string typeStr = func.lock()->func_type_.lock()->result_->print();
+            out << typeStr << " " << func.lock()->name_ << "_;\n";
+        }
+
         for (const auto &local : func.lock()->local_identifiers_)
         {
-
             // 遍历函数参数列表，排除函数参数
             bool isFuncParam = false;
             for (const auto &local_args : func.lock()->args_)
@@ -144,6 +149,8 @@ void CBuilder::build(ir::Module &program)
         if (func.lock()->print() == "int main()")
         {
             out << "return 0;\n";
+        } else if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) {
+            out << "return " + func.lock()->name_ + "_;\n"; 
         }
         out << "}\n";
     }
