@@ -175,6 +175,7 @@ public:
         unsigned long long uint_val;
         char char_val;
     };
+    std::string literal; // 字面量
     void accept(StmtVisitor &visitor) override;
 };
 

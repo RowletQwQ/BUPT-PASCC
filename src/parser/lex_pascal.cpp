@@ -1306,7 +1306,7 @@ yylval->number = atoi(yytext); RETURN_TOKEN(INTEGER);
 case 51:
 YY_RULE_SETUP
 #line 155 "lex_pascal.l"
-yylval->real = (float)atof(yytext); RETURN_TOKEN(REAL);
+yylval->real = strdup(yytext); RETURN_TOKEN(REAL);
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
