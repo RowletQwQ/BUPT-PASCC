@@ -100,19 +100,16 @@ int main(int argc, char *argv[])
     G_SETTINGS.parse_args(argc, argv);
     // 初始化环境
     init_env();
-
     // 从输入文件中读取代码
     std::ifstream input_file(G_SETTINGS.input_file);
     if (!input_file.is_open())
     {
         LOG_FATAL("Can't open input file: %s", G_SETTINGS.input_file.c_str());
     }
-    
     std::stringstream buffer;
     buffer << input_file.rdbuf();
     std::string code = buffer.str();
     input_file.close();
-
     // 第一步：词法分析 and 语法分析
     LOG_DEBUG("Start parsing code...");
     ProgramStmt* program_stmt;
@@ -120,15 +117,10 @@ int main(int argc, char *argv[])
     LOG_DEBUG("Parsing code done.");
     // 第二步: 语义分析 & 生成中间代码
     LOG_DEBUG("Start generating intermediate code...");
-    
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
-
     visitor->visit(*program_stmt);
     //visitor->show_result();
     ir::Module ir = visitor->get_ir();
-
-
-    
     LOG_DEBUG("Generating intermediate code done.");
     // 第三步: 优化
     if (G_SETTINGS.opt_level)
@@ -143,8 +135,6 @@ int main(int argc, char *argv[])
         }
         LOG_DEBUG("Optimizing intermediate code done.");
     }
-
-//    return 0;
     // 第四步: 生成目标代码
     std::ofstream output_file(G_SETTINGS.output_file);
     LOG_DEBUG("Start generating target code...");

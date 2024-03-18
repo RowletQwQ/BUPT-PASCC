@@ -29,9 +29,11 @@ After that, you can run the compiler with the following command.
 .
 |-- src # Source code
 |   |-- main.cpp # Main function
-|   |-- parser # Parser
-|   |   |-- stmt.hpp # Statement
+|   |-- parser # Parser (flex + bison)
+|   |-- ast # Abstract Syntax Tree
 |   |-- common # tools
-|   |-- ir # Intermediate Representation(中间表示形式相关)
-|   |-- generator # Code Generator
+|   |-- ir # Intermediate Representation And Semantic Analysis
+|   |-- builder # Code Generator
+|   |-- opt # Optimizer
+|-- test # Test
 

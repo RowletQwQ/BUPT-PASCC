@@ -73,15 +73,15 @@ def compile_and_run(directory):
 
 os.chdir('../open_set')
 open_ce, open_wa, open_tle, open_re = compile_and_run('.')
-os.chdir('../hidden_set')
+os.chdir('../test_set')
 hidden_ce, hidden_wa, hidden_tle, hidden_re = compile_and_run('.')
 os.chdir('..')
 for file in os.listdir('open_set'):
     if file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
         os.remove(f'open_set/{file}')
-for file in os.listdir('hidden_set'):
+for file in os.listdir('test_set'):
     if file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
-        os.remove(f'hidden_set/{file}')
+        os.remove(f'test_set/{file}')
 
 error_dir = 'judge/error_files'
 
@@ -111,7 +111,7 @@ for set_name in ['open_set']:
         if file.endswith('.empty'):
             os.remove(f'{set_name}/{file}')
                 
-for set_name in ['hidden_set']:
+for set_name in ['test_set']:
     for file in os.listdir(set_name):
         if file.endswith('.c'):
             # 如果文件名在错误列表中，将其移动到新位置

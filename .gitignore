@@ -11,3 +11,4 @@ open_set/*.c
 judge/error_files/
 .idea/
 *.ir
+test_set/
