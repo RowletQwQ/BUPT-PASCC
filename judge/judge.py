@@ -108,6 +108,8 @@ for set_name in ['open_set']:
             # 否则，删除文件
             else:
                 os.remove(f'{set_name}/{file}')
+        if file.endswith('.empty'):
+            os.remove(f'{set_name}/{file}')
                 
 for set_name in ['hidden_set']:
     for file in os.listdir(set_name):
@@ -125,6 +127,8 @@ for set_name in ['hidden_set']:
             # 否则，删除文件
             else:
                 os.remove(f'{set_name}/{file}')
+        if file.endswith('.empty'):
+            os.remove(f'{set_name}/{file}')
 
 print("Open set:")
 if len(open_ce) == 0 and len(open_wa) == 0 and len(open_tle) == 0 and len(open_re) == 0:
