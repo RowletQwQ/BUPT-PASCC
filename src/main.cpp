@@ -56,17 +56,6 @@ void init_env()
                 exit(0);
             }
         }
-        if(filename == "21_multi_loop.pas") {
-            std::ofstream out(G_SETTINGS.output_file);
-            out << "#include <stdio.h>\n";
-            out << "int main()\n";
-            out << "{\n";
-            out << "    printf(\"Not Finished yet\");\n";
-            out << "    return 0;\n";
-            out << "}\n";
-            out.close();
-            exit(0);
-        }
     }
 #ifndef RELEASE
     switch (G_SETTINGS.log_level)
