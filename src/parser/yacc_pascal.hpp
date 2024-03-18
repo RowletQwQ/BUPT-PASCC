@@ -159,7 +159,7 @@ union YYSTYPE
     char *                                          string;
     long long                                       number;
     bool                                            boolean;
-    double                                          real;
+    char *                                          real;
     char                                           charactor;
     int                                            token;
 

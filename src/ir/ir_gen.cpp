@@ -12,7 +12,7 @@
 namespace ir {
 
 // 常量
-constexpr unsigned kDefaultRealBitWidth = 32;
+constexpr unsigned kDefaultRealBitWidth = 64;
 constexpr unsigned kDefaultIntegerBitWidth = 32;
 
 // 工具函数
@@ -313,7 +313,7 @@ void IRGenerator::visit(NumberStmt &stmt) {
     std::shared_ptr<Literal> val; // 值
     if (stmt.is_real) {
         type = std::make_shared<RealType>(kDefaultRealBitWidth, false);
-        val = std::make_shared<LiteralDouble>(type, stmt.real_val);
+        val = std::make_shared<LiteralDouble>(type, stmt.real_val, stmt.literal);
     } else if (stmt.is_char) {
         type = std::make_shared<CharType>(false);
         val = std::make_shared<LiteralChar>(type, stmt.char_val);
@@ -383,7 +383,7 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
             NumberStmt *num_stmt = value_stmt->number.get();
             if (num_stmt->is_real) {
                 type = std::make_shared<RealType>(kDefaultRealBitWidth,false);
-                val = std::make_shared<LiteralDouble>(type, num_stmt->real_val);
+                val = std::make_shared<LiteralDouble>(type, num_stmt->real_val, num_stmt->literal);
             } else if (num_stmt->is_char) {
                 type = std::make_shared<CharType>(false);
                 val = std::make_shared<LiteralChar>(type, num_stmt->char_val);

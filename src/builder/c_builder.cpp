@@ -68,8 +68,16 @@ void CBuilder::build(ir::Module &program)
     std::stringstream out;
 //    std::ofstream out("G_SETTINGS.output_file");
     // 2. 加上 C 语言的头文件
-    out << "#include <stdio.h>";
-    out << "\n";
+    out << "#include <stdio.h>\n";
+    out << "#include <stdlib.h>\n";
+    out << "#include <signal.h>\n";
+    out << "#include <unistd.h>\n";
+    // 2.1 注册一个超时处理函数
+    out << "void timeout_handler(int sig) {\n";
+    out << "\tprintf(\"Timeout!\\n\");\n";
+    out << "\texit(0);\n";
+    out << "}\n";
+
     // 3. 加上全局变量和常量
     for (const auto &global : program.global_identifiers_)
     {
@@ -100,6 +108,11 @@ void CBuilder::build(ir::Module &program)
         out << func.lock()->print() << "\n";
         // 4.2 加入函数左大括号
         out << "{\n";
+        if (func.lock()->print() == "int main()") {
+            // 如果是 main 函数，注册超时处理函数
+            out << "\tsignal(SIGALRM, timeout_handler);\n";
+            out << "\talarm(1);\n";
+        }
         // 4.3 加入局部标识符
         // 一上来先先加上代表函数的一个变量, 这个变量名字是函数名加上下划线
         if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) { // 如果不是 procedure

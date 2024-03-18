@@ -306,9 +306,10 @@ public:
 */
 class LiteralDouble : public Literal {
 public:
-    LiteralDouble(std::shared_ptr<Type> type, double val) : Literal(type), val_(val) {}
+    LiteralDouble(std::shared_ptr<Type> type, double val, std::string literal) : Literal(type), val_(val), str_(literal)  {}
     double val_;
-    virtual std::string print() override { return std::to_string(val_); }
+    std::string str_;
+    virtual std::string print() override { return str_; }
     virtual long get_int() override { return val_; }
     virtual double get_real() override { return val_; }
 };

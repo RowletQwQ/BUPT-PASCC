@@ -152,7 +152,7 @@ OTHER_SIGN                     [\~\;\:\.\,\+\-\*\/\(\)\[\]\=\>\<\&\|\!]
 {OTHER_SIGN}                            RETURN_TOKEN(yytext[0]);
 
 {INTEGER}                                yylval->number = atoi(yytext); RETURN_TOKEN(INTEGER);
-{REAL}                                     yylval->real = (float)atof(yytext); RETURN_TOKEN(REAL);
+{REAL}                                     yylval->real = strdup(yytext); RETURN_TOKEN(REAL);
 {CHAR}                                    yylval->charactor = yytext[1]; RETURN_TOKEN(CHAR);
 {IDENTIFIER}                          yylval->string = strdup_tolower(yytext);RETURN_TOKEN(IDENTIFIER);
 

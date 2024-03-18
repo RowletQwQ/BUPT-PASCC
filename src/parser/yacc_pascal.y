@@ -439,7 +439,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     char *                                          string;
     long long                                       number;
     bool                                            boolean;
-    double                                          real;
+    char *                                          real;
     char                                           charactor;
     int                                            token;
 }
@@ -696,7 +696,10 @@ const_value: INTEGER
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
         num_value->number = std::make_unique<NumberStmt>();
-        fill_number_stmt(num_value->number, $1);
+        double val = atof($1);
+        fill_number_stmt(num_value->number, val);
+        num_value->number->literal = std::string($1);
+        free($1);
         $$ = num_value;
     }
     | '+' REAL
@@ -704,7 +707,10 @@ const_value: INTEGER
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
         num_value->number = std::make_unique<NumberStmt>();
-        fill_number_stmt(num_value->number, $2);
+        double val = atof($2);
+        fill_number_stmt(num_value->number, val);
+        num_value->number->literal = std::string($2);
+        free($2);
         $$ = num_value;
     }
     | '-' REAL
@@ -712,7 +718,10 @@ const_value: INTEGER
         ValueStmt * num_value = new ValueStmt();
         num_value->type = ValueStmt::ValueType::Number;
         num_value->number = std::make_unique<NumberStmt>();
-        fill_number_stmt(num_value->number, ($2) * -1);
+        double val = atof($2);
+        fill_number_stmt(num_value->number, val);
+        num_value->number->literal = std::string($2);
+        free($2);
         $$ = num_value;
     }
     | CHAR
@@ -1650,7 +1659,10 @@ factor : INTEGER
         unary_expr->primary_expr->value = std::make_unique<ValueStmt>();
         unary_expr->primary_expr->value->type =ValueStmt::ValueType::Number;
         unary_expr->primary_expr->value->number = std::make_unique<NumberStmt>();
-        fill_number_stmt(unary_expr->primary_expr->value->number,$1);
+        double val = atof($1);
+        fill_number_stmt(unary_expr->primary_expr->value->number, val);
+        unary_expr->primary_expr->value->number->literal = std::string($1);
+        free($1);
         $$ = unary_expr;
         LOG_DEBUG("DEBUG factor -> REAL");
     }
