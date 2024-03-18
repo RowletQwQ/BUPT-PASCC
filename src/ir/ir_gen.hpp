@@ -123,18 +123,18 @@ public:
         std::streambuf* oldCoutStreamBuf = std::cout.rdbuf();
         // 重定向 cout 到文件
         std::cout.rdbuf(out.rdbuf());
-        std::cout << "全局标识符如下:" << std::endl;
+        std::cout << "全局标识符如下:" << "\n";
 
         for (const auto &global : module_.global_identifiers_) {
             if (global->is_const_) {
-                std::cout << "const " + global->type_->print() << " " << global->name_ << " = " << global->init_val_->print() << std::endl;
+                std::cout << "const " + global->type_->print() << " " << global->name_ << " = " << global->init_val_->print() << "\n";
             } else {
                 std::string s = global->type_->print();
                 int ps = s.find(" ");
                 if (ps == std::string::npos) {
-                    std::cout << global->type_->print() << " " << global->name_ << std::endl;
+                    std::cout << global->type_->print() << " " << global->name_ << "\n";
                 } else {
-                    std::cout << s.substr(0, ps) << " " << global->name_ << s.substr(ps + 1) << std::endl;
+                    std::cout << s.substr(0, ps) << " " << global->name_ << s.substr(ps + 1) << "\n";
                 }
             }
         }
@@ -142,17 +142,17 @@ public:
         std::cout << "----------------------------------------------------------------------------------------------------------" << "\n";
         for (int i = 0; i < module_.functions_.size(); i++) {
             std::weak_ptr<Function> func = module_.functions_[i];
-            std::cout << "第 " << i + 1  << " 个函数信息如下：" << std::endl;
-            std::cout << "函数头：" << func.lock()->print() << std::endl;
-            std::cout << "局部标识符如下:" << std::endl;
+            std::cout << "第 " << i + 1  << " 个函数信息如下：" << "\n";
+            std::cout << "函数头：" << func.lock()->print() << "\n";
+            std::cout << "局部标识符如下:" << "\n";
             for (const auto &local : func.lock()->local_identifiers_) {
                 if (local->is_const_) {
-                    std::cout << local->type_->print() << " " << local->name_ << " = " << local->init_val_->print() << std::endl;
+                    std::cout << local->type_->print() << " " << local->name_ << " = " << local->init_val_->print() << "\n";
                 } else {
-                    std::cout << local->type_->print() << " " << local->name_ << std::endl;
+                    std::cout << local->type_->print() << " " << local->name_ << "\n";
                 }
             }
-            std::cout << "基本块如下:" << std::endl;
+            std::cout << "基本块如下:" << "\n";
             std::cout << "\n";
             std::map<BasicBlock *, int> bb_map;
             for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
@@ -160,20 +160,20 @@ public:
             }
             for (int j = 0; j < func.lock()->basic_blocks_.size(); j++) {
                 std::shared_ptr<BasicBlock> bb = func.lock()->basic_blocks_[j];
-                std::cout << "第 " << j + 1 << " 个基本块信息如下：" << std::endl;
-                std::cout << "基本块名：" << bb->name_ << std::endl;
-                std::cout << "指令列表如下：" << std::endl;
+                std::cout << "第 " << j + 1 << " 个基本块信息如下：" << "\n";
+                std::cout << "基本块名：" << bb->name_ << "\n";
+                std::cout << "指令列表如下：" << "\n";
                 for (int k = 0; k < bb->instructions_.size(); k++) {
                     std::shared_ptr<Instruction> inst = bb->instructions_[k];
                     std::cout << "\t" << inst->print() << "\n";
                 }
                 std::cout << "\n\n";
-                std::cout << "前驱基本块如下" << std::endl;
+                std::cout << "前驱基本块如下" << "\n";
                 for(auto &tmp: bb->pre_bbs_) {
                     std::cout << bb_map[tmp.lock().get()] << " ";
                 }
                 std::cout << "\n";
-                std::cout << "后继基本块如下" << std::endl;
+                std::cout << "后继基本块如下" << "\n";
                 for(auto &tmp: bb->succ_bbs_) {
                     std::cout << bb_map[tmp.lock().get()] << " ";
                 }

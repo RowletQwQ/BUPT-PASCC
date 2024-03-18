@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#define RELEASE
 
 
 #include "common/log/log.hpp"
@@ -67,6 +68,7 @@ void init_env()
             exit(0);
         }
     }
+#ifndef RELEASE
     switch (G_SETTINGS.log_level)
     {
         case 0:
@@ -88,6 +90,7 @@ void init_env()
             common::g_log = new common::Log(common::WARN);
             break;
     }
+#endif
     
 }
 
