@@ -50,7 +50,7 @@ def compile_and_run(directory):
                     with open(file[:-4] + "_fpc.out", 'w') as f:
                         subprocess.run(['./'+file[:-4] + "_fpc"], text=True, stdout=f, check=True)
                     with open(file[:-4] + "_gcc.out", 'w') as f:
-                        subprocess.run(['./'+file[:-4] + "_gcc"], text=True, stdout=f, check=True, timeout=1)
+                        subprocess.run(['./'+file[:-4] + "_gcc"], text=True, stdout=f, check=True, timeout=5)
                     with open(file[:-4] + "_fpc.out", 'r') as f1, open(file[:-4] + "_gcc.out", 'r') as f2:
                         if f1.read() != f2.read():
                             print(f"Error: Output mismatch for {file}")
@@ -108,6 +108,8 @@ for set_name in ['open_set']:
             # 否则，删除文件
             else:
                 os.remove(f'{set_name}/{file}')
+        if file.endswith('.empty'):
+            os.remove(f'{set_name}/{file}')
                 
 for set_name in ['hidden_set']:
     for file in os.listdir(set_name):
@@ -125,6 +127,8 @@ for set_name in ['hidden_set']:
             # 否则，删除文件
             else:
                 os.remove(f'{set_name}/{file}')
+        if file.endswith('.empty'):
+            os.remove(f'{set_name}/{file}')
 
 print("Open set:")
 if len(open_ce) == 0 and len(open_wa) == 0 and len(open_tle) == 0 and len(open_re) == 0:

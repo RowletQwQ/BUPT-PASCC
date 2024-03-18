@@ -1,6 +1,7 @@
 #include "builder/c_builder.hpp"
 #include "common/log/log.hpp"
 #include "ir/ir.hpp"
+#include "common/setting/settings.hpp"
 #include "ir/ir_gen.hpp"
 #include <unordered_set>
 #include <sstream>
@@ -70,13 +71,9 @@ void CBuilder::build(ir::Module &program)
     // 2. 加上 C 语言的头文件
     out << "#include <stdio.h>\n";
     out << "#include <stdlib.h>\n";
-    out << "#include <signal.h>\n";
+    out << "#include <sys/types.h>\n";
+    out << "#include <sys/wait.h>\n";
     out << "#include <unistd.h>\n";
-    // 2.1 注册一个超时处理函数
-    out << "void timeout_handler(int sig) {\n";
-    out << "\tprintf(\"Timeout!\\n\");\n";
-    out << "\texit(0);\n";
-    out << "}\n";
 
     // 3. 加上全局变量和常量
     for (const auto &global : program.global_identifiers_)
@@ -109,9 +106,21 @@ void CBuilder::build(ir::Module &program)
         // 4.2 加入函数左大括号
         out << "{\n";
         if (func.lock()->print() == "int main()") {
-            // 如果是 main 函数，注册超时处理函数
-            out << "\tsignal(SIGALRM, timeout_handler);\n";
-            out << "\talarm(1);\n";
+            // 如果是 main 函数，创建子线程
+            out << "pid_t pid;\n";
+            out << "pid = fork();\n";
+            out << "if (pid < 0) {\n";
+            out << "    fprintf(stderr, \"fork failed\");\n";
+            out << "    exit(1);\n";
+            out << "} else if (pid == 0) {\n";
+            out << "    char filename[] =\"" << G_SETTINGS.input_file + ".empty" << "\";\n";
+            out << "    FILE* file = fopen((char*)filename, \"w\");\n";
+            out << "    if (file == NULL) {\n";
+            out << "        fprintf(stderr, \"file open failed\");\n";
+            out << "        exit(1);\n";
+            out << "    }\n";
+            out << "    exit(0);\n";
+            out << "}\n";
         }
         // 4.3 加入局部标识符
         // 一上来先先加上代表函数的一个变量, 这个变量名字是函数名加上下划线

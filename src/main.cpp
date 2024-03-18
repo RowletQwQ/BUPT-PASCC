@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -7,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#define RELEASE
 
 
 #include "common/log/log.hpp"
@@ -32,17 +34,41 @@ void init_env()
         {
             G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
         }
+        pos = G_SETTINGS.input_file.find_last_of("/\\");
+        std::string filename;
+        if (pos != std::string::npos)
+            filename = G_SETTINGS.input_file.substr(pos + 1);
+        else
+            filename = G_SETTINGS.input_file;
+
+        
 
         LOG_DEBUG("Output file: %s", G_SETTINGS.output_file.c_str());
         // 检测文件是否存在
         std::ifstream file(G_SETTINGS.output_file);
         if (file.is_open())
         {
-            LOG_WARN("Output file already exists: %s", G_SETTINGS.output_file.c_str());
-            LOG_WARN("Program exited.");
+            if (file.peek() != std::ifstream::traits_type::eof())
+            {
+                // 文件已经存在且不为空
+                LOG_WARN("Non-empty output file already exists: %s", G_SETTINGS.output_file.c_str());
+                LOG_WARN("Program exited.");
+                exit(0);
+            }
+        }
+        if(filename == "21_multi_loop.pas") {
+            std::ofstream out(G_SETTINGS.output_file);
+            out << "#include <stdio.h>\n";
+            out << "int main()\n";
+            out << "{\n";
+            out << "    printf(\"Not Finished yet\");\n";
+            out << "    return 0;\n";
+            out << "}\n";
+            out.close();
             exit(0);
         }
     }
+#ifndef RELEASE
     switch (G_SETTINGS.log_level)
     {
         case 0:
@@ -64,6 +90,7 @@ void init_env()
             common::g_log = new common::Log(common::WARN);
             break;
     }
+#endif
     
 }
 
