@@ -45,17 +45,17 @@ void init_env()
 
         LOG_DEBUG("Output file: %s", G_SETTINGS.output_file.c_str());
         // 检测文件是否存在
-        std::ifstream file(G_SETTINGS.output_file);
-        if (file.is_open())
-        {
-            if (file.peek() != std::ifstream::traits_type::eof())
-            {
-                // 文件已经存在且不为空
-                LOG_WARN("Non-empty output file already exists: %s", G_SETTINGS.output_file.c_str());
-                LOG_WARN("Program exited.");
-                exit(0);
-            }
-        }
+        // std::ifstream file(G_SETTINGS.output_file);
+        // if (file.is_open())
+        // {
+        //     if (file.peek() != std::ifstream::traits_type::eof())
+        //     {
+        //         // 文件已经存在且不为空
+        //         LOG_WARN("Non-empty output file already exists: %s", G_SETTINGS.output_file.c_str());
+        //         LOG_WARN("Program exited.");
+        //         exit(0);
+        //     }
+        // }
     }
 #ifndef RELEASE
     switch (G_SETTINGS.log_level)
