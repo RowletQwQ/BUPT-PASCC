@@ -73,15 +73,15 @@ def compile_and_run(directory):
 
 os.chdir('../open_set')
 open_ce, open_wa, open_tle, open_re = compile_and_run('.')
-os.chdir('../hidden_set')
-hidden_ce, hidden_wa, hidden_tle, hidden_re = compile_and_run('.')
+os.chdir('../test_set')
+self_ce, self_wa, self_tle, self_re = compile_and_run('.')
 os.chdir('..')
 for file in os.listdir('open_set'):
     if file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
         os.remove(f'open_set/{file}')
-for file in os.listdir('hidden_set'):
+for file in os.listdir('test_set'):
     if file.endswith('_fpc') or file.endswith('_gcc') or file.endswith('.o'):
-        os.remove(f'hidden_set/{file}')
+        os.remove(f'test_set/{file}')
 
 error_dir = 'judge/error_files'
 
@@ -111,18 +111,18 @@ for set_name in ['open_set']:
         if file.endswith('.empty'):
             os.remove(f'{set_name}/{file}')
                 
-for set_name in ['hidden_set']:
+for set_name in ['test_set']:
     for file in os.listdir(set_name):
         if file.endswith('.c'):
             # 如果文件名在错误列表中，将其移动到新位置
-            if file[:-1] + 'pas' in hidden_ce or file[:-1] + 'pas' in hidden_wa or file[:-1] + 'pas' in hidden_tle or file[:-1] + 'pas' in hidden_re:
+            if file[:-1] + 'pas' in self_ce or file[:-1] + 'pas' in self_wa or file[:-1] + 'pas' in self_tle or file[:-1] + 'pas' in self_re:
                 shutil.move(f'{set_name}/{file}', f'{error_dir}/{file}')
             # 否则，删除文件
             else:
                 os.remove(f'{set_name}/{file}')
         if file.endswith('.out'):
             # 如果文件名在错误列表中，将其移动到新位置
-            if file[:-8] + 'pas' in hidden_ce or file[:-8] + 'pas' in hidden_wa or file[:-8] + 'pas' in hidden_tle or file[:-8] + 'pas' in hidden_re:
+            if file[:-8] + 'pas' in self_ce or file[:-8] + 'pas' in self_wa or file[:-8] + 'pas' in self_tle or file[:-8] + 'pas' in self_re:
                 shutil.move(f'{set_name}/{file}', f'{error_dir}/{file}')
             # 否则，删除文件
             else:
@@ -139,12 +139,12 @@ else:
     print(f"{Colors.RED}Wrong answer: {open_wa}{Colors.END}")
     print(f"{Colors.GRAY}Time limit exceeded: {open_tle}{Colors.END}")
     print(f"{Colors.PURPLE}Runtime errors: {open_re}{Colors.END}")
-print("Hidden set:")
-if len(hidden_ce) == 0 and len(hidden_wa) == 0 and len(hidden_tle) == 0 and len(hidden_re) == 0:
+print("Self Test:")
+if len(self_ce) == 0 and len(self_wa) == 0 and len(self_tle) == 0 and len(self_re) == 0:
     print("{Colors.GREEN}All tests passed{Colors.END}")
 else:
     print("Some tests failed")
-    print(f"{Colors.YELLOW}Compilation errors: {hidden_ce}{Colors.END}")
-    print(f"{Colors.RED}Wrong answer: {hidden_wa}{Colors.END}")
-    print(f"{Colors.GRAY}Time limit exceeded: {hidden_tle}{Colors.END}")
-    print(f"{Colors.PURPLE}Runtime errors: {hidden_re}{Colors.END}")
+    print(f"{Colors.YELLOW}Compilation errors: {self_ce}{Colors.END}")
+    print(f"{Colors.RED}Wrong answer: {self_wa}{Colors.END}")
+    print(f"{Colors.GRAY}Time limit exceeded: {self_tle}{Colors.END}")
+    print(f"{Colors.PURPLE}Runtime errors: {self_re}{Colors.END}")
