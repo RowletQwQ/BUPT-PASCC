@@ -36,4 +36,18 @@ After that, you can run the compiler with the following command.
 |   |-- builder # Code Generator
 |   |-- opt # Optimizer
 |-- test # Test
+```
 
+## Building Docker Image
+
+To build the docker image, run the following command.
+It will build the docker image with the name `my-riscv-env`.
+```bash
+docker build -t my-riscv-env . --network=host
+```
+
+To run the docker image, run the following command.
+It will run the docker image with the name `my-riscv-env`.
+```bash
+docker run -it --name my-riscv-env --mount type=bind,src=[absolute path of folder in host machine],dst=[absolute path in container] my-riscv-env /bin/bash
+```
