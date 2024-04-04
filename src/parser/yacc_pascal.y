@@ -642,7 +642,7 @@ const_declarations : /*empty*/
         }
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
     }
-    | error ';'
+    | CONST error ';'
     {
         current_rule = CurrentRule::ConstDeclarations;
         yyerror(&yylloc, "code_str", program, scanner, "常量定义出错，请检查是否符合规范。");
@@ -780,7 +780,7 @@ var_declarations : /*empty*/
         $$ = $2;
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
     }
-    | error ';'
+    | VAR error ';'
     {
         current_rule = CurrentRule::VarDeclarations;
         yyerror(&yylloc, "code_str", program, scanner, "变量定义出错，请检查是否符合规范。");
@@ -1137,7 +1137,15 @@ compound_statement : BEGIN_TOKEN statement_list END
         current_rule = CurrentRule::CompoundStatement;
         $$ = $2;
         LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
-    };
+    }
+    |BEGIN_TOKEN error END
+    {
+        current_rule = CurrentRule::CompoundStatement;
+        yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
+        $$ = new std::vector<BaseStmt *>();
+        LOG_DEBUG("DEBUG compound_statement ->BEGIN_TOKEN error END");
+    }
+    ;
 /*
 * no : 3.6
 * rule  :  statement_list -> statement | statement_list ';' statement
@@ -1168,9 +1176,8 @@ statement_list : statement
         current_rule = CurrentRule::StatementList;
         yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
         $$ = new std::vector<BaseStmt *>();
-        LOG_DEBUG("DEBUG statement_list -> error");
+        LOG_DEBUG("DEBUG statement_list -> error ;");
     }
-
     ;
 
 /*
