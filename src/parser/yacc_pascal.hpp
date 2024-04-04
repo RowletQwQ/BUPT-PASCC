@@ -39,7 +39,7 @@
 # define YY_YY_YACC_PASCAL_HPP_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -114,7 +114,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 398 "yacc_pascal.y"
+#line 308 "yacc_pascal.y"
 
     ProgramStmt *                                   program_struct;
     ProgramHeadStmt *                               program_head;

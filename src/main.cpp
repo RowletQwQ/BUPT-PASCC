@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#define RELEASE
-
 
 #include "common/log/log.hpp"
 #include "opt/opt.hpp"
@@ -19,7 +17,7 @@
 #include "parser/yacc_pascal.hpp"
 #include "builder/c_builder.hpp"
 
-void code_parse(const char *code, ProgramStmt **program_stmt);
+int code_parse(const char *code, ProgramStmt **program_stmt);
 
 void init_env()
 {
@@ -102,7 +100,12 @@ int main(int argc, char *argv[])
     // 第一步：词法分析 and 语法分析
     LOG_DEBUG("Start parsing code...");
     ProgramStmt* program_stmt;
-    code_parse(code.c_str(), &program_stmt);
+    int ret = code_parse(code.c_str(), &program_stmt);
+    if (ret != 0)
+    {
+        LOG_ERROR("Parsing code failed.");
+        return ret;
+    }
     LOG_DEBUG("Parsing code done.");
     // 第二步: 语义分析 & 生成中间代码
     LOG_DEBUG("Start generating intermediate code...");
