@@ -407,6 +407,14 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 // 对丢弃的符号进行析构
 %destructor {} <program_struct> <boolean> <number> <charactor> <basic_type>
 %destructor { free($$); } IDENTIFIER <string> <real>
+%destructor {
+    if($$ != nullptr){
+        for(auto kv_pair : *$$){
+            delete kv_pair;
+        }
+    }
+    delete $$;
+} <var_decls> <period_list> <func_decl_list> <stmt_list> <lval_list> <expr_list>
 %destructor { delete $$; } <*>
 // THEN 和 ELSE 为右结合
 %nonassoc THEN
@@ -455,13 +463,14 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
         free($2);
     };
-    /* | error
+    | error
     {
-        current_rule = CurrentRule::ProgramHead;
-        yyerror(&yylloc,  "code_str", program, scanner,"程序头定义出错，请检查是否符合规范。");
-        $$ = nullptr; // 或者创建一个默认的ProgramHeadStmt对象，根据你的错误处理策略而定
-        // 可以在这里执行其他的错误恢复逻辑，比如跳过一些输入直到遇到某个特定的符号等
-    }; */
+        // current_rule = CurrentRule::ProgramHead;
+        // yyerror(&yylloc,  "code_str", program, scanner,"程序头定义出错，请检查是否符合规范。");
+        // $$ = nullptr; // 或者创建一个默认的ProgramHeadStmt对象，根据你的错误处理策略而定
+        // // 可以在这里执行其他的错误恢复逻辑，比如跳过一些输入直到遇到某个特定的符号等
+        $$ = nullptr;
+    };
 
 
 /*
@@ -556,13 +565,14 @@ const_declarations : /*empty*/
         }
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
     }
-    /* | CONST error ';'
+    | CONST error ';'
     {
-        current_rule = CurrentRule::ConstDeclarations;
-        yyerror(&yylloc, "code_str", program, scanner, "常量定义出错，请检查是否符合规范。");
-        $$ = new ConstDeclStmt(); // 创建空的常量声明列表作为恢复策略
-        LOG_DEBUG("DEBUG const_declarations -> error");
-    } */
+        // current_rule = CurrentRule::ConstDeclarations;
+        // yyerror(&yylloc, "code_str", program, scanner, "常量定义出错，请检查是否符合规范。");
+        // $$ = new ConstDeclStmt(); // 创建空的常量声明列表作为恢复策略
+        // LOG_DEBUG("DEBUG const_declarations -> error");
+        $$ = nullptr;
+    }
     ;
 
 
@@ -694,13 +704,14 @@ var_declarations : /*empty*/
         $$ = $2;
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
     }
-    /* | VAR error ';'
+    | VAR error ';'
     {
-        current_rule = CurrentRule::VarDeclarations;
-        yyerror(&yylloc, "code_str", program, scanner, "变量定义出错，请检查是否符合规范。");
-        $$ = new std::vector<VarDeclStmt*>(); // 创建空的变量声明列表作为恢复策略
-        LOG_DEBUG("DEBUG var_declarations -> error");
-    } */
+        // current_rule = CurrentRule::VarDeclarations;
+        // yyerror(&yylloc, "code_str", program, scanner, "变量定义出错，请检查是否符合规范。");
+        // $$ = new std::vector<VarDeclStmt*>(); // 创建空的变量声明列表作为恢复策略
+        // LOG_DEBUG("DEBUG var_declarations -> error");
+        $$ = nullptr;
+    }
     ;
 
 /*
@@ -1052,13 +1063,14 @@ compound_statement : BEGIN_TOKEN statement_list END
         $$ = $2;
         LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
     }
-    /* |BEGIN_TOKEN error END
+    |BEGIN_TOKEN error END
     {
-        current_rule = CurrentRule::CompoundStatement;
-        yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
-        $$ = new std::vector<BaseStmt *>();
-        LOG_DEBUG("DEBUG compound_statement ->BEGIN_TOKEN error END");
-    } */
+        // current_rule = CurrentRule::CompoundStatement;
+        // yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
+        // $$ = new std::vector<BaseStmt *>();
+        // LOG_DEBUG("DEBUG compound_statement ->BEGIN_TOKEN error END");
+        $$ = nullptr;
+    }
     ;
 /*
 * no : 3.6
@@ -1085,13 +1097,14 @@ statement_list : statement
         delete $3;
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
     }
-    /* | error ';'
+    | error ';'
     {
-        current_rule = CurrentRule::StatementList;
-        yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
-        $$ = new std::vector<BaseStmt *>();
-        LOG_DEBUG("DEBUG statement_list -> error ;");
-    } */
+        // current_rule = CurrentRule::StatementList;
+        // yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
+        // $$ = new std::vector<BaseStmt *>();
+        // LOG_DEBUG("DEBUG statement_list -> error ;");
+        $$ = nullptr;
+    }
     ;
 
 /*
@@ -1807,12 +1820,14 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     (void)program;
     (void)scanner;
     (void)msg;
-    LOG_ERROR("[Unexcepted Error] at line %d, column %d:", llocp->first_line + 1, llocp->first_column, msg);
+    hadError = true;
+    LOG_ERROR("[Unexcepted Error] at line %d, column %d:", llocp->first_line, llocp->first_column + 1, msg);
     return 0;
 }
 
 static int yyreport_syntax_error(const yypcontext_t *ctx, const char * code_str, ProgramStmt ** program, void * scanner)
 {
+    hadError = true;
     int res = 0;
     std::ostringstream buf;
     buf << "\033[1;37m" << G_SETTINGS.input_file << ":" << yypcontext_location(ctx)->first_line 
@@ -1922,7 +1937,10 @@ int code_parse(const char * code_str, ProgramStmt ** program) {
 
 
     int ret = yyparse(code_str,program, scanner);
-
+    
     yylex_destroy(scanner);
+    if (hadError) {
+        return -1;
+    }
     return ret;
 }
