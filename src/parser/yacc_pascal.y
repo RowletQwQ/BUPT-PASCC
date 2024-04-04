@@ -12,6 +12,7 @@
 #include "yacc_pascal.hpp"
 #include "lex_pascal.hpp"
 
+bool hadError = false; // 错误标志
 
 RelExprStmt::RelExprType get_rel_expr_type(long long op) {
     if(op == 0){
@@ -224,37 +225,29 @@ enum class CurrentRule {
 };
 static CurrentRule current_rule = CurrentRule::ProgramStruct;
 void print_error_location(const char* code_str, YYLTYPE *llocp) {
-    const char* p = code_str;
-    int current_line = 0;
-    const char* line_start = p;
-    const char* line_end;
+    std::string code(code_str); // 将C风格字符串转换为std::string
+    std::istringstream stream(code);
+    std::string line;
+    int current_line = 1;
 
-    // 找到错误行的开始和结束位置
-    while (*p) {
-        if (*p == '\n') {
-            if (current_line >= llocp->first_line) {
-                line_end = p;
-                // 输出错误行的代码，并在错误列的位置标出错误的代码
-                if (current_line == llocp->first_line && llocp->first_column > 1) {
-                    std::cout.write(line_start, llocp->first_column - 1);
-                }
-                std::cout << "\033[31m";
-                if (current_line == llocp->last_line) {
-                    std::cout.write(line_start + llocp->first_column - 1, llocp->last_column - llocp->first_column + 1);
-                    std::cout << "\033[0m";
-                    std::cout.write(line_start + llocp->last_column, line_end - line_start - llocp->last_column);
-                } else {
-                    std::cout.write(line_start + llocp->first_column - 1, line_end - line_start - llocp->first_column + 1);
-                }
-                std::cout << std::endl;
-                if (current_line == llocp->last_line) {
-                    break;
-                }
+    while (std::getline(stream, line)) {
+        if (current_line == llocp->first_line) {
+            // 打印到错误开始之前的部分
+            std::cout << line.substr(0, llocp->first_column - 1);
+
+            // 错误部分使用红色高亮显示
+            std::cout << "\033[31m"
+                      << line.substr(llocp->first_column - 1, llocp->last_column - llocp->first_column + 1)
+                      << "\033[0m";
+
+            // 打印错误之后的部分
+            if (llocp->last_column < line.size()) {
+                std::cout << line.substr(llocp->last_column);
             }
-            ++current_line;
-            line_start = p + 1;
+            std::cout << std::endl;
+            break; // 已找到错误行，跳出循环
         }
-        ++p;
+        ++current_line;
     }
 }
 // 相关所需的函数，可能包含一些错误处理函数
@@ -263,72 +256,80 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     (void)program;
     (void)scanner;
     (void)msg;
-    LOG_ERROR("[Syntax Error] at line %d, column %d:", llocp->first_line + 1, llocp->first_column);
-    print_error_location(code_str, llocp);
-    switch (current_rule)
-    {
-        case CurrentRule::ProgramStruct:
-            LOG_ERROR("程序定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ProgramHead:
-            LOG_ERROR("程序头定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ProgramBody:
-            LOG_ERROR("程序体定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::IdList:
-            LOG_ERROR("标识符定义错误 请检查是否符合规范");
-            break;
-        case CurrentRule::ConstDeclarations: case CurrentRule::ConstDeclaration:
-            LOG_ERROR("常量定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ConstValue:
-            LOG_ERROR("常量 请检查是否为合法常量");
-            break;
-        case CurrentRule::VarDeclarations: case CurrentRule::VarDeclaration:
-            LOG_ERROR("变量定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::Type:
-            LOG_ERROR("类型定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::SubprogramDeclarations: case CurrentRule::Subprogram:
-            LOG_ERROR("子函数定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::SubprogramHead:
-            LOG_ERROR("子函数头定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::FormalParameter:
-            LOG_ERROR("参数定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::SubprogramBody:
-            LOG_ERROR("子函数体定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::CompoundStatement:
-            LOG_ERROR("复合语句定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::StatementList: case CurrentRule::Statement:
-            LOG_ERROR("语句定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ProcedureCall:
-            LOG_ERROR("过程调用出错 请检查是否符合规范");
-            break;
-        case CurrentRule::VariableList: case CurrentRule::Variable:
-            LOG_ERROR("变量定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::IdVarpart: case CurrentRule::ArrayIndexExpression:
-        case CurrentRule::BracketExpressionList:
-            LOG_ERROR("数组下标定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ExpressionList: case CurrentRule::Expression: 
-        case CurrentRule::SimpleExpression: case CurrentRule::Term: case CurrentRule::Factor:
-            LOG_ERROR("表达式定义出错 请检查是否符合规范");
-            break;
-        default:
-            LOG_ERROR("请检查相关代码是否符合规范");
-            break;
-    }
+    // if (!hadError) { // 避免重复报告错误
+        LOG_ERROR("[Syntax Error] at line %d, column %d:", llocp->first_line + 1, llocp->first_column);
+        print_error_location(code_str, llocp);
+        switch (current_rule)
+        {
+            case CurrentRule::ProgramStruct:
+                LOG_ERROR("程序定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ProgramHead:
+                LOG_ERROR("程序头定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ProgramBody:
+                LOG_ERROR("程序体定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::IdList:
+                LOG_ERROR("标识符定义错误 请检查是否符合规范");
+                break;
+            case CurrentRule::ConstDeclarations: case CurrentRule::ConstDeclaration:
+                LOG_ERROR("常量定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ConstValue:
+                LOG_ERROR("常量 请检查是否为合法常量");
+                break;
+            case CurrentRule::VarDeclarations: case CurrentRule::VarDeclaration:
+                LOG_ERROR("变量定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::Type:
+                LOG_ERROR("类型定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::SubprogramDeclarations: case CurrentRule::Subprogram:
+                LOG_ERROR("子函数定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::SubprogramHead:
+                LOG_ERROR("子函数头定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::FormalParameter:
+                LOG_ERROR("参数定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::SubprogramBody:
+                LOG_ERROR("子函数体定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::CompoundStatement:
+                LOG_ERROR("复合语句定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::StatementList: case CurrentRule::Statement:
+                LOG_ERROR("语句定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ProcedureCall:
+                LOG_ERROR("过程调用出错 请检查是否符合规范");
+                break;
+            case CurrentRule::VariableList: case CurrentRule::Variable:
+                LOG_ERROR("变量定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::IdVarpart: case CurrentRule::ArrayIndexExpression:
+            case CurrentRule::BracketExpressionList:
+                LOG_ERROR("数组下标定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ExpressionList: case CurrentRule::Expression:
+            case CurrentRule::SimpleExpression: case CurrentRule::Term: case CurrentRule::Factor:
+                LOG_ERROR("表达式定义出错 请检查是否符合规范");
+                break;
+            default:
+                LOG_ERROR("请检查相关代码是否符合规范");
+                break;
+
+        }
+        // hadError = true;
+    //}
     return 0;
 }
+
+void resetErrorFlag() {
+        hadError = false; // 重置错误标志，为下一次解析准备
+    }
 
 
 %}
@@ -539,7 +540,15 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
         $$->id_list.emplace_back(std::string($2));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
         free($2);
+    }
+    | error
+    {
+        current_rule = CurrentRule::ProgramHead;
+        yyerror(&yylloc,  "code_str", program, scanner,"程序头定义出错，请检查是否符合规范。");
+        $$ = nullptr; // 或者创建一个默认的ProgramHeadStmt对象，根据你的错误处理策略而定
+        // 可以在这里执行其他的错误恢复逻辑，比如跳过一些输入直到遇到某个特定的符号等
     };
+
 
 /*
 * no : 1.3
@@ -632,7 +641,15 @@ const_declarations : /*empty*/
             }
         }
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
-    };
+    }
+    | error ';'
+    {
+        current_rule = CurrentRule::ConstDeclarations;
+        yyerror(&yylloc, "code_str", program, scanner, "常量定义出错，请检查是否符合规范。");
+        $$ = new ConstDeclStmt(); // 创建空的常量声明列表作为恢复策略
+        LOG_DEBUG("DEBUG const_declarations -> error");
+    }
+    ;
 
 
 /*
@@ -762,7 +779,15 @@ var_declarations : /*empty*/
         current_rule = CurrentRule::VarDeclarations;
         $$ = $2;
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
-    };
+    }
+    | error ';'
+    {
+        current_rule = CurrentRule::VarDeclarations;
+        yyerror(&yylloc, "code_str", program, scanner, "变量定义出错，请检查是否符合规范。");
+        $$ = new std::vector<VarDeclStmt*>(); // 创建空的变量声明列表作为恢复策略
+        LOG_DEBUG("DEBUG var_declarations -> error");
+    }
+    ;
 
 /*
 * no : 2.2
@@ -1138,6 +1163,14 @@ statement_list : statement
         delete $3;
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
     }
+    | error ';'
+    {
+        current_rule = CurrentRule::StatementList;
+        yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
+        $$ = new std::vector<BaseStmt *>();
+        LOG_DEBUG("DEBUG statement_list -> error");
+    }
+
     ;
 
 /*
@@ -1537,7 +1570,13 @@ expression : simple_expression
         $$ = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression");
     }
-    ;
+    | error ';'
+    {
+        current_rule = CurrentRule::Expression;
+        yyerror(&yylloc,  "code_str", program, scanner,"表达式出错，请检查是否符合规范。");
+        $$ = new ExprStmt();
+    };
+
 
 
 /*
