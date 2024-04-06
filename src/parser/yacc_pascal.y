@@ -438,7 +438,32 @@ programstruct : program_head  ';'  program_body '.'
         LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'");
         *program = program_struct;
         $$ = nullptr; // 防止报错
-    };
+    }
+    | error  ';'  program_body '.'
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        delete $3;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> error ';' program_body '.'");
+    }
+    | program_head  ';'  error '.'
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        delete $1;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> program_head ';' error '.'");
+    }
+    | error  ';'  error '.'
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> error ';' error '.'");
+    }
+    ;
+
 /*
 * no : 1.2
 * rule  :  program_head -> "program" IDENTIFIER '(' idlist ')' | "program" IDENTIFIER
@@ -462,15 +487,13 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
         $$->id_list.emplace_back(std::string($2));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
         free($2);
-    };
-    | error
+    }
+    | PROGRAM error
     {
-        // current_rule = CurrentRule::ProgramHead;
-        // yyerror(&yylloc,  "code_str", program, scanner,"程序头定义出错，请检查是否符合规范。");
-        // $$ = nullptr; // 或者创建一个默认的ProgramHeadStmt对象，根据你的错误处理策略而定
-        // // 可以在这里执行其他的错误恢复逻辑，比如跳过一些输入直到遇到某个特定的符号等
         $$ = nullptr;
-    };
+        LOG_DEBUG("ERROR program_head -> PROGRAM error");
+    }
+    ;
 
 
 /*
@@ -531,11 +554,12 @@ idlist : IDENTIFIER
         $$ = $1;
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER");
         free($3);
-    };
+    }
+    ;
 
 /*
 * no : 1.5
-* rule  :  const_declarations -> empty | "const" const_declaration ';' const_declarations
+* rule  :  const_declarations -> empty | "const" const_declaration ';'
 * node :  ConstDeclStmt * const_decls
 * son  :  std::vector<std::pair<std::string, ValueStmt *> *> *
 * error : 常量定义出错 请检查是否符合规范
@@ -567,11 +591,8 @@ const_declarations : /*empty*/
     }
     | CONST error ';'
     {
-        // current_rule = CurrentRule::ConstDeclarations;
-        // yyerror(&yylloc, "code_str", program, scanner, "常量定义出错，请检查是否符合规范。");
-        // $$ = new ConstDeclStmt(); // 创建空的常量声明列表作为恢复策略
-        // LOG_DEBUG("DEBUG const_declarations -> error");
         $$ = nullptr;
+        LOG_DEBUG("ERROR const_declarations -> CONST error ;");
     }
     ;
 
@@ -706,11 +727,8 @@ var_declarations : /*empty*/
     }
     | VAR error ';'
     {
-        // current_rule = CurrentRule::VarDeclarations;
-        // yyerror(&yylloc, "code_str", program, scanner, "变量定义出错，请检查是否符合规范。");
-        // $$ = new std::vector<VarDeclStmt*>(); // 创建空的变量声明列表作为恢复策略
-        // LOG_DEBUG("DEBUG var_declarations -> error");
         $$ = nullptr;
+        LOG_DEBUG("ERROR var_declarations -> VAR error ;");
     }
     ;
 
@@ -751,7 +769,9 @@ var_declaration : idlist ':' type
         $1->emplace_back(var_decl);
         $$ = $1;
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type");
-    };
+    }
+    ;
+
 /*
 * no : 2.3
 * rule  : type -> basic_type | ARRAY '[' period_list ']' OF basic_type 
@@ -862,7 +882,8 @@ subprogram_declarations : /*empty*/
                 $$ = $1;
             }
             LOG_DEBUG("DEBUG subprogram_declarations -> subprogram_declarations subprogram ';'");
-        };
+        }
+        ;
 
 
 /*
@@ -880,7 +901,8 @@ subprogram : subprogram_head ';' subprogram_body
             subprogram->body = std::unique_ptr<FuncBodyDeclStmt>($3);
             $$ = subprogram;
             LOG_DEBUG("DEBUG subprogram -> subprogram_head ';' subprogram_body");
-        };
+        }
+        ;
 
 
 /*
@@ -922,6 +944,16 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
             free($2);
             LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type");
         }
+        | FUNCTION error
+        {
+            $$ = nullptr;
+            LOG_DEBUG("ERROR subprogram_head -> FUNCTION error");
+        }
+        | PROCEDURE error
+        {
+            $$ = nullptr;
+            LOG_DEBUG("ERROR subprogram_head -> PROCEDURE error");
+        };
 
 /*
 * no : 2.9
@@ -957,17 +989,17 @@ parameter_list :/* empty */
         LOG_DEBUG("DEBUG parameter_list -> empty");
     }
     |parameter
-        {
-            $$ = new std::vector<VarDeclStmt *>();
-            $$->emplace_back($1);
-            LOG_DEBUG("DEBUG parameter_list -> parameter");
-        }
-        | parameter_list ';' parameter
-        {
-            $1->emplace_back($3);
-            $$ = $1;
-            LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
-        };
+    {
+        $$ = new std::vector<VarDeclStmt *>();
+        $$->emplace_back($1);
+        LOG_DEBUG("DEBUG parameter_list -> parameter");
+    }
+    | parameter_list ';' parameter
+    {
+        $1->emplace_back($3);
+        $$ = $1;
+        LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
+    };
 
 /*
 * no : 3.1
@@ -1063,13 +1095,10 @@ compound_statement : BEGIN_TOKEN statement_list END
         $$ = $2;
         LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
     }
-    |BEGIN_TOKEN error END
+    | BEGIN_TOKEN error END
     {
-        // current_rule = CurrentRule::CompoundStatement;
-        // yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
-        // $$ = new std::vector<BaseStmt *>();
-        // LOG_DEBUG("DEBUG compound_statement ->BEGIN_TOKEN error END");
         $$ = nullptr;
+        LOG_DEBUG("ERROR compound_statement -> BEGIN_TOKEN error");
     }
     ;
 /*
@@ -1096,14 +1125,6 @@ statement_list : statement
         $$ = $1;
         delete $3;
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
-    }
-    | error ';'
-    {
-        // current_rule = CurrentRule::StatementList;
-        // yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查是否符合规范。");
-        // $$ = new std::vector<BaseStmt *>();
-        // LOG_DEBUG("DEBUG statement_list -> error ;");
-        $$ = nullptr;
     }
     ;
 
