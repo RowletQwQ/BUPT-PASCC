@@ -1,10 +1,15 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
 namespace builder {
 
 namespace riscv {
 
-class RiscvInstruction {
+class Operand;
+class BasicBlock;
+class Instruction {
 public:
     enum InstrType {
         /**Shifts**/
@@ -223,10 +228,62 @@ public:
         FSGNJX_D, // Sign inject exclusive double
 
     };
+
+
+    Instruction(InstrType type, int op_nums);
+    // Instruction(InstrType type, int op_nums, std::shared_ptr<BasicBlock> parent);
+    virtual void setOperand(int index, std::shared_ptr<Operand> operand);
+    virtual std::string print() const = 0;
+
+    InstrType type_; // 指令类型
+    std::shared_ptr<Operand> dest_; // 指令的目的操作数
+    std::vector<std::shared_ptr<Operand>> operands_; // 指令的操作数
+    // std::weak_ptr<BasicBlock> parent_; // 指令所在的基本块
+
+};
+
+// 以下的一元，二元，三元指令的元不包括dest
+// 同时默认指令的第一个操作数是dest
+// 如 add rd, rs1, rs2 算二元指令
+
+class UnaryInst : public Instruction {
+public:
+    UnaryInst(InstrType type, std::shared_ptr<Operand> src);
+    std::string print() const override;
+};
+
+// 二元指令
+// 指加减乘除模与之类的运算指令
+class BinaryInst : public Instruction {
+public:
+    BinaryInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> src1, std::shared_ptr<Operand> src2);
+    std::string print() const override;
 };
 
 
+// 融合指令，即融加结合指令，属于一类特化的计算指令集
+// 初始可以不考虑转换成这种类型的指令集
+class FusionInst : public Instruction {
+public:
+    FusionInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> src1, std::shared_ptr<Operand> src2, std::shared_ptr<Operand> src3);
+    std::string print() const override;
+};
 
+class BranchInst : public Instruction {
+public:
+    BranchInst(InstrType type, std::shared_ptr<Operand> src1, std::shared_ptr<Operand> src2, std::shared_ptr<Operand> target);
+    std::string print() const override;
+};
+
+// 无条件跳转指令
+// 这种跳转指令分为两种，一种是直接跳转，一种是间接跳转
+// 直接跳转是指令中直接给出跳转的目标地址，没有base
+// 间接跳转是指令中给出了跳转的基地址，通过基地址和src计算出跳转的目标地址
+class JumpInst : public Instruction {
+public:
+    JumpInst(InstrType type, std::shared_ptr<Operand> src, std::shared_ptr<Operand> base, std::shared_ptr<Operand> target);
+    std::string print() const override;
+};
 
 } // namespace riscv
 } // namespace builder
