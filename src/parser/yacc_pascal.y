@@ -457,23 +457,30 @@ programstruct : program_head  ';'  program_body '.'
         LOG_DEBUG("ERROR programstruct -> error ';' program_body '.'");
         // yyerror(&yylloc, "code_str", program, scanner, "程序头定义出错，请检查。");
     }
-    | program_head  ';'  error '.'
+    | program_head  ';'  error
     {
         ProgramStmt * program_struct = new ProgramStmt();
         *program = program_struct;
         delete $1;
         $$ = nullptr;
-        LOG_DEBUG("ERROR programstruct -> program_head ';' error '.'");
+        LOG_DEBUG("ERROR programstruct -> program_head ';' error");
         // yyerror(&yylloc, "code_str", program, scanner, "程序体定义出错，请检查。");
     }
-    | error  ';'  error '.'
+    | error  ';'  error
     {
         ProgramStmt * program_struct = new ProgramStmt();
         *program = program_struct;
         $$ = nullptr;
-        LOG_DEBUG("ERROR programstruct -> error ';' error '.'");
+        LOG_DEBUG("ERROR programstruct -> error ';' error");
         // yyerror(&yylloc, "code_str", program, scanner, "程序头、程序体定义出错，请检查。");
     }
+    /* | error
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> error");
+    } */
     ;
 
 /*
@@ -1993,7 +2000,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, const char * code_str,
         buf << " but found \"" << error_note << "\"";
     std::cerr<< buf.str() << std::endl;
     std::cerr<< msg << std::endl;
-    switch (current_rule)
+    /* switch (current_rule)
         {
             case CurrentRule::ProgramStruct:
                 LOG_ERROR("程序定义出错 请检查是否符合规范");
@@ -2055,7 +2062,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, const char * code_str,
                 LOG_ERROR("请检查相关代码是否符合规范");
                 break;
 
-        }
+        } */
     return res;
 }
 
