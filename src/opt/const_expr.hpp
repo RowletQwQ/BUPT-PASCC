@@ -8,6 +8,7 @@ public:
     virtual ~ConstExprOpt() = default;
     void optimize(ir::Module &program) override;
 
+
 }; // class ConstExprOpt
 
 } // namespace opt

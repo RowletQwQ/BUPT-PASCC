@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <iterator>
 #include <list>
 #include <memory>
@@ -239,6 +240,9 @@ public:
      * @return ValueID
     */
     Value::ValueID get_val_id() { return val_id_; }
+
+    bool is_inst() { return val_id_ == ValueID::Instruction; }
+    bool is_literal() { return val_id_ == ValueID::Literal; }
 
     Value::ValueID val_id_; // 值的类型
     std::shared_ptr<Type> type_; // 返回值类型
@@ -582,10 +586,27 @@ public:
      * @brief 设置操作数
      * 
     */
-    void set_operand(unsigned i, std::weak_ptr<Value> val) {
-        operands_[i] = val;
+    virtual void set_operand(unsigned i, std::weak_ptr<Value> val) {
+        if (operands_[i].expired()) {
+            operands_[i] = val;
+        } else {
+            operands_[i].lock() = val.lock();
+            operands_[i] = val;
+        }
     }
+
+    /**
+     * @brief 获取操作数
+     * 
+    */
+    virtual std::weak_ptr<Value> get_operand(unsigned i) {
+        return operands_[i];
+    }
+
+    virtual OpID get_op_id() { return op_id_; }
     
+    unsigned get_num_ops() { return num_ops_; }
+
     /**
      * @brief 设置操作数的位置
      * 
@@ -593,12 +614,6 @@ public:
     virtual void set_pos_in_bb(std::vector<std::shared_ptr<ir::Instruction> >::iterator pos) {
         pos_in_bb_ = pos;
     }
-
-    /**
-     * @brief 获取操作数
-     * 
-    */
-    virtual std::weak_ptr<Value> get_operand(unsigned i) = 0;
 
     // 以下是判断指令类型的函数
     bool is_call_inst() { return op_id_ == OpID::Call; }
@@ -609,6 +624,9 @@ public:
     bool is_assign_inst() { return op_id_ == OpID::Assign; }
     bool is_load_inst() { return op_id_ == OpID::Visit; }
     bool is_expr() { return is_binary_inst() || is_unary_inst() || is_assign_inst() || is_load_inst(); }
+    bool is_io_inst() { return op_id_ == OpID::Read || op_id_ == OpID::Write; }
+    bool is_arith_inst() { return op_id_ >= OpID::Add && op_id_ <= OpID::Le; }
+    bool is_array_visit_inst() { return op_id_ == OpID::Visit && num_ops_ == 2; }
     
 
     OpID op_id_; // 操作码
@@ -647,13 +665,13 @@ public:
         return operands_[0].lock()->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1].lock()->print();
     }
 
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
 
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
     /**
      * @brief 用来判断两个类型是否可以进行计算
      * 
@@ -713,13 +731,13 @@ public:
     }
 
 
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
 
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 
 };
 
@@ -752,13 +770,13 @@ public:
 
     static bool can_be_compared(const Type *t1, const Type *t2);
 
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
 
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 
 }; 
 
@@ -794,12 +812,12 @@ public:
         }
         return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 /**
@@ -822,16 +840,25 @@ public:
         set_operand(0, array);
         set_operand(1, idx);
     }
+
+    LoadInst(std::shared_ptr<Type> ty, std::shared_ptr<Value> id,
+            std::weak_ptr<BasicBlock> bb)
+      : Instruction(ty, OpID::Visit, 1, bb) {
+        set_operand(0, id);
+    }
     ~LoadInst() = default;
     virtual std::string print() override {
+        if (num_ops_ == 1) {
+            return operands_[0].lock()->print();
+        }
         return operands_[0].lock()->print() + "[" + operands_[1].lock()->print() + "]";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 /**
@@ -871,12 +898,12 @@ public:
         ans = ans + ")";
         return ans;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 /**
@@ -908,12 +935,12 @@ public:
         ans = ans + ")";
         return ans;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 /**
@@ -957,12 +984,12 @@ public:
         ret += ")";
         return ret;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 /**
@@ -986,12 +1013,12 @@ public:
     virtual std::string print() override {
         return "return " + operands_[0].lock()->print()+"";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 class BreakInst : public Instruction {
@@ -1010,12 +1037,12 @@ public:
     virtual std::string print() override {
         return "break";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 class ContinueInst : public Instruction {
@@ -1034,12 +1061,12 @@ public:
     virtual std::string print() override {
         return "continue";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 class ContinueIncInst : public Instruction {
@@ -1060,12 +1087,12 @@ public:
     virtual std::string print() override {
         return "continue_inc";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 // 分支跳转指令
@@ -1107,12 +1134,12 @@ public:
         }
         return res;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 };
 
 
