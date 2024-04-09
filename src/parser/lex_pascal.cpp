@@ -684,7 +684,7 @@ static const flex_int32_t yy_rule_can_match_eol[65] =
 extern int atoi();
 extern double atof();
 
-#define RETURN_TOKEN(token) LOG_DEBUG("%s  %s", #token, yytext);return token
+#define RETURN_TOKEN(token) LOG_DEBUG("%s  %s, Line: %d, Column: %d", #token, yytext, yylloc->first_line, yylloc->first_column);return token
 
 char *strdup_tolower(const char *s) {
     char *d = (char *)malloc(strlen(s) + 1);
@@ -2545,5 +2545,6 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 void scan_string(const char *str, yyscan_t scanner) {
     yy_switch_to_buffer(yy_scan_string(str, scanner), scanner);
+    yyset_lineno(1, scanner);
     //{STRING}                                yylval->string = strdup(yytext); RETURN_TOKEN(STRING);
 }

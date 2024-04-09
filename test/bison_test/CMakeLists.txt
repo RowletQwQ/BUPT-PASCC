@@ -9,11 +9,11 @@ find_package(BISON REQUIRED)
 
 
 
-# 生成词法分析器
-FLEX_TARGET(FLEX ../../src/parser/lex_pascal.l  ${CMAKE_CURRENT_BINARY_DIR}/lex_pascal.cpp DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/lex_pascal.hpp)
+# # 生成词法分析器
+# FLEX_TARGET(FLEX ../../src/parser/lex_pascal.l  ${CMAKE_CURRENT_BINARY_DIR}/lex_pascal.cpp DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/lex_pascal.hpp)
 
-# 生成语法分析器
-BISON_TARGET(BISON ../../src/parser/yacc_pascal.y ${CMAKE_CURRENT_BINARY_DIR}/yacc_pascal.cpp)
+# # 生成语法分析器
+# BISON_TARGET(BISON ../../src/parser/yacc_pascal.y ${CMAKE_CURRENT_BINARY_DIR}/yacc_pascal.cpp)
 
 # 包含主项目src目录
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../src)
@@ -30,12 +30,25 @@ set(LOG_SOURCE_FILES
     ../../src/common/log/log.cpp
 )
 
+set(FLEX_OUTPUTS
+    ../../src/parser/lex_pascal.cpp
+)
+
+set(BISON_OUTPUTS
+    ../../src/parser/yacc_pascal.cpp
+)
+
+set(SETTING_SRC
+    ../../src/common/setting/settings.cpp
+)
+
 add_executable(BISON_TEST
     main.cpp
-    ${FLEX_FLEX_OUTPUTS}
-    ${BISON_BISON_OUTPUTS}
+    ${FLEX_OUTPUTS}
+    ${BISON_OUTPUTS}
     ${AST_SOURCE_FILES}
     ${LOG_SOURCE_FILES}
+    ${SETTING_SRC}
 )
 
 target_link_libraries(BISON_TEST ${BISON_LIBRARIES} -fsanitize=address -pthread)

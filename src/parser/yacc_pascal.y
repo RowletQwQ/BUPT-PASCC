@@ -2,16 +2,19 @@
 // 此处为相关头文件和函数，会添加在生成的代码中
 
 #include <memory>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "common/log/log.hpp"
+#include "common/setting/settings.hpp"
 #include "ast/stmt.hpp"
 #include "ast/stmt_test.hpp"
 #include "yacc_pascal.hpp"
 #include "lex_pascal.hpp"
 
+bool hadError = false; // 错误标志
 
 RelExprStmt::RelExprType get_rel_expr_type(long long op) {
     if(op == 0){
@@ -223,113 +226,11 @@ enum class CurrentRule {
     Factor,
 };
 static CurrentRule current_rule = CurrentRule::ProgramStruct;
-void print_error_location(const char* code_str, YYLTYPE *llocp) {
-    const char* p = code_str;
-    int current_line = 0;
-    const char* line_start = p;
-    const char* line_end;
 
-    // 找到错误行的开始和结束位置
-    while (*p) {
-        if (*p == '\n') {
-            if (current_line >= llocp->first_line) {
-                line_end = p;
-                // 输出错误行的代码，并在错误列的位置标出错误的代码
-                if (current_line == llocp->first_line && llocp->first_column > 1) {
-                    std::cout.write(line_start, llocp->first_column - 1);
-                }
-                std::cout << "\033[31m";
-                if (current_line == llocp->last_line) {
-                    std::cout.write(line_start + llocp->first_column - 1, llocp->last_column - llocp->first_column + 1);
-                    std::cout << "\033[0m";
-                    std::cout.write(line_start + llocp->last_column, line_end - line_start - llocp->last_column);
-                } else {
-                    std::cout.write(line_start + llocp->first_column - 1, line_end - line_start - llocp->first_column + 1);
-                }
-                std::cout << std::endl;
-                if (current_line == llocp->last_line) {
-                    break;
-                }
-            }
-            ++current_line;
-            line_start = p + 1;
-        }
-        ++p;
+void resetErrorFlag() {
+        hadError = false; // 重置错误标志，为下一次解析准备
     }
-}
-// 相关所需的函数，可能包含一些错误处理函数
-int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan_t scanner, const char *msg)
-{
-    (void)program;
-    (void)scanner;
-    (void)msg;
-    LOG_ERROR("[Syntax Error] at line %d, column %d:", llocp->first_line + 1, llocp->first_column);
-    print_error_location(code_str, llocp);
-    switch (current_rule)
-    {
-        case CurrentRule::ProgramStruct:
-            LOG_ERROR("程序定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ProgramHead:
-            LOG_ERROR("程序头定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ProgramBody:
-            LOG_ERROR("程序体定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::IdList:
-            LOG_ERROR("标识符定义错误 请检查是否符合规范");
-            break;
-        case CurrentRule::ConstDeclarations: case CurrentRule::ConstDeclaration:
-            LOG_ERROR("常量定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ConstValue:
-            LOG_ERROR("常量 请检查是否为合法常量");
-            break;
-        case CurrentRule::VarDeclarations: case CurrentRule::VarDeclaration:
-            LOG_ERROR("变量定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::Type:
-            LOG_ERROR("类型定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::SubprogramDeclarations: case CurrentRule::Subprogram:
-            LOG_ERROR("子函数定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::SubprogramHead:
-            LOG_ERROR("子函数头定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::FormalParameter:
-            LOG_ERROR("参数定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::SubprogramBody:
-            LOG_ERROR("子函数体定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::CompoundStatement:
-            LOG_ERROR("复合语句定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::StatementList: case CurrentRule::Statement:
-            LOG_ERROR("语句定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ProcedureCall:
-            LOG_ERROR("过程调用出错 请检查是否符合规范");
-            break;
-        case CurrentRule::VariableList: case CurrentRule::Variable:
-            LOG_ERROR("变量定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::IdVarpart: case CurrentRule::ArrayIndexExpression:
-        case CurrentRule::BracketExpressionList:
-            LOG_ERROR("数组下标定义出错 请检查是否符合规范");
-            break;
-        case CurrentRule::ExpressionList: case CurrentRule::Expression: 
-        case CurrentRule::SimpleExpression: case CurrentRule::Term: case CurrentRule::Factor:
-            LOG_ERROR("表达式定义出错 请检查是否符合规范");
-            break;
-        default:
-            LOG_ERROR("请检查相关代码是否符合规范");
-            break;
-    }
-    return 0;
-}
-
+int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan_t scanner, const char *msg);
 
 %}
 
@@ -385,14 +286,23 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
     CONTINUE
 
 %define api.pure full
+%define parse.error custom
 /* %define parse.error verbose */
 /** 启用位置标识 **/
 %locations
+%define parse.trace
 %lex-param { yyscan_t scanner }
 /** 这些定义了在yyparse函数中的参数 **/
 %parse-param { const char * code_str }
 %parse-param { ProgramStmt ** program}
 %parse-param { void * scanner }
+
+// 定义初始动作
+%initial-action 
+{
+    *program = nullptr;
+};
+
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -453,6 +363,7 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %token <string> STRING
 
 
+
 // 下面定义非终结符
 %type <number> relop
 %type <number> addop
@@ -493,7 +404,27 @@ int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan
 %type <unary_expr>          factor
 /* %type <stmt_list>           else_part */
 /* %type <expr_list>           id_random */
-
+// 对丢弃的符号进行析构
+%destructor {} <program_struct> <boolean> <number> <charactor> <basic_type>
+%destructor { free($$); } IDENTIFIER <string> <real>
+%destructor {
+    if($$ != nullptr){
+        for(auto kv_pair : *$$){
+            delete kv_pair;
+        }
+    }
+    delete $$;
+} <var_decls> <period_list> <func_decl_list> <stmt_list> <lval_list> <expr_list>
+%destructor {
+    if($$ != nullptr){
+        for(auto pair : *$$){
+            delete pair->second;
+            delete pair;
+        }
+        delete $$;
+    }
+} <kv_pair_list>
+%destructor { delete $$; } <*>
 // THEN 和 ELSE 为右结合
 %nonassoc THEN
 %nonassoc ELSE
@@ -515,7 +446,43 @@ programstruct : program_head  ';'  program_body '.'
         program_struct->body = std::unique_ptr<ProgramBodyStmt>($3);
         LOG_DEBUG("DEBUG programstruct -> program_head ';' program_body '.'");
         *program = program_struct;
-    };
+        $$ = nullptr; // 防止报错
+    }
+    | error  ';'  program_body '.'
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        delete $3;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> error ';' program_body '.'");
+        // yyerror(&yylloc, "code_str", program, scanner, "程序头定义出错，请检查。");
+    }
+    | program_head  ';'  error
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        delete $1;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> program_head ';' error");
+        // yyerror(&yylloc, "code_str", program, scanner, "程序体定义出错，请检查。");
+    }
+    | error  ';'  error
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> error ';' error");
+        // yyerror(&yylloc, "code_str", program, scanner, "程序头、程序体定义出错，请检查。");
+    }
+    /* | error
+    {
+        ProgramStmt * program_struct = new ProgramStmt();
+        *program = program_struct;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR programstruct -> error");
+    } */
+    ;
+
 /*
 * no : 1.2
 * rule  :  program_head -> "program" IDENTIFIER '(' idlist ')' | "program" IDENTIFIER
@@ -539,7 +506,16 @@ program_head : PROGRAM IDENTIFIER '(' idlist ')'
         $$->id_list.emplace_back(std::string($2));
         LOG_DEBUG("DEBUG program_head -> PROGRAM IDENTIFIER");
         free($2);
-    };
+    }
+    | PROGRAM error
+    {
+        $$ = nullptr;
+        LOG_DEBUG("ERROR program_head -> PROGRAM error");
+        // yyerror(&yylloc, "code_str", program, scanner, "程序名定义出错，请检查。");
+        yyerrok;
+    }
+    ;
+
 
 /*
 * no : 1.3
@@ -573,7 +549,32 @@ program_body : const_declarations var_declarations subprogram_declarations compo
         }
         $$ = program_body;
         LOG_DEBUG("DEBUG program_body -> const_declarations var_declarations subprogram_declarations compound_statement");
-    };
+    }
+    | error_recovery const_declarations var_declarations subprogram_declarations compound_statement
+    {
+        if($2 != nullptr) {delete $2;}
+        if($3 != nullptr){
+            for(auto var_decl : *$3){
+                delete var_decl;
+            }
+            delete $3;
+        }
+        if($4 != nullptr){
+            for(auto func_decl : *$4){
+                delete func_decl;
+            }
+            delete $4;
+        }
+        if($5 != nullptr){
+            for(auto stmt : *$5){
+                delete stmt;
+            }
+            delete $5;
+        }
+        $$ = nullptr;
+        LOG_DEBUG("DEBUG program_body -> error_recovery const_declarations var_declarations subprogram_declarations compound_statement");
+    }
+    ;
 
     
 
@@ -599,11 +600,12 @@ idlist : IDENTIFIER
         $$ = $1;
         LOG_DEBUG("DEBUG idlist -> idlist ',' IDENTIFIER");
         free($3);
-    };
+    }
+    ;
 
 /*
 * no : 1.5
-* rule  :  const_declarations -> empty | "const" const_declaration ';' const_declarations
+* rule  :  const_declarations -> empty | "const" const_declaration ';'
 * node :  ConstDeclStmt * const_decls
 * son  :  std::vector<std::pair<std::string, ValueStmt *> *> *
 * error : 常量定义出错 请检查是否符合规范
@@ -632,7 +634,14 @@ const_declarations : /*empty*/
             }
         }
         LOG_DEBUG("DEBUG const_declarations -> CONST const_declaration ';' const_declarations");
-    };
+    }
+    | CONST error ';'
+    {
+        $$ = nullptr;
+        LOG_DEBUG("ERROR const_declarations -> CONST error ;");
+        yyerrok;
+    }
+    ;
 
 
 /*
@@ -656,6 +665,14 @@ const_declaration : IDENTIFIER '=' const_value
         $1->emplace_back(new std::pair<std::string, ValueStmt *>($3, $5));
         free($3);
         $$ = $1; // 不需要删除
+    }
+    |  error ';' IDENTIFIER '=' const_value
+    {
+        $$ = nullptr;
+        LOG_DEBUG("ERROR const_declaration -> error ';' IDENTIFIER = const_value");
+        free($3);
+        delete $5;
+        yyerrok;
     }
     ;
 
@@ -762,7 +779,14 @@ var_declarations : /*empty*/
         current_rule = CurrentRule::VarDeclarations;
         $$ = $2;
         LOG_DEBUG("DEBUG var_declarations -> VAR var_declaration ';'");
-    };
+    }
+    | VAR error ';'
+    {
+        $$ = nullptr;
+        LOG_DEBUG("ERROR var_declarations -> VAR error ;");
+        yyerrok;
+    }
+    ;
 
 /*
 * no : 2.2
@@ -801,7 +825,17 @@ var_declaration : idlist ':' type
         $1->emplace_back(var_decl);
         $$ = $1;
         LOG_DEBUG("DEBUG var_declaration -> var_declaration ';' idlist ':' type");
-    };
+    }
+    | error ';' idlist ':' type
+    {
+        $$ = nullptr;
+        LOG_DEBUG("ERROR var_declaration -> error ';' idlist ':' type");
+        delete $3;
+        delete $5;
+        yyerrok;
+    }
+    ;
+
 /*
 * no : 2.3
 * rule  : type -> basic_type | ARRAY '[' period_list ']' OF basic_type 
@@ -912,7 +946,8 @@ subprogram_declarations : /*empty*/
                 $$ = $1;
             }
             LOG_DEBUG("DEBUG subprogram_declarations -> subprogram_declarations subprogram ';'");
-        };
+        }
+        ;
 
 
 /*
@@ -930,7 +965,8 @@ subprogram : subprogram_head ';' subprogram_body
             subprogram->body = std::unique_ptr<FuncBodyDeclStmt>($3);
             $$ = subprogram;
             LOG_DEBUG("DEBUG subprogram -> subprogram_head ';' subprogram_body");
-        };
+        }
+        ;
 
 
 /*
@@ -972,6 +1008,20 @@ subprogram_head: PROCEDURE IDENTIFIER formal_parameter
             free($2);
             LOG_DEBUG("DEBUG subprogram_head -> FUNCTION IDENTIFIER formal_parameter ':' basic_type");
         }
+        | FUNCTION error
+        {
+            $$ = nullptr;
+            LOG_DEBUG("ERROR subprogram_head -> FUNCTION error");
+            // yyerror(&yylloc, "code_str", program, scanner, "子程序头中标识符定义出错，请检查。");
+            yyerrok;
+        }
+        | PROCEDURE error
+        {
+            $$ = nullptr;
+            LOG_DEBUG("ERROR subprogram_head -> PROCEDURE error");
+            // yyerror(&yylloc, "code_str", program, scanner, "子程序头中标识符定义出错，请检查。");
+            yyerrok;
+        };
 
 /*
 * no : 2.9
@@ -1007,17 +1057,17 @@ parameter_list :/* empty */
         LOG_DEBUG("DEBUG parameter_list -> empty");
     }
     |parameter
-        {
-            $$ = new std::vector<VarDeclStmt *>();
-            $$->emplace_back($1);
-            LOG_DEBUG("DEBUG parameter_list -> parameter");
-        }
-        | parameter_list ';' parameter
-        {
-            $1->emplace_back($3);
-            $$ = $1;
-            LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
-        };
+    {
+        $$ = new std::vector<VarDeclStmt *>();
+        $$->emplace_back($1);
+        LOG_DEBUG("DEBUG parameter_list -> parameter");
+    }
+    | parameter_list ';' parameter
+    {
+        $1->emplace_back($3);
+        $$ = $1;
+        LOG_DEBUG("DEBUG parameter_list -> parameter_list ';' parameter");
+    };
 
 /*
 * no : 3.1
@@ -1112,7 +1162,8 @@ compound_statement : BEGIN_TOKEN statement_list END
         current_rule = CurrentRule::CompoundStatement;
         $$ = $2;
         LOG_DEBUG("DEBUG compound_statement -> BEGIN_TOKEN statement_list END");
-    };
+    }
+    ;
 /*
 * no : 3.6
 * rule  :  statement_list -> statement | statement_list ';' statement
@@ -1131,12 +1182,45 @@ statement_list : statement
         current_rule = CurrentRule::StatementList;
         if($3 != nullptr){
             for(auto stmt : *$3){
-                $1->emplace_back(stmt);
+                if($1 != nullptr){
+                    $1->emplace_back(stmt);
+                }
+                else{
+                    std::vector<BaseStmt *> * stmt_list = new std::vector<BaseStmt *>();
+                    stmt_list->emplace_back(stmt);
+                    $1 = stmt_list;
+                }
             }
         }
         $$ = $1;
         delete $3;
         LOG_DEBUG("DEBUG statement_list -> statement_list ';' statement");
+    }
+    | error ';' statement
+    {
+        if($3 != nullptr){
+            for(auto kv_pair : *$3){
+                delete kv_pair;
+            }
+        }
+        delete $3;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR statement_list -> error ';' statement");
+        // yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查。");
+        yyerrok;
+    }
+    | statement_list ';' error
+    {
+        if($1 != nullptr){
+            for(auto kv_pair : *$1){
+                delete kv_pair;
+            }
+        }
+        delete $1;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR statement_list -> statement_list ';' error");
+        // yyerror(&yylloc, "code_str", program, scanner, "语句定义出错，请检查。");
+        yyerrok;
     }
     ;
 
@@ -1321,10 +1405,25 @@ variable_list : variable
     | variable_list ',' variable
     {
         current_rule = CurrentRule::VariableList;
-        $1->emplace_back($3);
+        if($3 != nullptr){
+                $1->emplace_back($3);
+            }
+            else{
+                std::vector<LValStmt *> * lval_list = new std::vector<LValStmt *>();
+                lval_list->emplace_back($3);
+                $1 = lval_list;
+            }
+
         $$ = $1;
         LOG_DEBUG("DEBUG variable_list -> variable_list ',' variable");
-    };
+    }
+    | error ',' variable
+    {
+        delete $3;
+        $$ = nullptr;
+        LOG_DEBUG("ERROR variable_list -> error ',' variable");
+    }
+    ;
 /*
 * no : 4.3
 * rule  :  variable -> IDENTIFIER id_varpart
@@ -1388,7 +1487,7 @@ id_varpart : /*empty*/
         if($4 != nullptr){
             $$ = $4;
         } else {
-            yyerror(&@4, "code_str", program, scanner, "数组下标定义出错 请检查是否符合规范");
+            
         }
         $$->emplace_back($2);
         std::reverse($$->begin(), $$->end());
@@ -1536,8 +1635,8 @@ expression : simple_expression
         expr->rel_expr->terms.emplace_back(std::move(term));
         $$ = expr;
         LOG_DEBUG("DEBUG expression -> simple_expression relop simple_expression");
-    }
-    ;
+    };
+
 
 
 /*
@@ -1803,10 +1902,171 @@ relop : '=' { $$ = 0; } | NE { $$ = 1; } | '<' { $$ = 2; } | LE { $$ = 3; } | '>
 */
 mulop : '*' { $$ = 0; } | '/' { $$ = 1; } | DIV { $$ = 1; } | MOD { $$ = 2; } | AND { $$ = 3; } | ANDTHEN { $$ = 4; } 
 
+error_recovery
+    : error ';'
+    {
+        yyerrok;
+    }
+    ;
 
 %%
 // 此处书写相关函数，会添加在生成的代码中
 extern void scan_string(const char *str, yyscan_t scanner);
+
+void get_error_location(const char* code_str, YYLTYPE *llocp, std::string &error_note, std::string &msg, bool have_expected) {
+    std::string code(code_str); // 将C风格字符串转换为std::string
+    std::istringstream stream(code);
+    std::string line;
+    int current_line = 1;
+    msg += "\t";
+    while (std::getline(stream, line)) {
+        if (current_line == llocp->first_line) {
+            // 打印到错误开始之前的部分
+            msg += line.substr(0, llocp->first_column);
+            // 错误部分使用红色高亮显示
+            error_note = line.substr(llocp->first_column, llocp->last_column - llocp->first_column + 1);
+            msg += "\033[31m";
+            msg += error_note;
+            msg += "\033[0m";
+            // 打印错误之后的部分
+            if (llocp->last_column < line.size()) {
+                msg+= line.substr(llocp->last_column + 1);
+            }
+            // 添加箭头
+            msg += "\n\t";
+            if (have_expected) {
+                for (int i = 0; i < llocp->first_column; ++i) {
+                    msg += " ";
+                }
+                for (int i = llocp->first_column; i <= llocp->last_column; ++i) {
+                    msg += "\033[1;37m^\033[0m";
+                }
+            } else {
+                for (int i = 0; i < llocp->first_column; ++i) {
+                    msg += "\033[1;37m^\033[0m";
+                }
+            }
+            
+            break; // 已找到错误行，跳出循环
+        }
+        ++current_line;
+    }
+}
+// 相关所需的函数，可能包含一些错误处理函数
+int yyerror(YYLTYPE *llocp, const char *code_str, ProgramStmt ** program, yyscan_t scanner, const char *msg)
+{
+    (void)program;
+    (void)scanner;
+    (void)msg;
+    hadError = true;
+    LOG_ERROR("[Unexcepted Error] at line %d, column %d: %s", llocp->first_line, llocp->first_column + 1, msg);
+    return 0;
+}
+
+static int yyreport_syntax_error(const yypcontext_t *ctx, const char * code_str, ProgramStmt ** program, void * scanner)
+{
+    hadError = true;
+    int res = 0;
+    std::ostringstream buf;
+    buf << "\033[1;37m" << G_SETTINGS.input_file << ":" << yypcontext_location(ctx)->first_line 
+        << ":" << yypcontext_location(ctx)->first_column + 1 << ":\033[0m";
+    buf << " \033[1;31m" << "Syntax error:" << "\033[0m";
+    bool have_expected = false;
+    // Report the tokens expected at this point.
+    {
+        enum { TOKENMAX = 5 };
+        yysymbol_kind_t expected[TOKENMAX];
+        int n = yypcontext_expected_tokens (ctx, expected, TOKENMAX);
+        if (n < 0)
+            // Forward errors to yyparse.
+            res = n;
+        else
+            for (int i = 0; i < n; ++i)
+                buf << (i == 0 ? " expected" : " or") << " " << yysymbol_name (expected[i]);
+        if (n > 0)
+            have_expected = true;
+    }
+    // Report the unexpected token.
+    {
+        yysymbol_kind_t lookahead = yypcontext_token (ctx);
+        if (lookahead != YYSYMBOL_YYEMPTY)
+            buf << " before " << yysymbol_name (lookahead);
+    }
+    std::string error_note;
+    std::string msg;
+    
+    get_error_location(code_str, yypcontext_location(ctx), error_note, msg, have_expected);
+    if (have_expected)
+        buf << " but found \"" << error_note << "\"";
+    std::cerr<< buf.str() << std::endl;
+    std::cerr<< msg << std::endl;
+    /* switch (current_rule)
+        {
+            case CurrentRule::ProgramStruct:
+                LOG_ERROR("程序定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ProgramHead:
+                LOG_ERROR("程序头定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ProgramBody:
+                LOG_ERROR("程序体定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::IdList:
+                LOG_ERROR("标识符定义错误 请检查是否符合规范");
+                break;
+            case CurrentRule::ConstDeclarations: case CurrentRule::ConstDeclaration:
+                LOG_ERROR("常量定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ConstValue:
+                LOG_ERROR("常量 请检查是否为合法常量");
+                break;
+            case CurrentRule::VarDeclarations: case CurrentRule::VarDeclaration:
+                LOG_ERROR("变量定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::Type:
+                LOG_ERROR("类型定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::SubprogramDeclarations: case CurrentRule::Subprogram:
+                LOG_ERROR("子函数定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::SubprogramHead:
+                LOG_ERROR("子函数头定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::FormalParameter:
+                LOG_ERROR("参数定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::SubprogramBody:
+                LOG_ERROR("子函数体定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::CompoundStatement:
+                LOG_ERROR("复合语句定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::StatementList: case CurrentRule::Statement:
+                LOG_ERROR("语句定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ProcedureCall:
+                LOG_ERROR("过程调用出错 请检查是否符合规范");
+                break;
+            case CurrentRule::VariableList: case CurrentRule::Variable:
+                LOG_ERROR("变量定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::IdVarpart: case CurrentRule::ArrayIndexExpression:
+            case CurrentRule::BracketExpressionList:
+                LOG_ERROR("数组下标定义出错 请检查是否符合规范");
+                break;
+            case CurrentRule::ExpressionList: case CurrentRule::Expression:
+            case CurrentRule::SimpleExpression: case CurrentRule::Term: case CurrentRule::Factor:
+                LOG_ERROR("表达式定义出错 请检查是否符合规范");
+                break;
+            default:
+                LOG_ERROR("请检查相关代码是否符合规范");
+                break;
+
+        } */
+    return res;
+}
+
+
 
 int code_parse(const char * code_str, ProgramStmt ** program) {
     yyscan_t scanner;
@@ -1815,7 +2075,10 @@ int code_parse(const char * code_str, ProgramStmt ** program) {
 
 
     int ret = yyparse(code_str,program, scanner);
-
+    
     yylex_destroy(scanner);
+    if (hadError) {
+        return -1;
+    }
     return ret;
 }
