@@ -24,7 +24,7 @@ class BasicBlock;
 class Function;
 
 // 常量
-constexpr unsigned kDefaultRealBitWidth = 64;
+constexpr unsigned kDefaultRealBitWidth = 32;
 constexpr unsigned kDefaultIntegerBitWidth = 32;
 const char* const DefaultReturnName = "__"; // 默认返回值名称
 
