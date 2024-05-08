@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
   // batch_test(58,folderPath,files);
   //     common::g_log = new common::Log(common::FATAL);
   //     batch_test(57,folderPath,files);
-  // single_point_test(folderPath,files);
-  batch_test(0, folderPath, files);
+   single_point_test(folderPath,files);
+  // batch_test(0, folderPath, files);
   // single_point_test(folderPath,files);
   delete common::g_log;
   return 0;

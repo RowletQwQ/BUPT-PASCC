@@ -38,8 +38,10 @@ set(YACC_OUTPUTS
 add_executable(BISON_TEST
     main.cpp
     ${YACC_OUTPUTS}
+
     ${AST_SOURCE_FILES}
     ${LOG_SOURCE_FILES}
+    ${SETTING_SRC}
 )
 
 target_link_libraries(BISON_TEST ${BISON_LIBRARIES} -fsanitize=address -pthread)

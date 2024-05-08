@@ -7,8 +7,8 @@ set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
 
 # 当所有函数都写完时，打开这个编译选项
+# add_compile_options(-Wall -Wextra -Wpedantic -Werror -g -fsanitize=address)
 add_compile_options(-g -fsanitize=address)
-#add_compile_options(-O2 -Wall -Wextra -Wpedantic -Werror )
 project(PASCC)
 
 
