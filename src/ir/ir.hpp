@@ -22,6 +22,10 @@ class Module;
 class BasicBlock;
 class Function;
 
+// 常量
+constexpr unsigned kDefaultRealBitWidth = 64;
+constexpr unsigned kDefaultIntegerBitWidth = 32;
+
 /**
  * @brief Use 类
  * 
@@ -243,6 +247,8 @@ public:
 
     bool is_inst() { return val_id_ == ValueID::Instruction; }
     bool is_literal() { return val_id_ == ValueID::Literal; }
+    bool is_real() { return type_->tid_ == Type::RealTID; }
+    bool is_integer() { return type_->tid_ == Type::IntegerTID || type_->tid_ == Type::BooleanTID || type_->tid_ == Type::CharTID; }
 
     Value::ValueID val_id_; // 值的类型
     std::shared_ptr<Type> type_; // 返回值类型
@@ -261,6 +267,9 @@ public:
     Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, ValueID::Literal, name) {}
     virtual long get_int() = 0;
     virtual double get_real() = 0;
+    static std::shared_ptr<ir::Literal> make_literal(bool val);
+    static std::shared_ptr<ir::Literal> make_literal(long val);
+    static std::shared_ptr<ir::Literal> make_literal(double val);
     ~Literal() = default;
 };
 
@@ -268,9 +277,9 @@ public:
  * @brief int 类型
  * 
 */
-class LiteraltInt : public Literal {
+class LiteralInt : public Literal {
 public:
-    LiteraltInt(std::shared_ptr<Type> type, int val) : Literal(type), val_(val) {}
+    LiteralInt(std::shared_ptr<Type> type, int val) : Literal(type), val_(val) {}
     virtual std::string print() override { return std::to_string(val_); }
     virtual long get_int() override { return val_; }
     virtual double get_real() override { return val_; }
@@ -582,6 +591,8 @@ public:
     ~Instruction() = default;
     void init();
 
+    static std::string op_to_string(OpID op);
+
     /**
      * @brief 设置操作数
      * 
@@ -619,7 +630,7 @@ public:
     bool is_call_inst() { return op_id_ == OpID::Call; }
     bool is_ret_inst() { return op_id_ == OpID::Ret; }
     bool is_br_inst() { return op_id_ == OpID::Br; }
-    bool is_binary_inst() { return op_id_ >= OpID::Add && op_id_ <= OpID::In; }
+    bool is_binary_inst() { return op_id_ >= OpID::Add && op_id_ <= OpID::AndThen; }
     bool is_unary_inst() { return op_id_ >= OpID::Not && op_id_ <= OpID::LogicalNot; }
     bool is_assign_inst() { return op_id_ == OpID::Assign; }
     bool is_load_inst() { return op_id_ == OpID::Visit; }
@@ -665,13 +676,6 @@ public:
         return operands_[0].lock()->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1].lock()->print();
     }
 
-    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
-    //     operands_[i] = val;
-    // }
-
-    // std::weak_ptr<Value> get_operand(unsigned i) override {
-    //     return operands_[i];
-    // }
     /**
      * @brief 用来判断两个类型是否可以进行计算
      * 
@@ -806,7 +810,7 @@ public:
     virtual std::string print() override {
         // 如果发现存储的是一个函数, 那么左值就是函数名_
         if (operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
-            return operands_[0].lock()->name_ + "_" + " = " + operands_[1].lock()->print();
+            return "__ =" + operands_[1].lock()->print();
         } else if (operands_[0].lock()->type_->is_pointer_) {
             return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
         }
@@ -887,9 +891,7 @@ public:
         for (int i = 0; i < operands_.size(); i++) {
             ans = ans + "&" + operands_[i].lock()->print();
             if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
-                ans.pop_back();
-                ans.pop_back();
-                ans = ans + "_";
+                ans = "__";
             }
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";

@@ -1,3 +1,4 @@
+#include "opt/const_expr.hpp"
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
@@ -8,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#define RELEASE
 
 
 #include "common/log/log.hpp"
@@ -104,6 +104,10 @@ int main(int argc, char *argv[])
     ProgramStmt* program_stmt;
     code_parse(code.c_str(), &program_stmt);
     LOG_DEBUG("Parsing code done.");
+    if(!program_stmt) {
+        LOG_FATAL("Program exit");
+        return -1;
+    }
     // 第二步: 语义分析 & 生成中间代码
     LOG_DEBUG("Start generating intermediate code...");
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
@@ -116,11 +120,13 @@ int main(int argc, char *argv[])
     {
         LOG_DEBUG("Start optimizing intermediate code...");
         // TODO
-        std::vector<opt::Optimize> opts;
-
+        std::vector<std::unique_ptr<opt::Optimize>> opts;
+        opts.emplace_back(std::make_unique<opt::ConstExprOpt>());
         for (auto &opt : opts)
         {
-            opt.optimize(ir);
+            LOG_DEBUG("Optimizing with %s...", opt->get_name().c_str());
+            opt->optimize(ir);
+            LOG_DEBUG("Optimizing with %s done.", opt->get_name().c_str());
         }
         LOG_DEBUG("Optimizing intermediate code done.");
     }
@@ -132,5 +138,6 @@ int main(int argc, char *argv[])
     builder->output(output_file);
     LOG_DEBUG("Generating target code done.");
     delete program_stmt;
+    delete common::g_log;
     return 0;
 }

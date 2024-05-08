@@ -11,10 +11,6 @@
 
 namespace ir {
 
-// 常量
-constexpr unsigned kDefaultRealBitWidth = 64;
-constexpr unsigned kDefaultIntegerBitWidth = 32;
-
 // 工具函数
 std::shared_ptr<Type> build_basic_type(BasicType type, bool is_pointer) {
     switch (type) {
@@ -319,7 +315,7 @@ void IRGenerator::visit(NumberStmt &stmt) {
         val = std::make_shared<LiteralChar>(type, stmt.char_val);
     } else {
         type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth, false);
-        val = std::make_shared<LiteraltInt>(type, stmt.int_val);
+        val = std::make_shared<LiteralInt>(type, stmt.int_val);
     }
     std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(type, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back()); 
     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
@@ -389,7 +385,7 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
                 val = std::make_shared<LiteralChar>(type, num_stmt->char_val);
             } else {
                 type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth,false);
-                val = std::make_shared<LiteraltInt>(type, num_stmt->int_val);
+                val = std::make_shared<LiteralInt>(type, num_stmt->int_val);
             }
         } else if (value_stmt->type == ValueStmt::ValueType::Str) {
             type = std::make_shared<StringType>();
