@@ -3,6 +3,7 @@
 #include <iterator>
 #include <memory>
 #include <iostream>
+#include <stdlib.h>
 
 namespace ir {
 // 函数类型类相关函数实现
@@ -54,6 +55,14 @@ Instruction::Instruction(const std::string name, std::shared_ptr<Type> ty, OpID 
     : Value(ty, ValueID::Instruction, name), op_id_(id), num_ops_(num_ops), bb_(bb) {
         init();
 }
+
+std::string Instruction::op_to_string(OpID id) {
+    if (op2str_.find(id) == op2str_.end()) {
+        return "";
+    }
+    return op2str_[id];
+}
+
 void Instruction::init() {
     operands_.resize(num_ops_, std::weak_ptr<Value>()); // 此句不能删去！否则operands_为空时无法用set_operand设置操作数，而只能用push_back设置操作数！
     use_pos_.resize(num_ops_);
@@ -105,5 +114,28 @@ std::string BasicBlock::print() {
     }
     return s;
 }
+
+
+std::shared_ptr<ir::Literal> ir::Literal::make_literal(bool val) {
+    std::shared_ptr<Type> type;
+    type = std::make_shared<BooleanType>(false);
+    return std::make_shared<ir::LiteralBool>(type, val);
+}
+
+// 创建一个实数常量
+std::shared_ptr<ir::Literal> ir::Literal::make_literal(double val) {
+    std::string s = std::to_string(val);
+    std::shared_ptr<Type> type;
+    type = std::make_shared<RealType>(kDefaultRealBitWidth, false);
+    return std::make_shared<LiteralDouble>(type, val, s);
+}
+
+// 创建一个整数常量
+std::shared_ptr<ir::Literal> ir::Literal::make_literal(long val) {
+    std::shared_ptr<Type> type;
+    type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth, false);
+    return std::make_shared<LiteralInt>(type, val);
+}
+
 
 } // namespace ir

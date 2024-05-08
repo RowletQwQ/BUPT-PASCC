@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 namespace ir {
     class Module;
 } // namespace ir
@@ -20,6 +21,7 @@ public:
      * @details 接受中间代码，对其进行优化
      */
     virtual void optimize(ir::Module &program) = 0;
+    virtual std::string get_name() = 0;
 }; // class Optimize
 
 } // namespace opt
