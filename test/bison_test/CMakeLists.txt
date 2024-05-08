@@ -4,8 +4,8 @@ add_compile_options(-fsanitize=address)
 set(CMAKE_CXX_STANDARD 17)
 
 
-find_package(FLEX REQUIRED)
-find_package(BISON REQUIRED)
+# find_package(FLEX REQUIRED)
+# find_package(BISON REQUIRED)
 
 
 
@@ -30,22 +30,15 @@ set(LOG_SOURCE_FILES
     ../../src/common/log/log.cpp
 )
 
-set(FLEX_OUTPUTS
+set(YACC_OUTPUTS
     ../../src/parser/lex_pascal.cpp
-)
-
-set(BISON_OUTPUTS
     ../../src/parser/yacc_pascal.cpp
-)
-
-set(SETTING_SRC
-    ../../src/common/setting/settings.cpp
 )
 
 add_executable(BISON_TEST
     main.cpp
-    ${FLEX_OUTPUTS}
-    ${BISON_OUTPUTS}
+    ${YACC_OUTPUTS}
+
     ${AST_SOURCE_FILES}
     ${LOG_SOURCE_FILES}
     ${SETTING_SRC}
