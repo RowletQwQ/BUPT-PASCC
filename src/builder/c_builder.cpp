@@ -123,11 +123,11 @@ void CBuilder::build(ir::Module &program)
         //     out << "}\n";
         // }
         // 4.3 加入局部标识符
-        // 一上来先先加上代表函数的一个变量, 这个变量名字是双下划线
-        if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) { // 如果不是 procedure
-            std::string typeStr = func.lock()->func_type_.lock()->result_->print();
-            out << typeStr << " __;\n";
-        }
+        // // 一上来先先加上代表函数的一个变量, 这个变量名字是双下划线
+        // if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) { // 如果不是 procedure
+        //     std::string typeStr = func.lock()->func_type_.lock()->result_->print();
+        //     out << typeStr << " __;\n";
+        // }
 
         for (const auto &local : func.lock()->local_identifiers_)
         {

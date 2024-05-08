@@ -510,10 +510,21 @@ void IRGenerator::visit(LValStmt &stmt) {
     }
     assert (val != nullptr);
     if (stmt.array_index.size() == 0) { // 如果不是数组, 就说明是一个普通变量, 如 a、b 等
-        std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(val->type_, val, this->scope_.current_f_->basic_blocks_.back());
-        this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
-        inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
-        this->module_.all_instructions_.emplace_back(inst);
+        // 判断是不是函数，Pascal可以不用()直接进行函数调用
+        if (val->get_val_id() == Value::ValueID::Function) {
+            // 构建函数调用指令
+            std::shared_ptr<Function> func = std::static_pointer_cast<Function>(val);
+            std::vector<std::shared_ptr<Value>> args; // 参数为0
+            std::shared_ptr<CallInst> inst = std::make_shared<CallInst>(func, args, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+            inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+            this->module_.all_instructions_.emplace_back(inst);
+        } else {
+            std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(val->type_, val, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+            inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+            this->module_.all_instructions_.emplace_back(inst);
+        }
     } else {
         // 处理数组
         for (int i = 0; i < stmt.array_index.size(); i++) {
@@ -574,8 +585,23 @@ void IRGenerator::visit(AssignStmt &stmt) {
     this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     // 判断构造的 val 是不是一个函数名
     bool is_return = false;
-    if (val->op_id_ == Instruction::OpID::Null && val->operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
+    if (val->get_op_id() == Instruction::OpID::Call) {
         is_return = true;
+        if(!this->scope_.find(DefaultReturnName)) {
+            // 获取函数信息
+            std::shared_ptr<Function> func = std::static_pointer_cast<Function>(val->get_operand(0).lock());
+            // 获取返回值类型
+            auto ret_type = func->func_type_.lock()->result_;
+            auto id = std::make_shared<LocalIdentifier>(ret_type, DefaultReturnName, false, nullptr);
+            this->scope_.current_f_->add_local_identifier(id);
+            this->scope_.push(DefaultReturnName, id);
+        }
+        // 更改val
+        std::unique_ptr<LValStmt> lval = std::make_unique<LValStmt>();
+        lval->id = DefaultReturnName;
+        lval->accept(*this);
+        val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     }
 
     // 处理右值
@@ -750,7 +776,25 @@ void IRGenerator::visit(ReadFuncStmt &stmt) {
     std::vector<std::shared_ptr<Value>> args;
     for (const auto &lval : stmt.lval) {
         lval->accept(*this);
-        args.emplace_back(this->scope_.current_f_->basic_blocks_.back()->instructions_.back());
+        auto val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        if (val->get_op_id() == Instruction::OpID::Call) {
+            if(!this->scope_.find(DefaultReturnName)) {
+                // 获取函数信息
+                std::shared_ptr<Function> func = std::static_pointer_cast<Function>(val->get_operand(0).lock());
+                // 获取返回值类型
+                auto ret_type = func->func_type_.lock()->result_;
+                auto id = std::make_shared<LocalIdentifier>(ret_type, DefaultReturnName, false, nullptr);
+                this->scope_.current_f_->add_local_identifier(id);
+                this->scope_.push(DefaultReturnName, id);
+            }
+            // 更改val
+            std::unique_ptr<LValStmt> lval = std::make_unique<LValStmt>();
+            lval->id = DefaultReturnName;
+            lval->accept(*this);
+            val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+            this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
+        }
+        args.emplace_back(val);
     }
     this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(args.size()); // 弹出参数
     std::shared_ptr<ReadInst> inst = std::make_shared<ReadInst>(args, this->scope_.current_f_->basic_blocks_.back());

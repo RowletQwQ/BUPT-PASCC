@@ -4,6 +4,7 @@
 #include <iterator>
 #include <list>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -25,6 +26,7 @@ class Function;
 // 常量
 constexpr unsigned kDefaultRealBitWidth = 64;
 constexpr unsigned kDefaultIntegerBitWidth = 32;
+const char* const DefaultReturnName = "__"; // 默认返回值名称
 
 /**
  * @brief Use 类
@@ -810,7 +812,9 @@ public:
     virtual std::string print() override {
         // 如果发现存储的是一个函数, 那么左值就是函数名_
         if (operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
-            return "__ =" + operands_[1].lock()->print();
+            std::stringstream ss;
+            ss << DefaultReturnName << " = " << operands_[1].lock()->print();
+            return ss.str();
         } else if (operands_[0].lock()->type_->is_pointer_) {
             return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
         }
@@ -891,7 +895,7 @@ public:
         for (int i = 0; i < operands_.size(); i++) {
             ans = ans + "&" + operands_[i].lock()->print();
             if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
-                ans = "__";
+                ans = DefaultReturnName;
             }
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
