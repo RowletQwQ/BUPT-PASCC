@@ -15,6 +15,7 @@
 #include "ast/stmt.hpp"
 #include "ir/ir_gen.hpp"
 #include "common/setting/settings.hpp"
+#include "common/thpool/thpool.hpp"
 #include "parser/yacc_pascal.hpp"
 #include "builder/c_builder.hpp"
 
@@ -56,7 +57,7 @@ void init_env()
         //     }
         // }
     }
-#ifndef RELEASE
+#ifndef ONLINE_JUDGE
     switch (G_SETTINGS.log_level)
     {
         case 0:
@@ -79,6 +80,7 @@ void init_env()
             break;
     }
 #endif
+    common::g_thpool = new common::ThreadPool(G_SETTINGS.thread_num);
     
 }
 
@@ -88,6 +90,10 @@ int main(int argc, char *argv[])
     G_SETTINGS.parse_args(argc, argv);
     // 初始化环境
     init_env();
+    // 管理线程池
+    std::unique_ptr<common::ThreadPool> thpool(common::g_thpool);
+    // 管理日志
+    std::unique_ptr<common::Log> log(common::g_log);
     // 从输入文件中读取代码
     std::ifstream input_file(G_SETTINGS.input_file);
     if (!input_file.is_open())
@@ -116,6 +122,7 @@ int main(int argc, char *argv[])
     LOG_DEBUG("Start generating intermediate code...");
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
     visitor->visit(*program_stmt);
+    std::unique_ptr<ProgramStmt> program_stmt_ptr(program_stmt);
     //visitor->show_result();
     ir::Module ir = visitor->get_ir();
     LOG_DEBUG("Generating intermediate code done.");
@@ -141,7 +148,6 @@ int main(int argc, char *argv[])
     builder->build(ir);
     builder->output(output_file);
     LOG_DEBUG("Generating target code done.");
-    delete program_stmt;
-    delete common::g_log;
+    
     return 0;
 }

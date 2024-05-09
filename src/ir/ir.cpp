@@ -1,4 +1,5 @@
 #include "ir/ir.hpp"
+#include "ir/visitor.hpp"
 #include <deque>
 #include <iterator>
 #include <memory>
@@ -137,6 +138,100 @@ std::shared_ptr<ir::Literal> ir::Literal::make_literal(long val) {
     return std::make_shared<LiteralInt>(type, val);
 }
 
+void GlobalIdentifier::accept(IrVisitor &visitor) {
+    visitor.visit(this);
+}
 
+void BinaryInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void UnaryInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void CompareInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void StoreInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LoadInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ReadInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void WriteInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void CallInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ReturnInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void BreakInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ContinueInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ContinueIncInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void BranchInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void Module::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void BasicBlock::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void Function::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralBool::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralInt::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralDouble::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralChar::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralString::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralArray::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralFloat::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
 
 } // namespace ir

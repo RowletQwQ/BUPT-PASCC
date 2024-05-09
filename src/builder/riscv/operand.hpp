@@ -16,7 +16,8 @@ public:
         Function, // 函数
         Memory, // 内存
         Const, // 常量
-        Block // 基本块
+        Block, // 基本块
+        Global, // 全局变量
     };
     explicit Operand(OpType type) : type_(type) {}
     ~Operand() = default;
@@ -101,6 +102,7 @@ public:
         Float, 
         Double, 
         ASCIIZ, // 字符串
+        ARRAY, // 数组
     };
     GlobalConst(int val, const std::string &name) 
         : Operand(OpType::Const), name_(name) , type_(Word), i32_(val){}
@@ -112,7 +114,8 @@ public:
         : Operand(OpType::Const), name_(name), type_(Double), f64_(val){}
     GlobalConst(std::string &val, const std::string &name)
         : Operand(OpType::Const), name_(name), type_(ASCIIZ), str_val_(val){}
-
+    GlobalConst(std::vector<std::shared_ptr<GlobalConst>> &val, const std::string &name)
+        : Operand(OpType::Const), name_(name), type_(Array), array_val_(val){}
     union {
         int i32_;
         long i64_;
@@ -121,26 +124,39 @@ public:
     };
     std::string name_;
     std::string str_val_;
+    std::vector<std::shared_ptr<GlobalConst>> array_val_;
     ConstType type_;
+    std::string print() const override;
+    std::vector<std::shared_ptr<GlobalConst>> unpackArray() const;
+};
+
+// 全局变量(未初始化)
+class GlobalId : public Operand {
+public:
+    std::string name_;
+    int size_;
+    GlobalId(const std::string &name, int size) 
+        : Operand(OpType::Global), name_(name), size_(size) {}
     std::string print() const override;
 };
 
-class Function : public Label {
-public:
-    int num_args_; // 参数个数,根据参数个数决定弹栈数
-    OpType ret_type_; // 返回值类型
-    std::vector<std::shared_ptr<Operand>> args_; // 参数列表
-    Function(const std::string &name, int num_args, OpType ret_type);
-    void setArgs(int index, std::shared_ptr<Operand> op);
-};
 
-// 基本块
-class BasicBlock : public Label {
-public:
-    BasicBlock(const std::string &name, std::weak_ptr<riscv::Function> parent) 
-    : Label(OpType::Block, parent.lock()->name_ + "_" + name), parent_(parent) {}
-    std::weak_ptr<riscv::Function> parent_; // 所属函数
-};
+// class Function : public Label {
+// public:
+//     int num_args_; // 参数个数,根据参数个数决定弹栈数
+//     OpType ret_type_; // 返回值类型
+//     std::vector<std::shared_ptr<Operand>> args_; // 参数列表
+//     Function(const std::string &name, int num_args, OpType ret_type);
+//     void setArgs(int index, std::shared_ptr<Operand> op);
+// };
+
+// // 基本块
+// class BasicBlock : public Label {
+// public:
+//     BasicBlock(const std::string &name, std::weak_ptr<riscv::Function> parent) 
+//     : Label(OpType::Block, parent.lock()->name_ + "_" + name), parent_(parent) {}
+//     std::weak_ptr<riscv::Function> parent_; // 所属函数
+// };
 
 
 // class Module {

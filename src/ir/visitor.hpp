@@ -1,5 +1,5 @@
 #pragma once
-#include "ir/ir.hpp"
+#include "ir.hpp"
 namespace ir {
 
 class BinaryInst;
@@ -18,6 +18,14 @@ class BranchInst;
 class Module;
 class BasicBlock;
 class Function;
+class GlobalIdentifier;
+class LiteralDouble;
+class LiteralInt;
+class LiteralString;
+class LiteralChar;
+class LiteralBool;
+class LiteralArray;
+class LiteralFloat;
 
 class IrVisitor {
 public:
@@ -37,6 +45,14 @@ public:
     virtual void visit(const Module* module) = 0;
     virtual void visit(const BasicBlock* bb) = 0;
     virtual void visit(const Function* func) = 0;
+    virtual void visit(const GlobalIdentifier* global) = 0;
+    virtual void visit(const LiteralDouble* literal) = 0;
+    virtual void visit(const LiteralInt* literal) = 0;
+    virtual void visit(const LiteralString* literal) = 0;
+    virtual void visit(const LiteralChar* literal) = 0;
+    virtual void visit(const LiteralBool* literal) = 0;
+    virtual void visit(const LiteralArray* literal) = 0;
+    virtual void visit(const LiteralFloat* literal) = 0;
 };
 
 } // namespace ir

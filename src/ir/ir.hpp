@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ir/visitor.hpp"
 #include <cstddef>
 #include <iterator>
 #include <list>
@@ -23,6 +22,7 @@ class Instruction;
 class Module;
 class BasicBlock;
 class Function;
+class IrVisitor;
 
 // 常量
 constexpr unsigned kDefaultRealBitWidth = 32;
@@ -64,6 +64,7 @@ public:
     virtual std::string placeholder() { return "";}
     virtual bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
     virtual TID get_tid() const { return tid_; }
+    virtual size_t get_size() = 0;
     TID tid_;
     bool is_pointer_;
 };
@@ -76,6 +77,7 @@ public:
     explicit VoidType() : Type(Type::VoidTID, false) {}
     virtual std::string print() override { return "void"; }
     virtual std::string placeholder() override { return ""; }
+    virtual size_t get_size() override { return 0; }
 };
 
 /**
@@ -92,6 +94,7 @@ public:
     virtual std::string placeholder() override {
         return num_bits_ == 32 ? "%d" : "%lld";
     }
+    virtual size_t get_size() override { return num_bits_ / 8; }
 };
 
 /**
@@ -108,6 +111,7 @@ public:
     virtual std::string placeholder() override {
         return num_bits_ == 32 ? "%f" : "%lf";
     }
+    virtual size_t get_size() override { return num_bits_ / 8; }
 };
 
 /**
@@ -119,6 +123,7 @@ public:
     explicit BooleanType(bool is_pointer) : Type(Type::BooleanTID, is_pointer) {}
     virtual std::string print() override { return "int"; } // c 语言中没有 bool 类型
     virtual std::string placeholder() override { return "%d"; }
+    virtual size_t get_size() override { return 1; }
 };
 
 /**
@@ -130,6 +135,7 @@ public:
     explicit CharType(bool is_pointer) : Type(Type::CharTID, is_pointer) {}
     virtual std::string print() override { return "char"; }
     virtual std::string placeholder() override { return "%c"; }
+    virtual size_t get_size() override { return 1; }
 };
 
 /**
@@ -141,6 +147,7 @@ public:
     explicit StringType() : Type(Type::StringTID, false) {}
     virtual std::string print() override { return "const char *"; }
     virtual std::string placeholder() override { return "%s"; }
+    virtual size_t get_size() override { return 8; } // 指针大小
 };
 
 /**
@@ -159,6 +166,7 @@ public:
         return type_str;
     }
     virtual std::string placeholder() override { return ""; }
+    virtual size_t get_size() override { return elem_type_->get_size() * dims_elem_num_.back(); }
 
     std::shared_ptr<Type> elem_type_; // 元素类型
     std::vector<unsigned> dims_elem_num_; // 数组各维度元素数量
@@ -268,8 +276,9 @@ public:
 class Literal : public Value {
 public:
     Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, ValueID::Literal, name) {}
-    virtual long get_int() = 0;
-    virtual double get_real() = 0;
+    virtual long get_int() const = 0;
+    virtual double get_real() const  = 0;
+    virtual void accept(IrVisitor &visitor) = 0;
     static std::shared_ptr<ir::Literal> make_literal(bool val);
     static std::shared_ptr<ir::Literal> make_literal(long val);
     static std::shared_ptr<ir::Literal> make_literal(double val);
@@ -284,8 +293,9 @@ class LiteralInt : public Literal {
 public:
     LiteralInt(std::shared_ptr<Type> type, int val) : Literal(type), val_(val) {}
     virtual std::string print() override { return std::to_string(val_); }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
     int val_;
 };
 
@@ -299,8 +309,9 @@ public:
     LiteralLong(std::shared_ptr<Type> type, long long val) : Literal(type), val_(val) {}
     long long val_;
     virtual std::string print() override { return std::to_string(val_); }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -312,8 +323,9 @@ public:
     LiteralFloat(std::shared_ptr<Type> type, float val) : Literal(type), val_(val) {}
     float val_;
     virtual std::string print() override { return std::to_string(val_); }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -326,8 +338,9 @@ public:
     double val_;
     std::string str_;
     virtual std::string print() override { return str_; }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -339,8 +352,9 @@ public:
     LiteralBool(std::shared_ptr<Type> type, bool val) : Literal(type), val_(val) {}
     bool val_;
     virtual std::string print() override { return val_ ? "true" : "false"; }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -352,8 +366,9 @@ public:
     LiteralChar(std::shared_ptr<Type> type, char val) : Literal(type), val_(val) {}
     char val_;
     virtual std::string print() override { return "'" + std::string(1, val_) + "'";}
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -365,8 +380,9 @@ public:
     LiteralString(std::shared_ptr<Type> type, const std::string val) : Literal(type), val_(val) {}
     std::string val_;
     virtual std::string print() override { return "\"" + val_ + "\"";}
-    virtual long get_int() override { throw "string can't be converted to integer"; }
-    virtual double get_real() override { throw "string can't be converted to real"; }
+    virtual long get_int() const override { throw "string can't be converted to integer"; }
+    virtual double get_real() const  override { throw "string can't be converted to real"; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -390,9 +406,10 @@ public:
         ret = ret + "}";
         return ret;
     }
-    virtual long get_int() override { throw "array can't be converted to integer"; }
-    virtual double get_real() override { throw "array can't be converted to real"; }
+    virtual long get_int() const override { throw "array can't be converted to integer"; }
+    virtual double get_real() const  override { throw "array can't be converted to real"; }
     std::vector<std::shared_ptr<Literal> > const_array;
+    void accept(IrVisitor &visitor) override;
 };
 
 // ----------------------------------------------------------------GlobalIdentifier---------------------------------------------------------------
@@ -412,7 +429,7 @@ public:
     virtual std::string print() override {
         return name_;
     }
-
+    void accept(IrVisitor &visitor);
     bool is_const_; // 是否为常量
     std::shared_ptr<Literal> init_val_; // 初始值
 };
@@ -474,9 +491,7 @@ public:
         return ret;
     }
 
-    void accept(IrVisitor &visitor) {
-        visitor.visit(this);
-    }
+    void accept(IrVisitor &visitor);
     
     /**
      * @brief 添加基本块
@@ -524,9 +539,7 @@ public:
 
     void pop_back_inst(int n) { instructions_.erase(instructions_.end() - n, instructions_.end()); }
 
-    void accept(IrVisitor &visitor) {
-        visitor.visit(this);
-    }
+    void accept(IrVisitor &visitor);
 
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
@@ -685,9 +698,7 @@ public:
     virtual std::string print() override {
         return operands_[0].lock()->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1].lock()->print();
     }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 
     /**
      * @brief 用来判断两个类型是否可以进行计算
@@ -747,9 +758,7 @@ public:
         }
     }
 
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
     // void set_operand(unsigned i, std::shared_ptr<Value> val) {
     //     operands_[i] = val;
     // }
@@ -788,9 +797,7 @@ public:
     }
 
     static bool can_be_compared(const Type *t1, const Type *t2);
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
     // void set_operand(unsigned i, std::shared_ptr<Value> val) {
     //     operands_[i] = val;
     // }
@@ -841,9 +848,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -885,9 +890,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -931,9 +934,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -971,9 +972,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -1023,9 +1022,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -1055,9 +1052,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 class BreakInst : public Instruction {
@@ -1082,9 +1077,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 class ContinueInst : public Instruction {
@@ -1109,9 +1102,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 class ContinueIncInst : public Instruction {
@@ -1138,9 +1129,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 // 分支跳转指令
@@ -1188,9 +1177,7 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
-    virtual void accept(IrVisitor &visitor) override {
-        visitor.visit(this);
-    }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 
@@ -1231,9 +1218,7 @@ public:
     */
     void add_instruction(std::shared_ptr<Instruction> i) { all_instructions_.emplace_back(i); }
 
-    void accept(IrVisitor &visitor) {
-        visitor.visit(this);
-    }
+    void accept(IrVisitor &visitor);
 
     std::vector<std::shared_ptr<GlobalIdentifier> > global_identifiers_; // 全局标识符, 包括全局变量和常量
     std::vector<std::shared_ptr<Function> > functions_; // 函数

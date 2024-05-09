@@ -16,7 +16,7 @@ Settings &Settings::get_instance()
 void Settings::parse_args(int argc, char *argv[])
 {
     int opt;
-    while((opt = getopt(argc,argv,"d:i:o:h:O")) != -1)
+    while((opt = getopt(argc,argv,"d:i:o:h:j:O")) != -1)
     {
         switch(opt)
         {
@@ -32,6 +32,9 @@ void Settings::parse_args(int argc, char *argv[])
             case 'h':
                 say_help();
                 exit(0);
+                break;
+            case 'j'
+                thread_num = atoi(optarg);
                 break;
             case 'O':
                 opt_level = 1;

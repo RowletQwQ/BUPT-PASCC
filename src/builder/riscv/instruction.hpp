@@ -1,5 +1,6 @@
 #pragma once
 
+#include "operand.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -7,8 +8,6 @@ namespace builder {
 
 namespace riscv {
 
-class Operand;
-class BasicBlock;
 class Instruction {
 public:
     enum InstrType {
@@ -234,21 +233,28 @@ public:
     // Instruction(InstrType type, int op_nums, std::shared_ptr<BasicBlock> parent);
     virtual void setOperand(int index, std::shared_ptr<Operand> operand);
     virtual std::string print() const = 0;
-
-    InstrType type_; // 指令类型
+    int getOpNums() const { return op_nums_; }
+    int op_nums_;
+    InstrType type_; // 指令类型    
     std::shared_ptr<Operand> dest_; // 指令的目的操作数
     std::vector<std::shared_ptr<Operand>> operands_; // 指令的操作数
     // std::weak_ptr<BasicBlock> parent_; // 指令所在的基本块
 
 };
 
+
+class NoOperandInst : public Instruction {
+public:
+    NoOperandInst(InstrType type);
+    std::string print() const override;
+};
 // 以下的一元，二元，三元指令的元不包括dest
 // 同时默认指令的第一个操作数是dest
 // 如 add rd, rs1, rs2 算二元指令
 
 class UnaryInst : public Instruction {
 public:
-    UnaryInst(InstrType type, std::shared_ptr<Operand> src);
+    UnaryInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> src);
     std::string print() const override;
 };
 
