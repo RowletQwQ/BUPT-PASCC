@@ -15,6 +15,7 @@ public:
         Register, // 寄存器
         Function, // 函数
         Memory, // 内存
+        Const, // 常量
         Block // 基本块
     };
     explicit Operand(OpType type) : type_(type) {}
@@ -32,18 +33,21 @@ public:
 class Register : public Operand {
 public:
     enum RegType {
-        Int32, // 32位整型
-        Int64, // 64位整型
-        Float32, // 32位浮点
-        Float64, // 64位浮点
-        Stack, // 栈专用
-        Zero // 零寄存器
+        Zero, // 零寄存器, zero
+        Return, // 返回地址寄存器，ra
+        Stack, // 栈专用, sp
+        Thread, // 线程指针, gp
+        Temp, // 临时寄存器，t0-t6
+        Frame, // 帧指针，s0
+        Saved, // 保存寄存器，s1-s11
+        IntArg, // 整型参数寄存器，a0-a7, 需要注意的是,a0兼顾返回值/函数的第一个参数
+        FloatArg, // 浮点参数寄存器，fa0-fa7
+        Float // 浮点寄存器
     };
 
     RegType reg_type_;
     int reg_id_; // 寄存器编号
-    Register(RegType reg_type, int reg_id) : Operand(Operand::Register), 
-            reg_type_(reg_type), reg_id_(reg_id) {}
+    Register(RegType reg_type, int reg_id = -1);
     std::string print() const override;
 };
 
@@ -75,10 +79,12 @@ class Memory : public Operand {
 public:
     std::shared_ptr<riscv::Register> base_; // 基地址寄存器
     std::shared_ptr<riscv::Immediate> offset_; // 偏移寄存器
-    Memory(std::shared_ptr<riscv::Register> base, std::shared_ptr<riscv::Immediate> offset) : Operand(Operand::Memory), base_(base), offset_(offset) {}
+    Memory(std::shared_ptr<riscv::Register> base, std::shared_ptr<riscv::Immediate> offset) 
+        : Operand(Operand::Memory), base_(base), offset_(offset) {}
+    std::string print() const override;
 };
 
-// 一个label可能是基本块，也可能是函数，更可能是全局变量
+// 一个label可能是基本块，也可能是函数
 class Label : public Operand {
 public:
     std::string name_;
@@ -86,41 +92,63 @@ public:
     std::string print() const override;
 };
 
-// 全局变量
-// 全局变量可能是个立即数，也可能是个可更改的数（存在内存里）
-class GlobalVariable : public Label {
+// 全局常量
+class GlobalConst : public Operand {
 public:
-    GlobalVariable(OpType type, const std::string &name) : Label(type, name) {}
+    enum ConstType {
+        Word,
+        DWord,
+        Float, 
+        Double, 
+        ASCIIZ, // 字符串
+    };
+    GlobalConst(int val, const std::string &name) 
+        : Operand(OpType::Const), name_(name) , type_(Word), i32_(val){}
+    GlobalConst(long val, const std::string &name) 
+        : Operand(OpType::Const), name_(name) , type_(DWord), i64_(val){}
+    GlobalConst(float val, const std::string &name)
+        : Operand(OpType::Const), name_(name), type_(Float), f32_(val){}
+    GlobalConst(double val, const std::string &name)
+        : Operand(OpType::Const), name_(name), type_(Double), f64_(val){}
+    GlobalConst(std::string &val, const std::string &name)
+        : Operand(OpType::Const), name_(name), type_(ASCIIZ), str_val_(val){}
+
+    union {
+        int i32_;
+        long i64_;
+        float f32_;
+        double f64_;
+    };
+    std::string name_;
+    std::string str_val_;
+    ConstType type_;
     std::string print() const override;
 };
 
 class Function : public Label {
 public:
-    
     int num_args_; // 参数个数,根据参数个数决定弹栈数
     OpType ret_type_; // 返回值类型
     std::vector<std::shared_ptr<Operand>> args_; // 参数列表
     Function(const std::string &name, int num_args, OpType ret_type);
-
     void setArgs(int index, std::shared_ptr<Operand> op);
 };
 
 // 基本块
 class BasicBlock : public Label {
 public:
-    BasicBlock(const std::string &name, std::weak_ptr<riscv::Function> parent) : Label(OpType::Block, name), parent_(parent) {}
-    std::string print() const override;
+    BasicBlock(const std::string &name, std::weak_ptr<riscv::Function> parent) 
+    : Label(OpType::Block, parent.lock()->name_ + "_" + name), parent_(parent) {}
     std::weak_ptr<riscv::Function> parent_; // 所属函数
 };
 
 
-class Module {
-public:
-    std::vector<std::shared_ptr<Function>> functions_;
-    std::vector<std::shared_ptr<GlobalVariable>> global_vars_;
-    std::vector<std::shared_ptr<BasicBlock>> basic_blocks_;
-    std::string print() const;
-};
+// class Module {
+// public:
+//     std::vector<std::shared_ptr<Function>> functions_;
+//     std::vector<std::shared_ptr<GlobalConst>> global_vars_;
+//     std::vector<std::shared_ptr<BasicBlock>> basic_blocks_;
+// };
 
 
 } // namespace riscv

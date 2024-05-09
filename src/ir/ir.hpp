@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ir/visitor.hpp"
 #include <cstddef>
 #include <iterator>
 #include <list>
@@ -473,7 +474,10 @@ public:
         return ret;
     }
 
-
+    void accept(IrVisitor &visitor) {
+        visitor.visit(this);
+    }
+    
     /**
      * @brief 添加基本块
      * @param bb 基本块
@@ -520,6 +524,9 @@ public:
 
     void pop_back_inst(int n) { instructions_.erase(instructions_.end() - n, instructions_.end()); }
 
+    void accept(IrVisitor &visitor) {
+        visitor.visit(this);
+    }
 
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
@@ -585,6 +592,7 @@ public:
         Write
     };
 
+    virtual void accept(IrVisitor &visitor) = 0;
     static std::map<Instruction::OpID, std::string> op2str_;
     explicit Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, 
         std::weak_ptr<BasicBlock> bb, bool before = false);
@@ -677,6 +685,9 @@ public:
     virtual std::string print() override {
         return operands_[0].lock()->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1].lock()->print();
     }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 
     /**
      * @brief 用来判断两个类型是否可以进行计算
@@ -736,7 +747,9 @@ public:
         }
     }
 
-
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
     // void set_operand(unsigned i, std::shared_ptr<Value> val) {
     //     operands_[i] = val;
     // }
@@ -775,7 +788,9 @@ public:
     }
 
     static bool can_be_compared(const Type *t1, const Type *t2);
-
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
     // void set_operand(unsigned i, std::shared_ptr<Value> val) {
     //     operands_[i] = val;
     // }
@@ -826,6 +841,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 /**
@@ -867,6 +885,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 /**
@@ -910,6 +931,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 /**
@@ -947,6 +971,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 /**
@@ -996,6 +1023,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 /**
@@ -1025,6 +1055,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 class BreakInst : public Instruction {
@@ -1049,6 +1082,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 class ContinueInst : public Instruction {
@@ -1073,6 +1109,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 class ContinueIncInst : public Instruction {
@@ -1099,6 +1138,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 // 分支跳转指令
@@ -1146,6 +1188,9 @@ public:
     // std::weak_ptr<Value> get_operand(unsigned i) override {
     //     return operands_[i];
     // }
+    virtual void accept(IrVisitor &visitor) override {
+        visitor.visit(this);
+    }
 };
 
 
@@ -1185,6 +1230,10 @@ public:
      * @param i 指令
     */
     void add_instruction(std::shared_ptr<Instruction> i) { all_instructions_.emplace_back(i); }
+
+    void accept(IrVisitor &visitor) {
+        visitor.visit(this);
+    }
 
     std::vector<std::shared_ptr<GlobalIdentifier> > global_identifiers_; // 全局标识符, 包括全局变量和常量
     std::vector<std::shared_ptr<Function> > functions_; // 函数
