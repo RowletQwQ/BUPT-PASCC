@@ -83,17 +83,17 @@ public:
 // 主要便于对内存的管理，故单独拿出来
 class Memory : public Operand {
 public:
-    enum MemType {
-        Int, // 整型
-        Float, // 浮点型
-    };
+    // enum MemType {
+    //     Int, // 整型
+    //     Float, // 浮点型
+    // };
     std::shared_ptr<riscv::Register> base_; // 基地址寄存器
     std::shared_ptr<riscv::Immediate> offset_; // 偏移寄存器
-    MemType type_;
+    // MemType type_;
     int size_; // 每个元素的大小
     Memory(std::shared_ptr<riscv::Register> base, std::shared_ptr<riscv::Immediate> offset, 
-            MemType type, int size, int count = 1) 
-        : Operand(Operand::Memory), base_(base), offset_(offset), type_(type) {}
+        int size, int count = 1) 
+        : Operand(Operand::Memory), base_(base), offset_(offset) {}
     std::string print() const override;
 };
 

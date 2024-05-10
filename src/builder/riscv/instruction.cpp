@@ -115,6 +115,8 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
     {Instruction::FCVT_S_LU, "fcvt_s_lu"},
     {Instruction::FCVT_D_L, "fcvt_d_l"},
     {Instruction::FCVT_D_LU, "fcvt_d_lu"},
+    {Instruction::FNEG_S, "fneg_s"},
+    {Instruction::FNEG_D, "fneg_d"},
     {Instruction::FADD_S, "fadd_s"},
     {Instruction::FSUB_S, "fsub_s"},
     {Instruction::FMUL_S, "fmul_s"},
@@ -172,7 +174,7 @@ UnaryInst::UnaryInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_
 : Instruction(type, 1)
 {
     // 进行指令检查
-    if ((type >= FMV_W_X && type <= FMV_X_D)|| (type >= FCVT_S_W && type <= FCVT_D_LU)) {
+    if ((type >= FMV_W_X && type <= FMV_X_D)|| (type >= FCVT_S_W && type <= FNEG_D)) {
         if (dest->type_ == Operand::Register && op1->type_ == Operand::Register) {
             type_ = type;
             operands_[0] = op1;

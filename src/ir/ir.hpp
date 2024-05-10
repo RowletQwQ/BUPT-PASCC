@@ -595,7 +595,9 @@ public:
         LogicalNot,
         Bracket,
         Null, // 这个一元运算就是当做本身
+        Minus, // -a
         Inc, // ++a
+        
         
 
         // Compare Operation

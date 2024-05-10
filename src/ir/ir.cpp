@@ -34,6 +34,7 @@ std::map<Instruction::OpID, std::string> Instruction::op2str_ = {
     {Instruction::OpID::LogicalNot, "LogicalNot"},
     {Instruction::OpID::Bracket, "()"},
     {Instruction::OpID::Null, ""},
+    {Instruction::OpID::Minus, "-"},
     {Instruction::OpID::Inc, "++"},
     {Instruction::OpID::Eq, "=="},
     {Instruction::OpID::Ne, "!="},

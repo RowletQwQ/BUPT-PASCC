@@ -81,7 +81,7 @@ Instruction::OpID build_op_id(MulExprStmt::MulExprType type) {
 Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
     switch (type) {
         case UnaryExprStmt::UnaryExprType::Minus:
-            return Instruction::OpID::Sub;
+            return Instruction::OpID::Minus;
         case UnaryExprStmt::UnaryExprType::Not:
             return Instruction::OpID::Not;
         default:

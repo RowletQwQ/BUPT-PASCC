@@ -21,6 +21,7 @@ thread_local std::shared_ptr<Function> cur_func_;
 thread_local std::vector<std::shared_ptr<GlobalConst>> tmp_consts_;
 thread_local std::shared_ptr<Register> last_result_;
 thread_local Scope current_scope_;
+thread_local bool is_under_call_ = false;
 
 
 static inline int UpperAlign(int size, int align) {
@@ -31,20 +32,19 @@ static inline int UpperAlign(int size, int align) {
 static std::shared_ptr<Memory> gen_sp_mem(int offset, bool is_real, int size, int count = 1) {
     auto sp = std::make_shared<Register>(Register::Stack);
     auto imm = std::make_shared<Immediate>(offset);
-    Memory::MemType type = is_real ? Memory::Float : Memory::Int;
-    return std::make_shared<Memory>(sp, imm, type, size, count);
+    return std::make_shared<Memory>(sp, imm, size, count);
 }
 
-static std::shared_ptr<Operand> get_arg_pos(int index, bool is_real) {
+static std::shared_ptr<Operand> get_arg_pos(int index) {
     if(index >= 8) {
         // 超过8个参数，需要通过栈传递
         auto sp = std::make_shared<Register>(Register::Frame, 0);
-        // +8 是因为要跳过上一个函数的返回地址
-        auto imm = std::make_shared<Immediate>(8 + index * 8);
-        return std::make_shared<Memory>(sp, imm, is_real ? Memory::Float : Memory::Int, 8);
+        // +16 是因为要跳过上一个函数的返回地址 + s0
+        auto imm = std::make_shared<Immediate>(16 + index * 8);
+        return std::make_shared<Memory>(sp, imm, 8);
     } 
 
-    return std::make_shared<Register>((is_real) ? Register::FloatArg : Register::IntArg, index);  
+    return std::make_shared<Register>(Register::IntArg, index);  
 }
 
 static Scope::PointerType make_pointer_type(std::shared_ptr<ir::Type> type) {
@@ -143,27 +143,164 @@ void Scope::free_tmp_reg(std::shared_ptr<Register> reg) {
     reg_used_[reg->getUniqueId()] = false;
 }
 
-int64_t get_bit_pattern(double val) {
+static int64_t get_bit_pattern(double val) {
     int64_t res;
     memcpy(&res, &val, sizeof(double));
     return res;
 }
 
-int32_t get_bit_pattern(float val) {
-    int32_t res;
-    memcpy(&res, &val, sizeof(float));
-    return res;
+// static int32_t get_bit_pattern(float val) {
+//     int32_t res;
+//     memcpy(&res, &val, sizeof(float));
+//     return res;
+// }
+
+
+static std::shared_ptr<Instruction> store_to_stack(std::shared_ptr<Register> reg, int offset) {
+    auto sp = std::make_shared<Register>(Register::Stack);
+    auto imm = std::make_shared<Immediate>(offset);
+    return std::make_shared<StoreInst>(Instruction::SD, reg, sp, imm);
 }
 
+static Instruction::InstrType get_arith_type(ir::Instruction::OpID id, std::shared_ptr<ir::Type> type) 
+{
+    // 先判断是否是浮点数
+    static std::map<ir::Instruction::OpID, Instruction::InstrType> float32_map = 
+    {
+        // Binary Operation
+        {ir::Instruction::Add, Instruction::FADD_S},
+        {ir::Instruction::Sub, Instruction::FSUB_S},
+        {ir::Instruction::Mul, Instruction::FMUL_S},
+        {ir::Instruction::Div, Instruction::FDIV_S},
+    };
+
+    static std::map<ir::Instruction::OpID, Instruction::InstrType> float64_map = 
+    {
+        // Binary Operation
+        {ir::Instruction::Add, Instruction::FADD_D},
+        {ir::Instruction::Sub, Instruction::FSUB_D},
+        {ir::Instruction::Mul, Instruction::FMUL_D},
+        {ir::Instruction::Div, Instruction::FDIV_D},
+    };
+    
+    static std::map<ir::Instruction::OpID, Instruction::InstrType> int32_map = 
+    {
+        // Binary Operation
+        {ir::Instruction::Add, Instruction::ADD},
+        {ir::Instruction::Sub, Instruction::SUB},
+        {ir::Instruction::Mul, Instruction::MUL},
+        {ir::Instruction::Div, Instruction::DIV},
+        {ir::Instruction::Mod, Instruction::REM},
+        {ir::Instruction::And, Instruction::AND},
+        {ir::Instruction::AndThen, Instruction::AND},
+        {ir::Instruction::Or, Instruction::OR},
+        {ir::Instruction::OrElse, Instruction::OR},
+    };
+
+    static std::map<ir::Instruction::OpID, Instruction::InstrType> int64_map = 
+    {
+        // Binary Operation
+        {ir::Instruction::Add, Instruction::ADD},
+        {ir::Instruction::Sub, Instruction::SUB},
+        {ir::Instruction::Mul, Instruction::MUL},
+        {ir::Instruction::Div, Instruction::DIV},
+        {ir::Instruction::Mod, Instruction::REM},
+        {ir::Instruction::And, Instruction::AND},
+        {ir::Instruction::AndThen, Instruction::AND},
+        {ir::Instruction::Or, Instruction::OR},
+        {ir::Instruction::OrElse, Instruction::OR},
+    };
+    if(type->get_tid() == ir::Type::RealTID) {
+        if(type->get_size() == 4) {
+            return float32_map[id];
+        } else {
+            return float64_map[id];
+        }
+    } else if (type->get_tid() == ir::Type::IntegerTID){
+        if (type->get_size() == 4) {
+            return int32_map[id];
+        } else {
+            return int64_map[id];
+        }
+    }
+    LOG_FATAL("Unknown arith result type %s", type->print().c_str());
+    return Instruction::NOP;
+}
+
+static void make_unary_inst
+(ir::Instruction::OpID id, std::shared_ptr<ir::Type> type, std::shared_ptr<Register> reg)
+{
+    // 同理, RISC-V中没有完整的一元运算符支持，此处需要更多转换
+    // 最后的结果一定保存在reg中
+    // TODO
+}
+
+static void make_cmp_inst
+(ir::Instruction::OpID id, std::shared_ptr<ir::Type> type, std::shared_ptr<Register> reg1, std::shared_ptr<Register> reg2)
+{
+    // RISC-V中的比较指令集并不完善，故需要转换
+    // 最后的结果一定保存在reg1中
+    // TODO
+}
 
 void RiscvBuilder::visit(const ir::BinaryInst* inst) {
-
+    // 先处理操作数
+    auto op1 = inst->operands_[0].lock();
+    if(op1->is_inst()) {
+        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
+        inst1->accept(*this);
+    } else if (op1->is_literal()) {
+        auto literal = std::static_pointer_cast<ir::Literal>(op1);
+        literal->accept(*this);
+    }
+    auto reg1 = last_result_;
+    auto op2 = inst->operands_[1].lock();
+    if(op2->is_inst()) {
+        auto inst2 = std::static_pointer_cast<ir::Instruction>(op2);
+        inst2->accept(*this);
+    } else if (op2->is_literal()) {
+        auto literal = std::static_pointer_cast<ir::Literal>(op2);
+        literal->accept(*this);
+    }
+    auto type = get_arith_type(inst->op_id_, inst->type_);
+    auto ins = std::make_shared<BinaryInst>(type, last_result_, reg1, last_result_);
+    cur_bb_->insts_.emplace_back(ins);
+    current_scope_.free_tmp_reg(reg1);
 }
 void RiscvBuilder::visit(const ir::UnaryInst* inst) {
-
+    // 先处理操作数
+    auto op1 = inst->operands_[0].lock();
+    if(op1->is_inst()) {
+        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
+        inst1->accept(*this);
+    } else if (op1->is_literal()) {
+        auto literal = std::static_pointer_cast<ir::Literal>(op1);
+        literal->accept(*this);
+    }
+    make_unary_inst(inst->op_id_, inst->type_, last_result_);
 }
 void RiscvBuilder::visit(const ir::CompareInst* inst) {
-
+    // 先处理操作数
+    auto op1 = inst->operands_[0].lock();
+    if(op1->is_inst()) {
+        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
+        inst1->accept(*this);
+    } else if (op1->is_literal()) {
+        auto literal = std::static_pointer_cast<ir::Literal>(op1);
+        literal->accept(*this);
+    }
+    auto reg1 = last_result_;
+    auto op2 = inst->operands_[1].lock();
+    if(op2->is_inst()) {
+        auto inst2 = std::static_pointer_cast<ir::Instruction>(op2);
+        inst2->accept(*this);
+    } else if (op2->is_literal()) {
+        auto literal = std::static_pointer_cast<ir::Literal>(op2);
+        literal->accept(*this);
+    }
+    make_cmp_inst(inst->op_id_, inst->type_, reg1, last_result_);
+    current_scope_.free_tmp_reg(last_result_);
+    last_result_ = reg1;
 }
 void RiscvBuilder::visit(const ir::StoreInst* inst) {
 
@@ -178,7 +315,47 @@ void RiscvBuilder::visit(const ir::WriteInst* inst) {
 
 }
 void RiscvBuilder::visit(const ir::CallInst* inst) {
+    // 在函数调用前保存调用环境
+    // 先将s1-s11写入栈
+    auto alloc = current_scope_.alloc_stack(80);
+    cur_bb_->insts_.emplace_back(alloc);
+    auto sp = std::make_shared<Register>(Register::Stack);
+    auto zero = std::make_shared<Register>(Register::Zero);
+    for(int i = 0; i < 12; i++){
+        auto s_reg = std::make_shared<Register>(Register::Saved, i + 1);
+        auto imm = std::make_shared<Immediate>(8 * i);
+        auto store_inst = std::make_shared<StoreInst>(Instruction::SD, s_reg, sp, imm);
+        cur_bb_->insts_.emplace_back(store_inst);
+    }
+    // 随后, 将a0-a7存入s2-s9
+    for(int i = 0; i < 8; i++) {
+        auto a_reg = std::make_shared<Register>(Register::IntArg, i);
+        auto s_reg = std::make_shared<Register>(Register::Saved, i + 2);
+        auto save_reg_inst = std::make_shared<BinaryInst>(Instruction::ADD, s_reg, zero, a_reg);
+        cur_bb_->insts_.emplace_back(save_reg_inst);
+    }
+    // 将ra存入s1
+    auto ra = std::make_shared<Register>(Register::Return);
+    auto s1 = std::make_shared<Register>(Register::Saved, 1);
+    auto save_ra_inst = std::make_shared<BinaryInst>(Instruction::ADD, s1, zero, ra);
+    cur_bb_->insts_.emplace_back(save_ra_inst);
+    // 开始上参数
+    int arg_index = 0;
+    // 先计算参数个数, 确定参数的数量
+    int arg_cnt = inst->operands_.size() - 1;
+    int stack_for_arg = 0;
+    if(arg_cnt > 8) {
+        // 参数个数大于8，需要将多余的参数放入栈中
+        stack_for_arg = (arg_cnt - 8) * 8;
+    }
+    // 开辟栈空间
+    if(stack_for_arg > 0) {
+        alloc = current_scope_.alloc_stack(stack_for_arg);
+        cur_bb_->insts_.emplace_back(alloc);
+    }
 
+    // 开始赋值
+    // TODO
 }
 void RiscvBuilder::visit(const ir::ReturnInst* inst) {
     // 什么都不用做
@@ -209,7 +386,25 @@ void RiscvBuilder::visit(const ir::ContinueIncInst* inst) {
     cur_bb_->insts_.emplace_back(ins);
 }
 void RiscvBuilder::visit(const ir::BranchInst* inst) {
-
+    // 先执行条件判断语句
+    auto cond = std::static_pointer_cast<ir::Instruction>(inst->operands_[0].lock());
+    // 执行比较运算，结果保存在last_result_中，0为假，非0为真
+    cond->accept(*this);
+    auto then_bb = std::static_pointer_cast<ir::BasicBlock>(inst->operands_[1].lock());
+    auto else_bb = std::static_pointer_cast<ir::BasicBlock>(inst->operands_[2].lock());
+    auto then_label = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, then_bb->index_));
+    auto zero = std::make_shared<Register>(Register::Zero);
+    // 如果条件为真，跳转到then_label
+    auto ins = std::make_shared<BranchInst>(Instruction::BNE, last_result_, zero, then_label);
+    cur_bb_->insts_.emplace_back(ins);
+    if(else_bb) {
+        // 如果存在else分支，则跳转到else分支
+        auto else_label = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, else_bb->index_));
+        ins = std::make_shared<JumpInst>(Instruction::J, else_label);
+        cur_bb_->insts_.emplace_back(ins);
+    }
+    // 释放寄存器
+    current_scope_.free_tmp_reg(last_result_);
 }
 
 void RiscvBuilder::visit(const ir::BasicBlock* bb) {
@@ -262,12 +457,11 @@ void RiscvBuilder::visit(const ir::Function* func) {
     // 开辟栈空间
     auto enter_inst = current_scope_.alloc_stack(stack_size);
     // 随后加入函数参数
-    int int_arg_index = 0;
-    int float_arg_index = 0;
+    int arg_index = 0;
     for(auto &arg : func->args_) {
         if(arg->type_->is_pointer_) {
             // 指针,类型为整数
-            auto mem = get_arg_pos(int_arg_index++, false);
+            auto mem = get_arg_pos(arg_index++);
             current_scope_.push(arg->name_, mem);
             current_scope_.add_pointer(arg->name_, make_pointer_type(arg->type_));
             if(mem->isRegister()) {
@@ -277,7 +471,7 @@ void RiscvBuilder::visit(const ir::Function* func) {
         } else {
             // 非指针，类型为整数或者实数
             auto tid = arg->type_->get_tid();
-            auto mem = get_arg_pos(tid == ir::Type::RealTID ? float_arg_index++ : int_arg_index++, tid == ir::Type::RealTID);
+            auto mem = get_arg_pos(arg_index++);
             current_scope_.push(arg->name_, mem);
             if(mem->isRegister()) {
                 auto reg = std::static_pointer_cast<Register>(mem);
@@ -327,7 +521,7 @@ void RiscvBuilder::visit(const ir::LiteralDouble* literal) {
         auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, reg, zero, imm);
         cur_bb_->insts_.emplace_back(inst);
         last_result_ = current_scope_.alloc_tmp_reg(true);
-        auto convert_inst = std::make_shared<UnaryInst>(Instruction::FCVT_D_W, last_result_, reg);
+        auto convert_inst = std::make_shared<UnaryInst>(Instruction::FMV_D_X, last_result_, reg);
         cur_bb_->insts_.emplace_back(convert_inst);
         current_scope_.free_tmp_reg(reg);
     }
@@ -413,7 +607,7 @@ void RiscvBuilder::visit(const ir::LiteralFloat* literal) {
         auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, reg, zero, imm);
         cur_bb_->insts_.emplace_back(inst);
         last_result_ = current_scope_.alloc_tmp_reg(true);
-        auto convert_inst = std::make_shared<UnaryInst>(Instruction::FCVT_D_W, last_result_, reg);
+        auto convert_inst = std::make_shared<UnaryInst>(Instruction::FMV_D_X, last_result_, reg);
         cur_bb_->insts_.emplace_back(convert_inst);
     }
 }
@@ -472,9 +666,13 @@ void RiscvBuilder::output(std::ofstream &out) {
     }
     // 输出所有函数
     out << ".text\n";
-    out << ".globl main\n";
+    // 先声明所有函数名称
     for(auto &func : modules_->funcs_) {
-        out << func->print() << std::endl;
+        out << ".globl " << func->label_->print() << "\n";
+    }
+    // 随后输出函数
+    for(auto &func : modules_->funcs_) {
+        func->output(out);
     }
 }
 
@@ -491,6 +689,26 @@ void Module::add_func(std::shared_ptr<Function> func) {
 void Module::add_global(std::shared_ptr<GlobalId> global) {
     std::lock_guard<std::mutex> lock(global_mutex_);
     global_vars_.emplace_back(global);
+}
+
+void Function::output(std::ofstream &out) const{
+    // 先输出Label
+    out << label_->print() << ":\n";
+    // 输出函数开始前的指令
+    for(auto &inst : before_insts_) {
+        out << "\t" << inst->print() << "\n";
+    }
+    // 输出基本块
+    for(auto &bb : bbs_) {
+        out << bb->label_->print() << ":\n";
+        for(auto &inst : bb->insts_) {
+            out << "\t" << inst->print() << "\n";
+        }
+    }
+    // 输出函数结束后的指令
+    for(auto &inst : after_insts_) {
+        out << "\t" << inst->print() << "\n";
+    }
 }
 
 } // namespace riscv

@@ -26,7 +26,7 @@ public:
     std::vector<std::shared_ptr<Instruction>> before_insts_; // 函数开始前的指令
     std::vector<std::shared_ptr<BasicBlock>> bbs_; // 函数所属的基本块
     std::vector<std::shared_ptr<Instruction>> after_insts_; // 函数结束后的指令
-    std::string print() const;
+    void output(std::ofstream &out) const;
 };
 class Module {
 public:

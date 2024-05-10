@@ -11,6 +11,7 @@ namespace riscv {
 class Instruction {
 public:
     enum InstrType {
+        NOP,
         /**Shifts**/
         // RV32I
         SLL, // Shift left logical
@@ -172,6 +173,10 @@ public:
         FCVT_D_L, // Convert double from long
         FCVT_D_LU, // Convert double from long unsigned
 
+        /** Unary **/
+        FNEG_S, // Negate single
+        FNEG_D, // Negate double
+
         /**Arithmetic**/
         // RV32F
         FADD_S, // Add single
@@ -227,6 +232,7 @@ public:
         FSGNJN_D, // Sign inject negate double
         FSGNJX_D, // Sign inject exclusive double
 
+        
     };
 
 
