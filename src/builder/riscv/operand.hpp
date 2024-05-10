@@ -7,6 +7,7 @@ namespace builder {
 
 namespace riscv {
 
+constexpr int kMaxRegs = 64;
 class Operand {
 public:
     enum OpType {
@@ -48,7 +49,9 @@ public:
 
     RegType reg_type_;
     int reg_id_; // 寄存器编号
+    int reg_unique_id_; // 寄存器唯一编号
     Register(RegType reg_type, int reg_id = -1);
+    int getUniqueId() const { return reg_unique_id_; }
     std::string print() const override;
 };
 
@@ -78,10 +81,17 @@ public:
 // 主要便于对内存的管理，故单独拿出来
 class Memory : public Operand {
 public:
+    enum MemType {
+        Int, // 整型
+        Float, // 浮点型
+    };
     std::shared_ptr<riscv::Register> base_; // 基地址寄存器
     std::shared_ptr<riscv::Immediate> offset_; // 偏移寄存器
-    Memory(std::shared_ptr<riscv::Register> base, std::shared_ptr<riscv::Immediate> offset) 
-        : Operand(Operand::Memory), base_(base), offset_(offset) {}
+    MemType type_;
+    int size_; // 每个元素的大小
+    Memory(std::shared_ptr<riscv::Register> base, std::shared_ptr<riscv::Immediate> offset, 
+            MemType type, int size, int count = 1) 
+        : Operand(Operand::Memory), base_(base), offset_(offset), type_(type) {}
     std::string print() const override;
 };
 
@@ -115,7 +125,7 @@ public:
     GlobalConst(std::string &val, const std::string &name)
         : Operand(OpType::Const), name_(name), type_(ASCIIZ), str_val_(val){}
     GlobalConst(std::vector<std::shared_ptr<GlobalConst>> &val, const std::string &name)
-        : Operand(OpType::Const), name_(name), type_(Array), array_val_(val){}
+        : Operand(OpType::Const), name_(name), type_(ARRAY), array_val_(val){}
     union {
         int i32_;
         long i64_;

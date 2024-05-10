@@ -105,6 +105,7 @@ bool BinaryInst::can_compute(const Type *t1, const Type *t2) {
 }
 
 void Function::add_basic_block(std::shared_ptr<BasicBlock> bb) {
+    bb->index_ = basic_blocks_.size();
     basic_blocks_.emplace_back(bb);
 }
 
@@ -191,10 +192,6 @@ void ContinueIncInst::accept(IrVisitor &visitor){
 }
 
 void BranchInst::accept(IrVisitor &visitor){
-    visitor.visit(this);
-}
-
-void Module::accept(IrVisitor &visitor){
     visitor.visit(this);
 }
 

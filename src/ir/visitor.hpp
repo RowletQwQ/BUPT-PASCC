@@ -42,7 +42,6 @@ public:
     virtual void visit(const ContinueInst* inst) = 0;
     virtual void visit(const ContinueIncInst* inst) = 0;
     virtual void visit(const BranchInst* inst) = 0;
-    virtual void visit(const Module* module) = 0;
     virtual void visit(const BasicBlock* bb) = 0;
     virtual void visit(const Function* func) = 0;
     virtual void visit(const GlobalIdentifier* global) = 0;

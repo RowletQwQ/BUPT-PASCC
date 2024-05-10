@@ -167,6 +167,12 @@ public:
     }
     virtual std::string placeholder() override { return ""; }
     virtual size_t get_size() override { return elem_type_->get_size() * dims_elem_num_.back(); }
+    Type::TID get_elem_tid() const { 
+        if(elem_type_->tid_ == Type::ArrayTID) {
+            return std::dynamic_pointer_cast<ArrayType>(elem_type_)->get_elem_tid();
+        }
+        return elem_type_->tid_;
+    }
 
     std::shared_ptr<Type> elem_type_; // 元素类型
     std::vector<unsigned> dims_elem_num_; // 数组各维度元素数量
@@ -260,6 +266,7 @@ public:
     bool is_literal() { return val_id_ == ValueID::Literal; }
     bool is_real() { return type_->tid_ == Type::RealTID; }
     bool is_integer() { return type_->tid_ == Type::IntegerTID || type_->tid_ == Type::BooleanTID || type_->tid_ == Type::CharTID; }
+    bool is_array() { return type_->tid_ == Type::ArrayTID; }
 
     Value::ValueID val_id_; // 值的类型
     std::shared_ptr<Type> type_; // 返回值类型
@@ -445,7 +452,12 @@ public:
         }
         return name_;
     }
-
+    virtual Type::TID get_elem_tid() const { 
+        if(type_->tid_ == Type::ArrayTID) {
+            return std::dynamic_pointer_cast<ArrayType>(type_)->get_elem_tid();
+        }
+        return type_->tid_;
+    }
     bool is_const_; // 是否为常量
     std::shared_ptr<Literal> init_val_; // 初始值  
 };
@@ -544,6 +556,7 @@ public:
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
     std::vector<std::weak_ptr<BasicBlock> > succ_bbs_; // 后继基本块
+    int index_; // 基本块的索引
 };
 
 // ----------------------------------------------------------------Instruction---------------------------------------------------------------

@@ -341,7 +341,118 @@ std::string JumpInst::print() const {
     }
 }
 
+LoadInst::LoadInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> base, std::shared_ptr<Operand> offset)
+: Instruction(type, 2)
+{
+    static const std::set<Instruction::InstrType> valid_types = {
+        LB, LH, LW, LBU, LHU, LD, LWU, FLW, FLD
+    };
 
+    if (valid_types.count(type) > 0) {
+        if (dest->type_ == Operand::Register && base->type_ == Operand::Register && offset->type_ == Operand::Immediate) {
+            // 正确的指令类型和操作数类型
+        } else {
+            LOG_ERROR("Error Instruction: %s, dest %s, base %s, offset %s", 
+                    instrTypeToString[type].c_str(), dest->print().c_str(), base->print().c_str(), offset->print().c_str());
+            LOG_FATAL("LoadInst type error, dest and base should be Register, offset should be Immediate");
+        }
+    } else {
+        LOG_FATAL("LoadInst type error, %s not a LoadInst", instrTypeToString[type].c_str());
+    }
+    type_ = type;
+    operands_[0] = base;
+    operands_[1] = offset;
+    dest_ = dest;
+}
+
+LoadInst::LoadInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> src)
+: Instruction(type, 1)
+{
+    static const std::set<Instruction::InstrType> valid_types = {
+        LB, LH, LW, LBU, LHU, LD, LWU, FLW, FLD
+    };
+
+    if (valid_types.count(type) > 0) {
+        if (dest->type_ == Operand::Register && src->type_ == Operand::Memory) {
+            // 正确的指令类型和操作数类型
+        } else {
+            LOG_ERROR("Error Instruction: %s, dest %s, src %s", 
+                    instrTypeToString[type].c_str(), dest->print().c_str(), src->print().c_str());
+            LOG_FATAL("LoadInst type error, dest should be Register, src should be Memory");
+        }
+    } else {
+        LOG_FATAL("LoadInst type error, %s not a LoadInst", instrTypeToString[type].c_str());
+    }
+    type_ = type;
+    operands_[0] = src;
+    dest_ = dest;
+}
+
+std::string LoadInst::print() const {
+    if (op_nums_ == 2) {
+        return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print() + 
+                ", " + operands_.at(1)->print();
+    } else {
+        return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print();
+    }
+}
+
+StoreInst::StoreInst(InstrType type, std::shared_ptr<Operand> src, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> offset)
+: Instruction(type, 3)
+{
+    static const std::set<Instruction::InstrType> valid_types = {
+        SB, SH, SW, SD, FSW, FSD
+    };
+
+    if (valid_types.count(type) > 0) {
+        if (src->type_ == Operand::Register && dest->type_ == Operand::Register && offset->type_ == Operand::Immediate) {
+            // 正确的指令类型和操作数类型
+        } else {
+            LOG_ERROR("Error Instruction: %s, src %s, dest %s, offset %s", 
+                    instrTypeToString[type].c_str(), src->print().c_str(), dest->print().c_str(), offset->print().c_str());
+            LOG_FATAL("StoreInst type error, src and dest should be Register, offset should be Immediate");
+        }
+    } else {
+        LOG_FATAL("StoreInst type error, %s not a StoreInst", instrTypeToString[type].c_str());
+    }
+    type_ = type;
+    operands_[0] = src;
+    operands_[1] = dest;
+    operands_[2] = offset;
+}
+
+
+StoreInst::StoreInst(InstrType type, std::shared_ptr<Operand> src, std::shared_ptr<Operand> dest)
+: Instruction(type, 2)
+{
+    static const std::set<Instruction::InstrType> valid_types = {
+        SB, SH, SW, SD, FSW, FSD
+    };
+
+    if (valid_types.count(type) > 0) {
+        if (src->type_ == Operand::Register && dest->type_ == Operand::Memory) {
+            // 正确的指令类型和操作数类型
+        } else {
+            LOG_ERROR("Error Instruction: %s, src %s, dest %s", 
+                    instrTypeToString[type].c_str(), src->print().c_str(), dest->print().c_str());
+            LOG_FATAL("StoreInst type error, src should be Register, dest should be Memory");
+        }
+    } else {
+        LOG_FATAL("StoreInst type error, %s not a StoreInst", instrTypeToString[type].c_str());
+    }
+    type_ = type;
+    operands_[0] = src;
+    operands_[1] = dest;
+}
+
+std::string StoreInst::print() const {
+    if (op_nums_ == 3) {
+        return instrTypeToString[type_] + " " + operands_.at(0)->print() + ", " + operands_.at(1)->print() + 
+                ", " + operands_.at(2)->print();
+    } else {
+        return instrTypeToString[type_] + " " + operands_.at(0)->print() + ", " + operands_.at(1)->print();
+    }
+}
 
 
 } // namespace riscv

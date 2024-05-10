@@ -2,9 +2,13 @@
 #pragma once
 #include "builder/builder.hpp"
 #include "builder/riscv/instruction.hpp"
+#include "instruction.hpp"
 #include "ir/visitor.hpp"
+#include "operand.hpp"
+#include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 
 namespace builder {
@@ -19,7 +23,10 @@ public:
 class Function {
 public:
     std::shared_ptr<Label> label_;
+    std::vector<std::shared_ptr<Instruction>> before_insts_; // 函数开始前的指令
     std::vector<std::shared_ptr<BasicBlock>> bbs_; // 函数所属的基本块
+    std::vector<std::shared_ptr<Instruction>> after_insts_; // 函数结束后的指令
+    std::string print() const;
 };
 class Module {
 public:
@@ -33,6 +40,53 @@ private:
     std::mutex const_mutex_;
     std::mutex func_mutex_;
     std::mutex global_mutex_;
+};
+
+class Scope {
+public:
+    enum PointerType {
+        NotPointer,
+        Int8,
+        Int16,
+        Int32,
+        Int64,
+        Float,
+        Double,
+    };
+    Scope();
+    // 进入一个新的作用域
+    void enter();
+    std::shared_ptr<Instruction> alloc_stack(int size);
+    std::shared_ptr<Instruction> dealloc_stack(int size);
+    // 离开当前作用域
+    std::shared_ptr<Instruction> leave();
+    // 加入一个符号
+    void push(const std::string &name, std::shared_ptr<Operand> val);
+    // 查找一个符号
+    std::shared_ptr<Operand> find(const std::string &name);
+
+    void touch_reg(int reg) {   
+        reg_used_[reg] = true;
+        reg_access_timestamp_[reg] = ++timestamp_;
+    }
+
+    bool is_reg_allocated(int reg) const {
+        return reg_used_[reg];
+    }
+
+    void add_pointer(const std::string &name, PointerType type) {
+        pointers_.back()[name] = type;
+    }
+
+private:
+    // 作用域栈
+    std::vector<bool> reg_used_;
+    int timestamp_;
+    std::vector<int> reg_access_timestamp_;
+    std::vector<int> stack_size_;
+    std::vector<std::map<std::string,PointerType> > pointers_;
+    std::vector<std::map<std::string, std::shared_ptr<Operand>>> symbols_;
+    std::map<std::string, int> global_symbols_;
 };
 
 class RiscvBuilder :public ir::IrVisitor,public Builder {
@@ -50,7 +104,6 @@ public:
     void visit(const ir::ContinueInst* inst) override;
     void visit(const ir::ContinueIncInst* inst) override;
     void visit(const ir::BranchInst* inst) override;
-    void visit(const ir::Module* module) override;
     void visit(const ir::BasicBlock* bb) override;
     void visit(const ir::Function* func) override;
     void visit(const ir::GlobalIdentifier* global) override;

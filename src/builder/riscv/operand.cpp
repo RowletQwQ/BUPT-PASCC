@@ -25,6 +25,40 @@ Register::Register(Register::RegType reg_type, int reg_id /* = -1*/)
         }
     }
     reg_id_ = reg_id;
+    switch(reg_type_) {
+        case RegType::Zero:
+            reg_unique_id_ = 0;
+            break;
+        case RegType::Return:
+            reg_unique_id_ = 1;
+            break;
+        case RegType::Stack:
+            reg_unique_id_ = 2;
+            break;
+        case RegType::Thread:
+            reg_unique_id_ = 3;
+            break;
+        case RegType::Temp:
+            reg_unique_id_ = 5 + reg_id_;
+            break;
+        case RegType::Frame:
+            reg_unique_id_ = 8;
+            break;
+        case RegType::Saved:
+            reg_unique_id_ = 8 + reg_id_;
+            break;
+        case RegType::IntArg:
+            reg_unique_id_ = 10 + reg_id_;
+            break;
+        case RegType::FloatArg:
+            reg_unique_id_ = 33 + reg_id_;
+            break;
+        case RegType::Float:
+            reg_unique_id_ = 32 + reg_id_;
+            break;
+        default:
+            LOG_FATAL("Unknown register type");
+    }
 }
 
 std::string Register::print() const {

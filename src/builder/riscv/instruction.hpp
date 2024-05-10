@@ -242,6 +242,21 @@ public:
 
 };
 
+// 加载指令
+class LoadInst : public Instruction {
+public:
+    LoadInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> src);
+    LoadInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> src, std::shared_ptr<Operand> offset);
+    std::string print() const override;
+};
+
+// 存储指令
+class StoreInst : public Instruction {
+public:
+    StoreInst(InstrType type, std::shared_ptr<Operand> src, std::shared_ptr<Operand> dest);
+    StoreInst(InstrType type, std::shared_ptr<Operand> src, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> offset);
+    std::string print() const override;
+};
 
 class NoOperandInst : public Instruction {
 public:
