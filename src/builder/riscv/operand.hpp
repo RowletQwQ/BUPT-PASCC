@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,6 +39,7 @@ public:
         Zero, // 零寄存器, zero
         Return, // 返回地址寄存器，ra
         Stack, // 栈专用, sp
+        Global, // 全局寄存器，gp
         Thread, // 线程指针, gp
         Temp, // 临时寄存器，t0-t6
         Frame, // 帧指针，s0
@@ -66,12 +68,12 @@ public:
     ImmType imm_type_;
     union {
         int imm_i32_;
-        long imm_i64_;
+        int64_t imm_i64_;
         float imm_f32_;
         double imm_f64_;
     };
     Immediate(int imm) : Operand(Operand::Immediate), imm_type_(ImmType::Int32), imm_i32_(imm) {}
-    Immediate(long imm) : Operand(Operand::Immediate), imm_type_(ImmType::Int64), imm_i64_(imm) {}
+    Immediate(int64_t imm) : Operand(Operand::Immediate), imm_type_(ImmType::Int64), imm_i64_(imm) {}
     Immediate(float imm) : Operand(Operand::Immediate), imm_type_(ImmType::Float32), imm_f32_(imm) {}
     Immediate(double imm) : Operand(Operand::Immediate), imm_type_(ImmType::Float64), imm_f64_(imm) {}
     std::string print() const override;

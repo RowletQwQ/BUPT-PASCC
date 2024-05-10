@@ -4,8 +4,10 @@
 #include "instruction.hpp"
 #include "ir/ir.hpp"
 #include "common/thpool/thpool.hpp"
+#include "common/log/log.hpp"
 #include "operand.hpp"
 
+#include <cstdint>
 #include <future>
 #include <memory>
 #include <string>
@@ -17,7 +19,7 @@ namespace riscv {
 thread_local std::shared_ptr<BasicBlock> cur_bb_;
 thread_local std::shared_ptr<Function> cur_func_;
 thread_local std::vector<std::shared_ptr<GlobalConst>> tmp_consts_;
-thread_local std::shared_ptr<Operand> last_result_;
+thread_local std::shared_ptr<Register> last_result_;
 thread_local Scope current_scope_;
 
 
@@ -72,6 +74,16 @@ void Scope::enter() {
     stack_size_.emplace_back(0);
     symbols_.emplace_back();
     pointers_.emplace_back();
+    reg_used_.assign(kMaxRegs, false);
+    for(int i = 0; i < 7; i++){
+        avail_int_regs_.emplace_back(std::make_shared<Register>(Register::IntArg, i));
+    }
+    for(int i = 0; i < 6; i++) {
+        avail_int_regs_.emplace_back(std::make_shared<Register>(Register::Temp, i));
+    }
+    for(int i = 0; i < 32; i++){
+        avail_float_regs_.emplace_back(std::make_shared<Register>(Register::FloatArg, i));
+    }
 }
 
 // 对应指令 addi sp , sp, -size
@@ -106,8 +118,42 @@ std::shared_ptr<Instruction> Scope::leave() {
     return inst;
 }
 
+std::shared_ptr<Register> Scope::alloc_tmp_reg(bool is_real) {
+    // 从临时寄存器中找一个未使用的寄存器
+    if(is_real) {
+        for(auto &reg: avail_float_regs_) {
+            if(!is_reg_allocated(reg->getUniqueId())) {
+                touch_reg(reg->getUniqueId());
+                return reg;
+            }
+        }
+    } else {
+        for(auto &reg: avail_int_regs_) {
+            if(!is_reg_allocated(reg->getUniqueId())) {
+                touch_reg(reg->getUniqueId());
+                return reg;
+            }
+        }
+    }
+    LOG_FATAL("No available register");
+    return nullptr;
+}
 
+void Scope::free_tmp_reg(std::shared_ptr<Register> reg) {
+    reg_used_[reg->getUniqueId()] = false;
+}
 
+int64_t get_bit_pattern(double val) {
+    int64_t res;
+    memcpy(&res, &val, sizeof(double));
+    return res;
+}
+
+int32_t get_bit_pattern(float val) {
+    int32_t res;
+    memcpy(&res, &val, sizeof(float));
+    return res;
+}
 
 
 void RiscvBuilder::visit(const ir::BinaryInst* inst) {
@@ -135,16 +181,32 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
 
 }
 void RiscvBuilder::visit(const ir::ReturnInst* inst) {
-
+    // 什么都不用做
 }
 void RiscvBuilder::visit(const ir::BreakInst* inst) {
-
+    auto op = inst->operands_[0].lock();
+    auto bb = std::static_pointer_cast<ir::BasicBlock>(op);
+    auto label = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, bb->index_));
+    auto ins = std::make_shared<JumpInst>(Instruction::J, label);
+    cur_bb_->insts_.emplace_back(ins);
 }
 void RiscvBuilder::visit(const ir::ContinueInst* inst) {
-
+    auto op = inst->operands_[0].lock();
+    auto bb = std::static_pointer_cast<ir::BasicBlock>(op);
+    auto label = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, bb->index_));
+    auto ins = std::make_shared<JumpInst>(Instruction::J, label);
+    cur_bb_->insts_.emplace_back(ins);
 }
 void RiscvBuilder::visit(const ir::ContinueIncInst* inst) {
-
+    // 与上面一条指令不同的是，这里需要先执行第一条操作数的最后一条指令
+    auto op1 = inst->operands_[0].lock();
+    auto bb1 = std::static_pointer_cast<ir::BasicBlock>(op1);
+    bb1->instructions_.back()->accept(*this);
+    auto op2 = inst->operands_[1].lock();
+    auto bb2 = std::static_pointer_cast<ir::BasicBlock>(op2);
+    auto label = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, bb2->index_));
+    auto ins = std::make_shared<JumpInst>(Instruction::J, label);
+    cur_bb_->insts_.emplace_back(ins);
 }
 void RiscvBuilder::visit(const ir::BranchInst* inst) {
 
@@ -159,6 +221,7 @@ void RiscvBuilder::visit(const ir::BasicBlock* bb) {
     }
     cur_func_->bbs_.emplace_back(cur_bb_);
 }
+
 void RiscvBuilder::visit(const ir::Function* func) {
     auto function = std::make_shared<Function>();
     function->label_ = std::make_shared<Label>(Operand::Function,func->name_);
@@ -207,11 +270,19 @@ void RiscvBuilder::visit(const ir::Function* func) {
             auto mem = get_arg_pos(int_arg_index++, false);
             current_scope_.push(arg->name_, mem);
             current_scope_.add_pointer(arg->name_, make_pointer_type(arg->type_));
+            if(mem->isRegister()) {
+                auto reg = std::static_pointer_cast<Register>(mem);
+                current_scope_.touch_reg(reg->getUniqueId());
+            }
         } else {
             // 非指针，类型为整数或者实数
             auto tid = arg->type_->get_tid();
             auto mem = get_arg_pos(tid == ir::Type::RealTID ? float_arg_index++ : int_arg_index++, tid == ir::Type::RealTID);
             current_scope_.push(arg->name_, mem);
+            if(mem->isRegister()) {
+                auto reg = std::static_pointer_cast<Register>(mem);
+                current_scope_.touch_reg(reg->getUniqueId());
+            }
         }
     }
     cur_func_->before_insts_.emplace_back(enter_inst);
@@ -244,15 +315,38 @@ void RiscvBuilder::visit(const ir::GlobalIdentifier* global) {
 }
 
 void RiscvBuilder::visit(const ir::LiteralDouble* literal) {
-    auto global_const = std::make_shared<GlobalConst>(literal->get_real(), literal->name_);
-    modules_->add_const(global_const);
-    tmp_consts_.emplace_back(global_const);
+    if(!cur_func_) {
+        auto global_const = std::make_shared<GlobalConst>(literal->get_real(), literal->name_);
+        modules_->add_const(global_const);
+        tmp_consts_.emplace_back(global_const);
+    } else {
+        // 没有在解析函数，此时在运算，将常量放入寄存器
+        auto reg = current_scope_.alloc_tmp_reg(false);
+        auto imm = std::make_shared<Immediate>(get_bit_pattern(literal->get_real()));
+        auto zero = std::make_shared<Register>(Register::Zero);
+        auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, reg, zero, imm);
+        cur_bb_->insts_.emplace_back(inst);
+        last_result_ = current_scope_.alloc_tmp_reg(true);
+        auto convert_inst = std::make_shared<UnaryInst>(Instruction::FCVT_D_W, last_result_, reg);
+        cur_bb_->insts_.emplace_back(convert_inst);
+        current_scope_.free_tmp_reg(reg);
+    }
 }
 
 void RiscvBuilder::visit(const ir::LiteralInt* literal) {
-    auto global_const = std::make_shared<GlobalConst>(literal->get_int(), literal->name_);
-    modules_->add_const(global_const);
-    tmp_consts_.emplace_back(global_const);
+    if(!cur_func_) {
+        auto global_const = std::make_shared<GlobalConst>(literal->val_, literal->name_);
+        modules_->add_const(global_const);
+        tmp_consts_.emplace_back(global_const);
+    } else {
+        // 没有在解析函数，此时在运算，将常量放入寄存器
+        auto reg = current_scope_.alloc_tmp_reg(false);
+        auto imm = std::make_shared<Immediate>(literal->val_);
+        auto zero = std::make_shared<Register>(Register::Zero);
+        auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, reg, zero, imm);
+        cur_bb_->insts_.emplace_back(inst);
+        last_result_ = reg;
+    }
 }
 
 void RiscvBuilder::visit(const ir::LiteralString* literal) {
@@ -262,15 +356,35 @@ void RiscvBuilder::visit(const ir::LiteralString* literal) {
 }
 
 void RiscvBuilder::visit(const ir::LiteralChar* literal) {
-    auto global_const = std::make_shared<GlobalConst>(literal->val_, literal->name_);
-    modules_->add_const(global_const);
-    tmp_consts_.emplace_back(global_const);
+    if (!cur_func_) {
+        auto global_const = std::make_shared<GlobalConst>(literal->val_, literal->name_);
+        modules_->add_const(global_const);
+        tmp_consts_.emplace_back(global_const);
+    } else {
+        // 没有在解析函数，此时在运算，将常量放入寄存器
+        auto reg = current_scope_.alloc_tmp_reg(false);
+        auto imm = std::make_shared<Immediate>(literal->val_);
+        auto zero = std::make_shared<Register>(Register::Zero);
+        auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, reg, zero, imm);
+        cur_bb_->insts_.emplace_back(inst);
+        last_result_ = reg;
+    }
 }
 
 void RiscvBuilder::visit(const ir::LiteralBool* literal) {
-    auto global_const = std::make_shared<GlobalConst>(literal->val_, literal->name_);
-    modules_->add_const(global_const);
-    tmp_consts_.emplace_back(global_const);
+    if (!cur_func_) {
+        auto global_const = std::make_shared<GlobalConst>(literal->val_, literal->name_);
+        modules_->add_const(global_const);
+        tmp_consts_.emplace_back(global_const);
+    } else {
+        // 没有在解析函数，此时在运算，将常量放入寄存器
+        auto reg = current_scope_.alloc_tmp_reg(false);
+        auto imm = std::make_shared<Immediate>(literal->val_);
+        auto zero = std::make_shared<Register>(Register::Zero);
+        auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, reg, zero, imm);
+        cur_bb_->insts_.emplace_back(inst);
+        last_result_ = reg;
+    }
 }
 
 void RiscvBuilder::visit(const ir::LiteralArray* literal) {
@@ -287,8 +401,21 @@ void RiscvBuilder::visit(const ir::LiteralArray* literal) {
 }
 
 void RiscvBuilder::visit(const ir::LiteralFloat* literal) {
-    auto global_const = std::make_shared<GlobalConst>(literal->get_real(), literal->name_);
-    modules_->add_const(global_const);
+    if (!cur_func_) {
+        auto global_const = std::make_shared<GlobalConst>(literal->val_, literal->name_);
+        modules_->add_const(global_const);
+        tmp_consts_.emplace_back(global_const);
+    } else {
+        // 没有在解析函数，此时在运算，将常量放入寄存器
+        auto reg = current_scope_.alloc_tmp_reg(false);
+        auto imm = std::make_shared<Immediate>(get_bit_pattern(literal->val_));
+        auto zero = std::make_shared<Register>(Register::Zero);
+        auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, reg, zero, imm);
+        cur_bb_->insts_.emplace_back(inst);
+        last_result_ = current_scope_.alloc_tmp_reg(true);
+        auto convert_inst = std::make_shared<UnaryInst>(Instruction::FCVT_D_W, last_result_, reg);
+        cur_bb_->insts_.emplace_back(convert_inst);
+    }
 }
 
 void RiscvBuilder::build(ir::Module &program) {

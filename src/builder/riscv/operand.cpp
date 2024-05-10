@@ -35,23 +35,36 @@ Register::Register(Register::RegType reg_type, int reg_id /* = -1*/)
         case RegType::Stack:
             reg_unique_id_ = 2;
             break;
-        case RegType::Thread:
+        case RegType::Global:
             reg_unique_id_ = 3;
             break;
-        case RegType::Temp:
-            reg_unique_id_ = 5 + reg_id_;
+        case RegType::Thread:
+            reg_unique_id_ = 4;
             break;
+        case RegType::Temp:
+        {
+            if (reg_id_ <= 2) {
+                reg_unique_id_ = 5 + reg_id_;
+            } else {
+                reg_unique_id_ = 28 + reg_id_;
+            }
+            break;
+        }
         case RegType::Frame:
             reg_unique_id_ = 8;
             break;
         case RegType::Saved:
-            reg_unique_id_ = 8 + reg_id_;
+            if (reg_id_ == 0) {
+                reg_unique_id_ = 9;
+            } else {
+                reg_unique_id_ = 18 + reg_id_;
+            }
             break;
         case RegType::IntArg:
             reg_unique_id_ = 10 + reg_id_;
             break;
         case RegType::FloatArg:
-            reg_unique_id_ = 33 + reg_id_;
+            reg_unique_id_ = 10 + reg_id_;
             break;
         case RegType::Float:
             reg_unique_id_ = 32 + reg_id_;
@@ -100,7 +113,7 @@ std::string Immediate::print() const {
 }
 
 std::string Label::print() const {
-    return name_ + ":";
+    return name_;
 }
 
 std::string GlobalConst::print() const {

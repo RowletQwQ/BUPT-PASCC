@@ -65,6 +65,7 @@ public:
 
         /**Jump**/
         // RV32I
+        J, // Jump
         JAL, // Jump and link
         JALR, // Jump and link register
 
@@ -302,6 +303,8 @@ public:
 // 间接跳转是指令中给出了跳转的基地址，通过基地址和src计算出跳转的目标地址
 class JumpInst : public Instruction {
 public:
+    JumpInst(InstrType type, std::shared_ptr<Operand> ret, std::shared_ptr<Operand> desc);
+    JumpInst(InstrType type, std::shared_ptr<Operand> target);
     JumpInst(InstrType type, std::shared_ptr<Operand> src, std::shared_ptr<Operand> base, std::shared_ptr<Operand> target);
     std::string print() const override;
 };

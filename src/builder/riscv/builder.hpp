@@ -74,6 +74,10 @@ public:
         return reg_used_[reg];
     }
 
+    std::shared_ptr<Register> alloc_tmp_reg(bool is_real);
+
+    void free_tmp_reg(std::shared_ptr<Register> reg);
+
     void add_pointer(const std::string &name, PointerType type) {
         pointers_.back()[name] = type;
     }
@@ -81,6 +85,8 @@ public:
 private:
     // 作用域栈
     std::vector<bool> reg_used_;
+    std::vector<std::shared_ptr<Register>> avail_int_regs_;
+    std::vector<std::shared_ptr<Register>> avail_float_regs_;
     int timestamp_;
     std::vector<int> reg_access_timestamp_;
     std::vector<int> stack_size_;

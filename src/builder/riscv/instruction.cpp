@@ -2,6 +2,7 @@
 
 #include "instruction.hpp"
 #include "common/log/log.hpp"
+#include "operand.hpp"
 #include <map>
 #include <set>
 #include <string>
@@ -49,6 +50,7 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
     {Instruction::BGE, "bge"},
     {Instruction::BLTU, "bltu"},
     {Instruction::BGEU, "bgeu"},
+    {Instruction::J, "j"},
     {Instruction::JAL, "jal"},
     {Instruction::JALR, "jalr"},
     {Instruction::LB, "lb"},
@@ -283,18 +285,47 @@ BranchInst::BranchInst(InstrType type, std::shared_ptr<Operand> op1, std::shared
     dest_ = dest;
 }
 
+JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> target)
+: Instruction(type, 0)
+{
+    if (type == Instruction::J) {
+        if (target->type_ == Operand::Immediate) {
+            // 正确的指令类型和操作数类型
+        } else {
+            LOG_ERROR("Error Instruction: %s, target %s", 
+                    instrTypeToString[type].c_str(), target->print().c_str());
+            LOG_FATAL("JumpInst type error, target should be Immediate");
+        }
+    } else {
+        LOG_FATAL("JumpInst type error, %s not a single operand JumpInst", instrTypeToString[type].c_str());
+    }
+    type_ = type;
+    dest_ = target;
+}
+
+JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> ret, std::shared_ptr<Operand> desc)
+: Instruction(type, 1)
+{
+    if (type == Instruction::JAL) {
+        if (ret->type_ == Operand::Register && desc->type_ == Operand::Immediate) {
+            // 正确的指令类型和操作数类型
+        } else {
+            LOG_ERROR("Error Instruction: %s, ret %s, desc %s", 
+                    instrTypeToString[type].c_str(), ret->print().c_str(), desc->print().c_str());
+            LOG_FATAL("JumpInst type error, ret should be Register, desc should be Immediate");
+        }
+    } else {
+        LOG_FATAL("JumpInst type error, %s not a double operand JumpInst", instrTypeToString[type].c_str());
+    }
+    type_ = type;
+    operands_[0] = desc;
+    dest_ = ret;
+}
+
 JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> op1, std::shared_ptr<Operand> op2)
 : Instruction(type, 2)
 {
-    if(type == Instruction::JAL) {
-        if (dest->type_ == Operand::Register && op1->type_ == Operand::Immediate) {
-            // 正确的指令类型和操作数类型
-        } else {
-            LOG_ERROR("Error Instruction: %s, dest %s, op1 %s", 
-                    instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str());
-            LOG_FATAL("JumpInst type error, dest should be Register, op1 should be Immediate");
-        }
-    } else if (type == Instruction::JALR) {
+    if (type == Instruction::JALR) {
         if (dest->type_ == Operand::Register && op1->type_ == Operand::Register && op2->type_ == Operand::Immediate) {
             // 正确的指令类型和操作数类型
         } else {
@@ -303,7 +334,7 @@ JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_pt
             LOG_FATAL("JumpInst type error, dest should be Register, op1 should be Register, op2 should be Immediate");
         }
     } else {
-        LOG_FATAL("JumpInst type error, %s not a JumpInst", instrTypeToString[type].c_str());
+        LOG_FATAL("JumpInst type error, %s not a triple operand JumpInst", instrTypeToString[type].c_str());
     }
 }
 
@@ -332,8 +363,10 @@ std::string BranchInst::print() const {
 }
 
 std::string JumpInst::print() const {
-    // Jump指令分成两种,jal和jalr
-    if (type_ == JAL) {
+    // Jump指令分成了三种情况，J, JAL, JALR
+    if (type_ == J) {
+        return instrTypeToString[type_] + " " + dest_->print();
+    } else if (type_ == JAL) {
         return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print();
     } else {
         return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print() + 

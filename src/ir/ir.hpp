@@ -1087,9 +1087,9 @@ public:
     // void set_operand(unsigned i, std::shared_ptr<Value> val) {
     //     operands_[i] = val;
     // }
-    // std::weak_ptr<Value> get_operand(unsigned i) override {
-    //     return operands_[i];
-    // }
+    std::weak_ptr<Value> get_operand(unsigned i) override {
+        return operands_[i];
+    }
     virtual void accept(IrVisitor &visitor) override;
 };
 
