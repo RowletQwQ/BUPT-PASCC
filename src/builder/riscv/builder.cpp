@@ -11,6 +11,7 @@
 #include <future>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 namespace builder {
 namespace riscv {
@@ -21,7 +22,7 @@ thread_local std::shared_ptr<Function> cur_func_;
 thread_local std::vector<std::shared_ptr<GlobalConst>> tmp_consts_;
 thread_local std::shared_ptr<Register> last_result_;
 thread_local Scope current_scope_;
-thread_local bool is_under_call_ = false;
+thread_local bool need_pointer_ = false;
 
 
 static inline int UpperAlign(int size, int align) {
@@ -306,7 +307,11 @@ void RiscvBuilder::visit(const ir::StoreInst* inst) {
 
 }
 void RiscvBuilder::visit(const ir::LoadInst* inst) {
-
+    if(need_pointer_) {
+        // 需要将对应操作数的内存地址存入last_result_
+    } else {
+        
+    }
 }
 void RiscvBuilder::visit(const ir::ReadInst* inst) {
 
@@ -316,13 +321,13 @@ void RiscvBuilder::visit(const ir::WriteInst* inst) {
 }
 void RiscvBuilder::visit(const ir::CallInst* inst) {
     // 在函数调用前保存调用环境
-    // 先将s1-s11写入栈
-    auto alloc = current_scope_.alloc_stack(80);
+    // 先将s2-s11写入栈
+    auto alloc = current_scope_.alloc_stack(72);
     cur_bb_->insts_.emplace_back(alloc);
     auto sp = std::make_shared<Register>(Register::Stack);
     auto zero = std::make_shared<Register>(Register::Zero);
-    for(int i = 0; i < 12; i++){
-        auto s_reg = std::make_shared<Register>(Register::Saved, i + 1);
+    for(int i = 2; i < 12; i++){
+        auto s_reg = std::make_shared<Register>(Register::Saved, i);
         auto imm = std::make_shared<Immediate>(8 * i);
         auto store_inst = std::make_shared<StoreInst>(Instruction::SD, s_reg, sp, imm);
         cur_bb_->insts_.emplace_back(store_inst);
@@ -334,11 +339,6 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
         auto save_reg_inst = std::make_shared<BinaryInst>(Instruction::ADD, s_reg, zero, a_reg);
         cur_bb_->insts_.emplace_back(save_reg_inst);
     }
-    // 将ra存入s1
-    auto ra = std::make_shared<Register>(Register::Return);
-    auto s1 = std::make_shared<Register>(Register::Saved, 1);
-    auto save_ra_inst = std::make_shared<BinaryInst>(Instruction::ADD, s1, zero, ra);
-    cur_bb_->insts_.emplace_back(save_ra_inst);
     // 开始上参数
     int arg_index = 0;
     // 先计算参数个数, 确定参数的数量
@@ -354,8 +354,89 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
         cur_bb_->insts_.emplace_back(alloc);
     }
 
-    // 开始赋值
-    // TODO
+    // 获取目标函数
+    auto func = std::static_pointer_cast<ir::Function>(inst->operands_.back().lock());
+    for(int i = 0; i < arg_cnt; i++) {
+        if(func->args_[i]->type_->is_pointer_) {
+            // 如果是pointer，那这个操作数是也只能是一个指针，即ir::LoadInst
+            need_pointer_ = true;
+            auto arg = inst->operands_[i].lock();
+            if(!arg->is_inst()) {
+                LOG_FATAL("Pointer argument must be a LoadInst");
+            }
+            auto load_inst = std::static_pointer_cast<ir::Instruction>(arg);
+            if(!load_inst->is_load_inst()) {
+                LOG_FATAL("Pointer argument must be a LoadInst");
+            }
+            load_inst->accept(*this);
+            need_pointer_ = false;
+
+        } else {
+            auto arg = inst->operands_[i].lock();
+            if(arg->is_inst()) {
+                auto inst = std::static_pointer_cast<ir::Instruction>(arg);
+                inst->accept(*this);
+            } else if (arg->is_literal()) {
+                auto literal = std::static_pointer_cast<ir::Literal>(arg);
+                literal->accept(*this);
+            }
+        }
+        // 将参数放入正确的位置
+        if (i < 8) {
+            auto dest = std::make_shared<Register>(Register::IntArg, i);
+            auto move_inst = std::make_shared<BinaryInst>(Instruction::ADD, dest, zero, last_result_);
+            cur_bb_->insts_.emplace_back(move_inst);
+        } else {
+            // 参数放入栈中
+            auto sp = std::make_shared<Register>(Register::Stack);
+            auto imm = std::make_shared<Immediate>(8 * (i - 8));
+            auto store_inst = std::make_shared<StoreInst>(Instruction::SD, last_result_, sp, imm);
+            cur_bb_->insts_.emplace_back(store_inst);
+        }
+        current_scope_.free_tmp_reg(last_result_);
+    }
+    // 申请栈空间
+    alloc = current_scope_.alloc_stack(8);
+    cur_bb_->insts_.emplace_back(alloc);
+    // 将s1存入栈顶
+    auto s1 = std::make_shared<Register>(Register::Saved, 1);
+    auto imm = std::make_shared<Immediate>(0);
+    auto store_inst = std::make_shared<StoreInst>(Instruction::SD, s1, sp, imm);
+    // 将ra存入s1
+    auto ra = std::make_shared<Register>(Register::Return);
+    auto save_ra_inst = std::make_shared<BinaryInst>(Instruction::ADD, s1, zero, ra);
+    cur_bb_->insts_.emplace_back(save_ra_inst);
+    // 组装jal指令
+    auto func_label = std::make_shared<Label>(Operand::Function, func->name_);
+    auto jal_inst = std::make_shared<JumpInst>(Instruction::JAL, ra, func_label);
+
+    // 调用返回，需要恢复环境
+    // 将s1存入ra
+    auto load_ra_inst = std::make_shared<BinaryInst>(Instruction::ADD, ra, zero, s1);
+    cur_bb_->insts_.emplace_back(load_ra_inst);
+    // 将栈顶存入s1
+    store_inst = std::make_shared<LoadInst>(Instruction::LD, s1, sp, imm);
+    cur_bb_->insts_.emplace_back(store_inst);
+    // 退栈
+    auto dealloc = current_scope_.dealloc_stack(8 + stack_for_arg);
+    cur_bb_->insts_.emplace_back(dealloc);
+    // 恢复a0-a7
+    for(int i = 0; i < 8; i++) {
+        auto a_reg = std::make_shared<Register>(Register::IntArg, i);
+        auto s_reg = std::make_shared<Register>(Register::Saved, i + 2);
+        auto load_reg_inst = std::make_shared<BinaryInst>(Instruction::ADD, a_reg, zero, s_reg);
+        cur_bb_->insts_.emplace_back(load_reg_inst);
+    }
+    // 恢复s2-s11
+    for(int i = 2; i < 12; i++){
+        auto s_reg = std::make_shared<Register>(Register::Saved, i);
+        auto imm = std::make_shared<Immediate>(8 * i);
+        auto load_inst = std::make_shared<LoadInst>(Instruction::LD, s_reg, sp, imm);
+        cur_bb_->insts_.emplace_back(load_inst);
+    }
+    // 退栈
+    dealloc = current_scope_.dealloc_stack(72);
+    cur_bb_->insts_.emplace_back(dealloc);
 }
 void RiscvBuilder::visit(const ir::ReturnInst* inst) {
     // 什么都不用做
