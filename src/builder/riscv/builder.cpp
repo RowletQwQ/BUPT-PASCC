@@ -192,10 +192,6 @@ static Instruction::InstrType get_arith_type(ir::Instruction::OpID id, std::shar
         {ir::Instruction::Mul, Instruction::MUL},
         {ir::Instruction::Div, Instruction::DIV},
         {ir::Instruction::Mod, Instruction::REM},
-        {ir::Instruction::And, Instruction::AND},
-        {ir::Instruction::AndThen, Instruction::AND},
-        {ir::Instruction::Or, Instruction::OR},
-        {ir::Instruction::OrElse, Instruction::OR},
     };
 
     static std::map<ir::Instruction::OpID, Instruction::InstrType> int64_map = 
@@ -206,10 +202,6 @@ static Instruction::InstrType get_arith_type(ir::Instruction::OpID id, std::shar
         {ir::Instruction::Mul, Instruction::MUL},
         {ir::Instruction::Div, Instruction::DIV},
         {ir::Instruction::Mod, Instruction::REM},
-        {ir::Instruction::And, Instruction::AND},
-        {ir::Instruction::AndThen, Instruction::AND},
-        {ir::Instruction::Or, Instruction::OR},
-        {ir::Instruction::OrElse, Instruction::OR},
     };
     if(type->get_tid() == ir::Type::RealTID) {
         if(type->get_size() == 4) {
@@ -234,6 +226,7 @@ static void make_unary_inst
     // 同理, RISC-V中没有完整的一元运算符支持，此处需要更多转换
     // 最后的结果一定保存在reg中
     // TODO
+    
 }
 
 static void make_cmp_inst
@@ -241,11 +234,149 @@ static void make_cmp_inst
 {
     // RISC-V中的比较指令集并不完善，故需要转换
     // 最后的结果一定保存在reg1中
-    // TODO
+    // 先进行类型转换
+    if(reg1->is_real() != reg2->is_real()) {
+        // 需要进行类型转换
+        // 必须要一律转换成浮点数才能计算
+        if(reg1->is_real()) {
+            // reg1是浮点数，reg2是整数
+            auto reg3 = current_scope_.alloc_tmp_reg(true);
+            auto zero = std::make_shared<Register>(Register::Zero);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_D_L, reg3, reg2);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(reg2);
+            reg2 = reg3;
+        } else {
+            // reg1是整数，reg2是浮点数
+            auto reg3 = current_scope_.alloc_tmp_reg(true);
+            auto zero = std::make_shared<Register>(Register::Zero);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_L_D, reg3, reg1);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(reg1);
+            reg1 = reg3;
+        }
+    }
+    // 此时reg1和reg2的类型一定相同
+    auto zero = std::make_shared<Register>(Register::Zero);
+    if(reg1->is_real()) {
+        // 此时为浮点数
+        switch (id) {
+            case ir::Instruction::Eq:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FEQ_D, reg1, reg1, reg2));
+                break;
+            case ir::Instruction::Ne:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FEQ_D, reg1, reg1, reg2));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FEQ_D, reg1, reg1, zero));
+                break;
+            case ir::Instruction::Lt:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FLT_D, reg1, reg1, reg2));
+                break;
+            case ir::Instruction::Le:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FLE_D, reg1, reg1, reg2));
+                break;
+            case ir::Instruction::Gt:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FLT_D, reg1, reg2, reg1));
+                break;
+            case ir::Instruction::Ge:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FLE_D, reg1, reg2, reg1));
+                break;
+            default:
+                LOG_FATAL("Unknown compare operator");
+        }
+    } else {
+        // 此时为整数
+        auto imm_true = std::make_shared<Immediate>(1);
+        auto imm_8 = std::make_shared<Immediate>(8);
+        auto imm_16 = std::make_shared<Immediate>(16);
+        switch (id) {
+            case ir::Instruction::Eq:
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, reg1, reg2, imm_16));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, imm_8));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, 1));
+                break;
+            case ir::Instruction::Ne:
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BNE, reg1, reg2, imm_16));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, imm_8));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, 1));
+                break;
+            case ir::Instruction::Lt:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg1, reg2));
+                break;
+            case ir::Instruction::Le:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg2, reg1));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, 1));
+                break;
+            case ir::Instruction::Gt:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg2, reg1));
+                break;
+            case ir::Instruction::Ge:
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg1, reg2));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, 1));
+                break;
+            default:
+                LOG_FATAL("Unknown compare operator");
+        }
+    }
 }
 
 void RiscvBuilder::visit(const ir::BinaryInst* inst) {
     // 先处理操作数
+    if(inst->is_logical()) {
+        // 逻辑运算符和其他运算符不同，需要特殊处理
+        // 如 a1 and a2, 需要先计算a1, 如果a1为0, 则结果为0, 否则计算a2
+        auto op1 = inst->operands_[0].lock();
+        if(op1->is_inst()) {
+            auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
+            inst1->accept(*this);
+        } else if (op1->is_literal()) {
+            auto literal = std::static_pointer_cast<ir::Literal>(op1);
+            literal->accept(*this);
+        }
+        // 将结果保存在reg1中
+        auto reg1 = current_scope_.alloc_tmp_reg(false);
+        auto zero = std::make_shared<Register>(Register::Zero);
+        auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg1, zero, last_result_);
+        cur_bb_->insts_.emplace_back(ins);
+        current_scope_.free_tmp_reg(last_result_);
+        // 插入一条空指令占位，随后用条件跳转指令替换
+        auto zero_inst = std::make_shared<BinaryInst>(Instruction::ADD, zero, zero, zero);
+        size_t index = cur_bb_->insts_.size();
+        cur_bb_->insts_.emplace_back(zero_inst);
+        // 计算第二个操作数
+        auto op2 = inst->operands_[1].lock();
+        if(op2->is_inst()) {
+            auto inst2 = std::static_pointer_cast<ir::Instruction>(op2);
+            inst2->accept(*this);
+        } else if (op2->is_literal()) {
+            auto literal = std::static_pointer_cast<ir::Literal>(op2);
+            literal->accept(*this);
+        }
+        // 此时第二个操作数的计算结果被存在last_result_中
+        // 计算此时的结果
+        if (inst->op_id_ == ir::Instruction::And || inst->op_id_ == ir::Instruction::AndThen) {
+            auto res_inst = std::make_shared<BinaryInst>(Instruction::AND, last_result_, reg1, last_result_);
+            cur_bb_->insts_.emplace_back(res_inst);
+        } else {
+            auto res_inst = std::make_shared<BinaryInst>(Instruction::OR, last_result_, reg1, last_result_);
+            cur_bb_->insts_.emplace_back(res_inst);
+        }
+        // 计算跳转指令立即数
+        auto imm = std::make_shared<Immediate>((cur_bb_->insts_.size() - index - 1) * 8);
+        if(inst->op_id_ == ir::Instruction::And || inst->op_id_ == ir::Instruction::AndThen) {
+            // 如果是and, 需要判断第一个操作数是否为0
+            // 第一个操作数为0直接跳转
+            auto jmp_inst = std::make_shared<BranchInst>(Instruction::BEQ, reg1, zero, imm);
+            cur_bb_->insts_[index] = jmp_inst;
+        } else {
+            // 如果是or, 需要判断第一个操作数是否为1
+            // 第一个操作数为1直接跳转
+            auto jmp_inst = std::make_shared<BranchInst>(Instruction::BNE, reg1, zero, imm);
+            cur_bb_->insts_[index] = jmp_inst;
+        }
+        return;
+    }
     auto op1 = inst->operands_[0].lock();
     if(op1->is_inst()) {
         auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
@@ -262,6 +393,28 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
     } else if (op2->is_literal()) {
         auto literal = std::static_pointer_cast<ir::Literal>(op2);
         literal->accept(*this);
+    }
+    // 注意类型转换！
+    if(reg1->is_real() != last_result_->is_real()) {
+        // 需要进行类型转换
+        // 必须要一律转换成浮点数才能计算
+        if(reg1->is_real()) {
+            // reg1是浮点数，last_result_是整数
+            auto reg2 = current_scope_.alloc_tmp_reg(true);
+            auto zero = std::make_shared<Register>(Register::Zero);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_D_L, reg2, last_result_);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(last_result_);
+            last_result_ = reg2;
+        } else {
+            // reg1是整数，last_result_是浮点数
+            auto reg2 = current_scope_.alloc_tmp_reg(true);
+            auto zero = std::make_shared<Register>(Register::Zero);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_L_D, reg2, reg1);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(reg1);
+            reg1 = reg2;
+        }
     }
     auto type = get_arith_type(inst->op_id_, inst->type_);
     auto ins = std::make_shared<BinaryInst>(type, last_result_, reg1, last_result_);

@@ -210,16 +210,40 @@ UnaryInst::UnaryInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_
 BinaryInst::BinaryInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_ptr<Operand> op1, std::shared_ptr<Operand> op2)
 : Instruction(type, 2)
 {
-    static const std::set<Instruction::InstrType> valid_types = {
+
+    static const std::set<Instruction::InstrType> vaild_int_types = {
         ADD, SUB, SLT, SLTU, XOR, OR, AND, ANDI, MUL, MULH, MULHSU, 
-        MULHU, DIV, DIVU, REM, REMU, MULW, DIVW, DIVUW, REMW,
+        MULHU, DIV, DIVU, REM, REMU, MULW, DIVW, DIVUW, REMW
+    };
+
+    static const std::set<Instruction::InstrType> valid_float_types = {
         FADD_S, FSUB_S, FMUL_S, FDIV_S, FADD_D, FSUB_D, FMUL_D, FDIV_D,
         FSGNJ_S, FSGNJN_S, FSGNJX_S, FSGNJ_D, FSGNJN_D, FSGNJX_D
     };
 
-    if (valid_types.count(type) > 0) {
+    if (vaild_int_types.count(type) > 0) {
         if (dest->type_ == Operand::Register && op1->type_ == Operand::Register && op2->type_ == Operand::Register) {
-            // 正确的指令类型和操作数类型
+            auto reg1 = std::dynamic_pointer_cast<Register>(op1);
+            auto reg2 = std::dynamic_pointer_cast<Register>(op2);
+            if(reg1->is_real() || reg2->is_real()) {
+                LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 
+                    instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str(), op2->print().c_str());
+                LOG_FATAL("BinaryInst type error, dest, op1 and op2 should be Register");
+            }
+        } else {
+            LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 
+                    instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str(), op2->print().c_str());
+            LOG_FATAL("BinaryInst type error, dest, op1 and op2 should be Register");
+        }
+    } else if (valid_float_types.count(type) > 0) {
+        if (dest->type_ == Operand::Register && op1->type_ == Operand::Register && op2->type_ == Operand::Register) {
+            auto reg1 = std::dynamic_pointer_cast<Register>(op1);
+            auto reg2 = std::dynamic_pointer_cast<Register>(op2);
+            if(!reg1->is_real() || !reg2->is_real()) {
+                LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 
+                    instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str(), op2->print().c_str());
+                LOG_FATAL("BinaryInst type error, dest, op1 and op2 should be Register");
+            }
         } else {
             LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 
                     instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str(), op2->print().c_str());
@@ -228,6 +252,7 @@ BinaryInst::BinaryInst(InstrType type, std::shared_ptr<Operand> dest, std::share
     } else {
         LOG_FATAL("BinaryInst type error, %s not a BinaryInst", instrTypeToString[type].c_str());
     }
+
 
     type_ = type;
     operands_[0] = op1;

@@ -724,6 +724,7 @@ public:
      * @return false 
      */
     static bool can_compute(const Type *t1, const Type *t2);
+    bool is_logical() const { return op_id_ == And || op_id_ == Or || op_id_ == AndThen || op_id_ == OrElse; }
 };
 
 /**

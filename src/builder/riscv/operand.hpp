@@ -54,6 +54,7 @@ public:
     int reg_unique_id_; // 寄存器唯一编号
     Register(RegType reg_type, int reg_id = -1);
     int getUniqueId() const { return reg_unique_id_; }
+    bool is_real() const { return reg_unique_id_ >= 32; }
     std::string print() const override;
 };
 
