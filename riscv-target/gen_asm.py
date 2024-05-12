@@ -12,20 +12,28 @@ class Colors:
     
 import concurrent.futures
 
+import os
+
 def run_pascc(file, source_dir, dest_dir):
     filename = os.path.basename(file)
     try:
         with open(dest_dir + filename[:-4] + ".log", 'w') as log_file:
-            subprocess.run(['../bin/pascc', '-i', file, '-o', dest_dir + filename[:-4] + ".s", '-D', '-d', '3'], stdout=log_file, check=True)
-    except subprocess.CalledProcessError:
-        print(f"Error: Compilation failed for {filename}")
-        return
+            subprocess.run(['../bin/pascc', '-i', file, '-o', dest_dir + filename[:-4] + ".s", '-D', '-d', '3'], stdout=log_file, stderr=subprocess.STDOUT, check=True, timeout=20)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        print(f"Error: {str(e)} for {filename}")
+        os.remove(dest_dir + filename[:-4] + ".s")
+        return False
     print(f"Assembly for {filename} generated successfully")
+    return True
 
 def gen_asm(source_dir, dest_dir):
-    files = [file for file in os.listdir(source_dir) if file.endswith('.pas')]
+    files = sorted([file for file in os.listdir(source_dir) if file.endswith('.pas')])
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(run_pascc, files, [source_dir]*len(files), [dest_dir]*len(files))
+        results = list(executor.map(run_pascc, files, [source_dir]*len(files), [dest_dir]*len(files)))
+    successful_files = [file for file, success in zip(files, results) if success]
+    failed_files = [file for file, success in zip(files, results) if not success]
+    print(f"{Colors.GREEN} Successful files: {successful_files} {Colors.END}")
+    print(f"{Colors.RED} Failed files: {failed_files} {Colors.END}")
             
 os.chdir('../open_set')
 gen_asm('.', '../riscv-target/asm/')

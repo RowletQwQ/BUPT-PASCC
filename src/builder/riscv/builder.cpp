@@ -958,7 +958,7 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
     // 先把a0的值存入last_result_
     auto a0 = std::make_shared<Register>(Register::IntArg, 0);
     last_result_ = current_scope_.alloc_tmp_reg(false);
-    auto load_a0_inst = std::make_shared<LoadInst>(Instruction::ADD, last_result_, a0, zero);
+    auto load_a0_inst = std::make_shared<BinaryInst>(Instruction::ADD, last_result_, a0, zero);
     cur_bb_->insts_.emplace_back(load_a0_inst);
     // 将s1存入ra
     auto load_ra_inst = std::make_shared<BinaryInst>(Instruction::ADD, ra, zero, s1);
