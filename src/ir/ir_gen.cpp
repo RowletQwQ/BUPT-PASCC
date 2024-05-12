@@ -394,13 +394,14 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
             LOG_ERROR("常量声明:不支持的类型, 常量名:%s, 类型:%d, 指针:%p", name.c_str(), value_stmt->type, value_stmt);
         }
         this->module_.add_literal(val);
-
+        val->name_ = name;
         // 判断是否是全局作用域
         if (this->scope_.is_global()) {
             auto g = std::make_shared<GlobalIdentifier>(type, name, true, val);
             this->module_.add_global_identifier(g);
             this->scope_.push(name, g);
         } else {
+
             auto l = std::make_shared<LocalIdentifier>(type, name, true, val);
             this->scope_.current_f_->add_local_identifier(l);
             this->scope_.push(name, l);

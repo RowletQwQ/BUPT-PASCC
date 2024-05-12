@@ -324,7 +324,8 @@ BranchInst::BranchInst(InstrType type, std::shared_ptr<Operand> op1, std::shared
     };
 
     if (valid_types.count(type) > 0) {
-        if (op1->type_ == Operand::Register && op2->type_ == Operand::Register && dest->type_ == Operand::Immediate) {
+        if (op1->type_ == Operand::Register && op2->type_ == Operand::Register && 
+            (dest->type_ == Operand::Immediate || dest->isFunction() || dest->isBlock())) {
             // 正确的指令类型和操作数类型
         } else {
             LOG_ERROR("Error Instruction: %s, op1 %s, op2 %s, dest %s", 
@@ -344,7 +345,7 @@ JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> target)
 : Instruction(type, 0)
 {
     if (type == Instruction::J) {
-        if (target->type_ == Operand::Immediate || target->isFunction()) {
+        if (target->type_ == Operand::Immediate || target->isFunction() || target->isBlock()) {
             // 正确的指令类型和操作数类型
         } else {
             LOG_ERROR("Error Instruction: %s, target %s", 
@@ -363,7 +364,7 @@ JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> ret, std::shared_ptr
 {
     if (type == Instruction::JAL) {
         if (ret->type_ == Operand::Register && 
-        (desc->type_ == Operand::Immediate || desc->isFunction())) {
+        (desc->type_ == Operand::Immediate || desc->isFunction() || desc->isBlock())) {
             // 正确的指令类型和操作数类型
         } else {
             LOG_ERROR("Error Instruction: %s, ret %s, desc %s", 
@@ -382,7 +383,8 @@ JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_pt
 : Instruction(type, 2)
 {
     if (type == Instruction::JALR) {
-        if (dest->type_ == Operand::Register && op1->type_ == Operand::Register && op2->type_ == Operand::Immediate) {
+        if (dest->type_ == Operand::Register && op1->type_ == Operand::Register && 
+        (op2->type_ == Operand::Immediate || op2->isBlock() || op2->isFunction())) {
             // 正确的指令类型和操作数类型
         } else {
             LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 

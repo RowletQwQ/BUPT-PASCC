@@ -271,6 +271,8 @@ static void make_unary_inst
         case ir::Instruction::Inc:
             cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg, reg, imm_1));
             break;
+        case ir::Instruction::Bracket:
+            break; // 空指令
         default:
             LOG_FATAL("Unknown unary operator");
     }
@@ -596,7 +598,14 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
                 break;
             }
         }
-        if(!res)
+        std::shared_ptr<GlobalConst> res_const;
+        for(auto &g_const: modules_->consts_) {
+            if(g_const->name_ == inst->name_) {
+                res_const = g_const;
+                break;
+            }
+        }
+        if(!res && !res_const)
             LOG_FATAL("LoadInst: identifier %s not found in scope", inst->name_.c_str());
         auto label = std::make_shared<Label>(Operand::Immediate, inst->name_);
         if(need_pointer_ || is_lval_) {
@@ -1296,16 +1305,6 @@ void RiscvBuilder::build(ir::Module &program) {
             )
         );
     }
-    // 添加常量， 在data段声明
-    // for(auto &const_ : program.all_literals_) {
-    //     globals.emplace_back(
-    //         common::g_thpool->enqueue(
-    //             [this, &const_] {
-    //                 const_->accept(*this);
-    //             }
-    //         )
-    //     );
-    // }
     // 等待所有任务完成
     for(auto &fut : globals) {
         fut.get();

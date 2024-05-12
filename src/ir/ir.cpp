@@ -77,7 +77,8 @@ GlobalIdentifier::GlobalIdentifier(std::shared_ptr<Type> type, const std::string
 
 // 局部标识符类相关函数实现
 LocalIdentifier::LocalIdentifier(std::shared_ptr<Type> type, const std::string name,bool is_const, std::shared_ptr<Literal> init_val)
-    : Value(type, ValueID::LocalIdentifier, name), is_const_(is_const), init_val_(init_val) {}
+    : Value(type, ValueID::LocalIdentifier, name), is_const_(is_const), init_val_(init_val) {
+    }
 
 // 函数类相关函数实现
 Function::Function(std::shared_ptr<FunctionType> type, const std::string name, std::vector<std::string> arg_name) 
