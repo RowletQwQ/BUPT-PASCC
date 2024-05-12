@@ -64,7 +64,7 @@ public:
     virtual std::string placeholder() { return "";}
     virtual bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
     virtual TID get_tid() const { return tid_; }
-    virtual size_t get_size() = 0;
+    virtual size_t get_size() { return 0; }
     TID tid_;
     bool is_pointer_;
 };
@@ -191,7 +191,7 @@ public:
     TID get_tid() const override { return result_->tid_; }
     std::shared_ptr<Type> result_;
     std::vector<std::shared_ptr<Type> > args_; 
-
+    virtual size_t get_size() override { return result_->get_size(); }
 };
 
 // /**

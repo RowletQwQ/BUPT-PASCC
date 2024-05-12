@@ -2,9 +2,8 @@
 #pragma once
 #include "builder/builder.hpp"
 #include "builder/riscv/instruction.hpp"
-#include "instruction.hpp"
 #include "ir/visitor.hpp"
-#include "operand.hpp"
+#include "builder/riscv/operand.hpp"
 #include <map>
 #include <memory>
 #include <mutex>
@@ -61,7 +60,7 @@ public:
     // 离开当前作用域
     std::shared_ptr<Instruction> leave();
     // 加入一个符号
-    void push(const std::string &name, std::shared_ptr<Operand> val);
+    void push(const std::string &name, std::shared_ptr<Operand> val, bool is_pointer = false, PointerType type = NotPointer);
     // 查找一个符号
     std::shared_ptr<Operand> find(const std::string &name);
 

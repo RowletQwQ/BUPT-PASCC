@@ -1,6 +1,6 @@
 #pragma once
 
-#include "operand.hpp"
+#include "builder/riscv/operand.hpp"
 #include <memory>
 #include <string>
 #include <vector>

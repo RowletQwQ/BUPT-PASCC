@@ -1,4 +1,4 @@
-#include "builder/c_builder.hpp"
+#include "builder/c/c_builder.hpp"
 #include "common/log/log.hpp"
 #include "ir/ir.hpp"
 #include "common/setting/settings.hpp"
@@ -7,6 +7,7 @@
 #include <sstream>
 namespace builder
 {
+namespace c {
     std::stringstream output;
     std::unordered_set<const ir::BasicBlock *>processed_bbs;
 // 处理基本块
@@ -185,4 +186,5 @@ void CBuilder::output(std::ofstream &out)
     out << code_;
 }
 
-}
+} // namespace c
+} // namespace builder

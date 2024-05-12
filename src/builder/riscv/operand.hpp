@@ -117,15 +117,15 @@ public:
         ASCIIZ, // 字符串
         ARRAY, // 数组
     };
-    GlobalConst(int val, const std::string &name) 
+    GlobalConst(const int val, const std::string &name) 
         : Operand(OpType::Const), name_(name) , type_(Word), i32_(val){}
-    GlobalConst(long val, const std::string &name) 
+    GlobalConst(const long val, const std::string &name) 
         : Operand(OpType::Const), name_(name) , type_(DWord), i64_(val){}
-    GlobalConst(float val, const std::string &name)
+    GlobalConst(const float val, const std::string &name)
         : Operand(OpType::Const), name_(name), type_(Float), f32_(val){}
-    GlobalConst(double val, const std::string &name)
+    GlobalConst(const double val, const std::string &name)
         : Operand(OpType::Const), name_(name), type_(Double), f64_(val){}
-    GlobalConst(std::string &val, const std::string &name)
+    GlobalConst(const std::string &val, const std::string &name)
         : Operand(OpType::Const), name_(name), type_(ASCIIZ), str_val_(val){}
     GlobalConst(std::vector<std::shared_ptr<GlobalConst>> &val, const std::string &name)
         : Operand(OpType::Const), name_(name), type_(ARRAY), array_val_(val){}

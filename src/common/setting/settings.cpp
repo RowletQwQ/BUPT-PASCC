@@ -33,7 +33,7 @@ void Settings::parse_args(int argc, char *argv[])
                 say_help();
                 exit(0);
                 break;
-            case 'j'
+            case 'j':
                 thread_num = atoi(optarg);
                 break;
             case 'O':

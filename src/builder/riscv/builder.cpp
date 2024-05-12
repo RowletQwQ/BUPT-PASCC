@@ -1,17 +1,17 @@
 
 
-#include "builder.hpp"
-#include "instruction.hpp"
+#include "builder/riscv/builder.hpp"
+#include "builder/riscv/instruction.hpp"
 #include "ir/ir.hpp"
 #include "common/thpool/thpool.hpp"
 #include "common/log/log.hpp"
-#include "operand.hpp"
+#include "builder/riscv/operand.hpp"
 
 #include <cstdint>
+#include <cstring>
 #include <future>
 #include <memory>
 #include <string>
-#include <type_traits>
 #include <vector>
 namespace builder {
 namespace riscv {
@@ -69,6 +69,13 @@ Scope::Scope() {
     reg_used_.resize(kMaxRegs, false);
     timestamp_ = 0;
     reg_access_timestamp_.resize(kMaxRegs, 0);
+}
+
+void Scope::push(const std::string &name, std::shared_ptr<Operand> val,bool is_pointer /*= false*/, PointerType type /*= NotPointer*/) {
+    symbols_.back()[name] = val;
+    if (is_pointer) {
+        pointers_.back()[name] = type;
+    }
 }
 
 void Scope::enter() {
@@ -225,8 +232,27 @@ static void make_unary_inst
 {
     // 同理, RISC-V中没有完整的一元运算符支持，此处需要更多转换
     // 最后的结果一定保存在reg中
-    // TODO
-    
+    auto imm_1 = std::make_shared<Immediate>(1);
+    auto imm_neg1 = std::make_shared<Immediate>(-1);
+    switch(id) {
+        case ir::Instruction::Minus:
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SUB, reg, std::make_shared<Register>(Register::Zero), reg));
+            break;
+        case ir::Instruction::LogicalNot:
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg, reg, imm_1));
+            break;
+        case ir::Instruction::BitReverse:
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg, reg, imm_neg1));
+            break;
+        case ir::Instruction::Not:
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg, reg, imm_neg1));
+            break;
+        case ir::Instruction::Inc:
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg, reg, imm_1));
+            break;
+        default:
+            LOG_FATAL("Unknown unary operator");
+    }
 }
 
 static void make_cmp_inst
@@ -293,27 +319,27 @@ static void make_cmp_inst
                 cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, reg1, reg2, imm_16));
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
                 cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, imm_8));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, 1));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, imm_true));
                 break;
             case ir::Instruction::Ne:
                 cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BNE, reg1, reg2, imm_16));
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
                 cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, imm_8));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, 1));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, imm_true));
                 break;
             case ir::Instruction::Lt:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg1, reg2));
                 break;
             case ir::Instruction::Le:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg2, reg1));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, 1));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, imm_true));
                 break;
             case ir::Instruction::Gt:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg2, reg1));
                 break;
             case ir::Instruction::Ge:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg1, reg2));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, 1));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, imm_true));
                 break;
             default:
                 LOG_FATAL("Unknown compare operator");
@@ -363,7 +389,7 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
             cur_bb_->insts_.emplace_back(res_inst);
         }
         // 计算跳转指令立即数
-        auto imm = std::make_shared<Immediate>((cur_bb_->insts_.size() - index - 1) * 8);
+        auto imm = std::make_shared<Immediate>((int64_t)(cur_bb_->insts_.size() - index - 1) * 8);
         if(inst->op_id_ == ir::Instruction::And || inst->op_id_ == ir::Instruction::AndThen) {
             // 如果是and, 需要判断第一个操作数是否为0
             // 第一个操作数为0直接跳转
@@ -568,8 +594,8 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
     auto load_ra_inst = std::make_shared<BinaryInst>(Instruction::ADD, ra, zero, s1);
     cur_bb_->insts_.emplace_back(load_ra_inst);
     // 将栈顶存入s1
-    store_inst = std::make_shared<LoadInst>(Instruction::LD, s1, sp, imm);
-    cur_bb_->insts_.emplace_back(store_inst);
+    auto store_inst_1 = std::make_shared<LoadInst>(Instruction::LD, s1, sp, imm);
+    cur_bb_->insts_.emplace_back(store_inst_1);
     // 退栈
     auto dealloc = current_scope_.dealloc_stack(8 + stack_for_arg);
     cur_bb_->insts_.emplace_back(dealloc);
@@ -634,7 +660,7 @@ void RiscvBuilder::visit(const ir::BranchInst* inst) {
     if(else_bb) {
         // 如果存在else分支，则跳转到else分支
         auto else_label = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, else_bb->index_));
-        ins = std::make_shared<JumpInst>(Instruction::J, else_label);
+        auto ins = std::make_shared<JumpInst>(Instruction::J, else_label);
         cur_bb_->insts_.emplace_back(ins);
     }
     // 释放寄存器

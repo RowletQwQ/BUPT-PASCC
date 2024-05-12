@@ -1,8 +1,8 @@
 
 
-#include "instruction.hpp"
+#include "builder/riscv/instruction.hpp"
 #include "common/log/log.hpp"
-#include "operand.hpp"
+#include "builder/riscv/operand.hpp"
 #include <map>
 #include <set>
 #include <string>
@@ -156,6 +156,13 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
 Instruction::Instruction(InstrType type, int op_nums)
 : type_(type), op_nums_(op_nums) {
     operands_.resize(op_nums);
+}
+
+void Instruction::setOperand(int index, std::shared_ptr<Operand> operand) {
+    if (index < 0 || index >= op_nums_) {
+        LOG_FATAL("Instruction setOperand index error, index %d, op_nums %d", index, op_nums_);
+    }
+    operands_[index] = operand;
 }
 
 NoOperandInst::NoOperandInst(InstrType type)

@@ -28,6 +28,7 @@ set(AST_SOURCE_FILES
 
 set(LOG_SOURCE_FILES
     ../../src/common/log/log.cpp
+    ../../src/common/setting/settings.cpp
 )
 
 set(YACC_OUTPUTS
