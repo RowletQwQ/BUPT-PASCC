@@ -24,7 +24,8 @@ thread_local std::vector<std::shared_ptr<GlobalConst>> tmp_consts_;
 thread_local std::shared_ptr<Register> last_result_;
 thread_local Scope current_scope_;
 thread_local bool need_pointer_ = false;
-thread_local bool is_reg_ = false; // 用于判断last_result_传的是值还是寄存器本身
+thread_local bool is_lval_ = false; // 用于提示当前尝试获取的是左值还是右值
+thread_local bool is_reg_  = false; // 用于提示当前尝试获取的是内存还是寄存器
 
 
 static inline int UpperAlign(int size, int align) {
@@ -148,6 +149,7 @@ std::shared_ptr<Register> Scope::alloc_tmp_reg(bool is_real) {
     if(is_real) {
         for(auto &reg: avail_float_regs_) {
             if(!is_reg_allocated(reg->getUniqueId())) {
+                LOG_DEBUG("Alloc float reg %s", reg->print().c_str()); 
                 touch_reg(reg->getUniqueId());
                 return reg;
             }
@@ -155,6 +157,7 @@ std::shared_ptr<Register> Scope::alloc_tmp_reg(bool is_real) {
     } else {
         for(auto &reg: avail_int_regs_) {
             if(!is_reg_allocated(reg->getUniqueId())) {
+                LOG_DEBUG("Alloc int reg %s", reg->print().c_str());
                 touch_reg(reg->getUniqueId());
                 return reg;
             }
@@ -165,6 +168,7 @@ std::shared_ptr<Register> Scope::alloc_tmp_reg(bool is_real) {
 }
 
 void Scope::free_tmp_reg(std::shared_ptr<Register> reg) {
+    LOG_DEBUG("Free reg %s", reg->print().c_str());
     reg_used_[reg->getUniqueId()] = false;
 }
 
@@ -505,9 +509,10 @@ void RiscvBuilder::visit(const ir::CompareInst* inst) {
 }
 void RiscvBuilder::visit(const ir::StoreInst* inst) {
     // 先接收左值
-    is_reg_ = false;
+    is_lval_ = true;
     auto op1 = std::static_pointer_cast<ir::Instruction>(inst->operands_[0].lock());
     op1->accept(*this);
+    is_lval_ = false;
     if(is_reg_) {
         LOG_DEBUG("StoreInst target: Reg %s", last_result_->print().c_str());
         auto res_reg = last_result_;
@@ -527,6 +532,7 @@ void RiscvBuilder::visit(const ir::StoreInst* inst) {
         cur_bb_->insts_.emplace_back(store_inst);
         current_scope_.free_tmp_reg(last_result_);
         last_result_ = res_reg;
+        is_reg_ = false; // 消除标记
     } else {
         LOG_DEBUG("StoreInst target: Mem Addr In %s", last_result_->print().c_str());
         auto mem_reg = current_scope_.alloc_tmp_reg(false);
@@ -551,8 +557,10 @@ void RiscvBuilder::visit(const ir::StoreInst* inst) {
         } else {
             auto store_inst = std::make_shared<StoreInst>(Instruction::SW, last_result_, mem_reg, std::make_shared<Immediate>(0));
             cur_bb_->insts_.emplace_back(store_inst);
-        } 
+        }
+        current_scope_.free_tmp_reg(mem_reg); 
     }
+    current_scope_.free_tmp_reg(last_result_); // Store之后的寄存器没有必要继续使用
 }
 void RiscvBuilder::visit(const ir::LoadInst* inst) {
     // 先判断是不是数组
@@ -591,7 +599,7 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
         if(!res)
             LOG_FATAL("LoadInst: identifier %s not found in scope", inst->name_.c_str());
         auto label = std::make_shared<Label>(Operand::Immediate, inst->name_);
-        if(need_pointer_) {
+        if(need_pointer_ || is_lval_) {
             last_result_ = current_scope_.alloc_tmp_reg(false);
             auto la_inst = std::make_shared<LoadInst>(Instruction::LA, last_result_, label);
             cur_bb_->insts_.emplace_back(la_inst);
@@ -608,6 +616,7 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
                 cur_bb_->insts_.emplace_back(load_inst);
             }
             last_result_ = reg;
+            is_reg_ = true;
         }
         return;
     }
@@ -633,15 +642,16 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
                 auto ins = std::make_shared<BinaryInst>(Instruction::ADD, last_result_, std::make_shared<Register>(Register::Zero), res_reg);
                 cur_bb_->insts_.emplace_back(ins);
             }
+            is_reg_ = true;
         } else {
             auto mem = std::static_pointer_cast<Memory>(res);
             if(mem->type_ == Memory::Float) {
                 last_result_ = current_scope_.alloc_tmp_reg(true);
                 if (mem->size_ == 4) {
-                    auto inst = std::make_shared<LoadInst>(Instruction::LW, last_result_, mem->base_, mem->offset_);
+                    auto inst = std::make_shared<LoadInst>(Instruction::FLW, last_result_, mem->base_, mem->offset_);
                     cur_bb_->insts_.emplace_back(inst);
                 } else {
-                    auto inst = std::make_shared<LoadInst>(Instruction::LD, last_result_, mem->base_, mem->offset_);
+                    auto inst = std::make_shared<LoadInst>(Instruction::FLD, last_result_, mem->base_, mem->offset_);
                     cur_bb_->insts_.emplace_back(inst);
                 }
             } else {
@@ -661,7 +671,7 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
 void RiscvBuilder::visit(const ir::ReadInst* inst) {
     // 在函数调用前保存调用环境
     // 先将s2-s11写入栈
-    auto alloc = current_scope_.alloc_stack(72);
+    auto alloc = current_scope_.alloc_stack(80);
     cur_bb_->insts_.emplace_back(alloc);
     auto sp = std::make_shared<Register>(Register::Stack);
     auto zero = std::make_shared<Register>(Register::Zero);
@@ -748,14 +758,14 @@ void RiscvBuilder::visit(const ir::ReadInst* inst) {
         cur_bb_->insts_.emplace_back(load_inst);
     }
     // 退栈
-    auto dealloc = current_scope_.dealloc_stack(72);
+    auto dealloc = current_scope_.dealloc_stack(80);
     cur_bb_->insts_.emplace_back(dealloc);
 
 }
 void RiscvBuilder::visit(const ir::WriteInst* inst) {
     // 在函数调用前保存调用环境
     // 先将s2-s11写入栈
-    auto alloc = current_scope_.alloc_stack(72);
+    auto alloc = current_scope_.alloc_stack(80);
     cur_bb_->insts_.emplace_back(alloc);
     auto sp = std::make_shared<Register>(Register::Stack);
     auto zero = std::make_shared<Register>(Register::Zero);
@@ -849,14 +859,14 @@ void RiscvBuilder::visit(const ir::WriteInst* inst) {
         cur_bb_->insts_.emplace_back(load_inst);
     }
     // 退栈
-    auto dealloc = current_scope_.dealloc_stack(72);
+    auto dealloc = current_scope_.dealloc_stack(80);
     cur_bb_->insts_.emplace_back(dealloc);
 
 }
 void RiscvBuilder::visit(const ir::CallInst* inst) {
     // 在函数调用前保存调用环境
     // 先将s2-s11写入栈
-    auto alloc = current_scope_.alloc_stack(72);
+    auto alloc = current_scope_.alloc_stack(80);
     cur_bb_->insts_.emplace_back(alloc);
     auto sp = std::make_shared<Register>(Register::Stack);
     auto zero = std::make_shared<Register>(Register::Zero);
@@ -974,7 +984,7 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
         cur_bb_->insts_.emplace_back(load_inst);
     }
     // 退栈
-    dealloc = current_scope_.dealloc_stack(72);
+    dealloc = current_scope_.dealloc_stack(80);
     cur_bb_->insts_.emplace_back(dealloc);
 }
 void RiscvBuilder::visit(const ir::ReturnInst* inst) {
@@ -1108,13 +1118,7 @@ void RiscvBuilder::visit(const ir::Function* func) {
     // 离开当前作用域
     // 检查有没有返回值，有就保存到a0
     if(func->func_type_.lock()->result_->is_number()) {
-        if(func->name_ == "main") {
-            // main函数需要返回0
-            auto zero = std::make_shared<Register>(Register::Zero);
-            auto a0 = std::make_shared<Register>(Register::IntArg, 0);
-            auto inst = std::make_shared<BinaryInst>(Instruction::XOR, a0, zero, zero);
-            cur_func_->after_insts_.emplace_back(inst);
-            } else {
+        if(func->name_ != "main")  {
                 auto ret = current_scope_.find("__");
             if(ret == nullptr) {
                 LOG_FATAL("Function %s has no return value", func->name_.c_str());
@@ -1137,12 +1141,29 @@ void RiscvBuilder::visit(const ir::Function* func) {
     auto leave_inst = current_scope_.leave();
     cur_func_->after_insts_.emplace_back(leave_inst);
     cur_func_->after_insts_.emplace_back(load_s0);
-    
+    // 退s0的栈空间
+    auto dealloc_stack = current_scope_.dealloc_stack(8);
+    cur_func_->after_insts_.emplace_back(dealloc_stack);
+    // 如果是main函数，需要召唤系统调用退出
+    if(func->name_ == "main") {
+        auto a7 = std::make_shared<Register>(Register::IntArg, 7);
+        auto imm = std::make_shared<Immediate>(10);
+        auto a0 = std::make_shared<Register>(Register::IntArg, 0);
+        auto set_a7 = std::make_shared<BinaryInst>(Instruction::ADDI, a7, zero, imm);
+        auto set_a0 = std::make_shared<BinaryInst>(Instruction::XOR, a0, zero, zero);
+        auto ecall = std::make_shared<NoOperandInst>(Instruction::ECALL);
+        cur_func_->after_insts_.emplace_back(set_a7);
+        cur_func_->after_insts_.emplace_back(set_a0);
+        cur_func_->after_insts_.emplace_back(ecall);
+        modules_->add_func(cur_func_);
+        return;
+    }
     // 加上返回指令
     auto ra = std::make_shared<Register>(Register::Return);
     auto ret_inst = std::make_shared<JumpInst>(Instruction::JALR, zero, ra, imm_zero);
     cur_func_->after_insts_.emplace_back(ret_inst);
     modules_->add_func(cur_func_);
+    
 }
 void RiscvBuilder::visit(const ir::GlobalIdentifier* global) {
     // 先判断是否初始化
@@ -1276,15 +1297,15 @@ void RiscvBuilder::build(ir::Module &program) {
         );
     }
     // 添加常量， 在data段声明
-    for(auto &const_ : program.all_literals_) {
-        globals.emplace_back(
-            common::g_thpool->enqueue(
-                [this, &const_] {
-                    const_->accept(*this);
-                }
-            )
-        );
-    }
+    // for(auto &const_ : program.all_literals_) {
+    //     globals.emplace_back(
+    //         common::g_thpool->enqueue(
+    //             [this, &const_] {
+    //                 const_->accept(*this);
+    //             }
+    //         )
+    //     );
+    // }
     // 等待所有任务完成
     for(auto &fut : globals) {
         fut.get();

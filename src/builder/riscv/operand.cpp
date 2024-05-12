@@ -42,7 +42,7 @@ Register::Register(Register::RegType reg_type, int reg_id /* = -1*/)
             if (reg_id_ <= 2) {
                 reg_unique_id_ = 5 + reg_id_;
             } else {
-                reg_unique_id_ = 28 + reg_id_;
+                reg_unique_id_ = 25 + reg_id_;
             }
             break;
         }
@@ -50,17 +50,17 @@ Register::Register(Register::RegType reg_type, int reg_id /* = -1*/)
             reg_unique_id_ = 8;
             break;
         case RegType::Saved:
-            if (reg_id_ == 0) {
-                reg_unique_id_ = 9;
+            if (reg_id_ <= 1) {
+                reg_unique_id_ = 8 + reg_id_;
             } else {
-                reg_unique_id_ = 18 + reg_id_;
+                reg_unique_id_ = 16 + reg_id_;
             }
             break;
         case RegType::IntArg:
             reg_unique_id_ = 10 + reg_id_;
             break;
         case RegType::FloatArg:
-            reg_unique_id_ = 10 + reg_id_;
+            reg_unique_id_ = 32 + reg_id_;
             break;
         case RegType::Float:
             reg_unique_id_ = 32 + reg_id_;
