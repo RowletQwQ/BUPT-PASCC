@@ -59,6 +59,7 @@ void Settings::say_help()
     LOG_INFO("  -o <file>   Set output file");
     LOG_INFO("  -h          Show this help message");
     LOG_INFO("  -O          Enable optimization");
+    LOG_INFO("  -D          Generate assembly code");
 }
 
 } // namespace common
