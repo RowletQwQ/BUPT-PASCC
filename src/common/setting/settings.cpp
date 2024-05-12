@@ -16,7 +16,7 @@ Settings &Settings::get_instance()
 void Settings::parse_args(int argc, char *argv[])
 {
     int opt;
-    while((opt = getopt(argc,argv,"d:i:o:h:j:O")) != -1)
+    while((opt = getopt(argc,argv,"d:i:o:h:j:O:D")) != -1)
     {
         switch(opt)
         {
@@ -39,7 +39,7 @@ void Settings::parse_args(int argc, char *argv[])
             case 'O':
                 opt_level = 1;
                 break;
-            case '-D':
+            case 'D':
                 is_asm = true;
                 break;
             default:
