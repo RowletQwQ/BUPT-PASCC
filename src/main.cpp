@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "builder/riscv/builder.hpp"
 #include "common/thpool/thpool.hpp"
 #include "common/log/log.hpp"
 #include "opt/opt.hpp"
@@ -29,7 +30,11 @@ void init_env()
         size_t pos = G_SETTINGS.input_file.find_last_of('.');
         if (pos == std::string::npos)
         {
-            G_SETTINGS.output_file = G_SETTINGS.input_file + ".c";
+            if(G_SETTINGS.is_asm) {
+                G_SETTINGS.output_file = G_SETTINGS.input_file + ".s";
+            } else {
+                G_SETTINGS.output_file = G_SETTINGS.input_file + ".c";
+            }
         }
         else
         {
@@ -145,9 +150,18 @@ int main(int argc, char *argv[])
     // 第四步: 生成目标代码
     std::ofstream output_file(G_SETTINGS.output_file);
     LOG_DEBUG("Start generating target code...");
-    std::unique_ptr<builder::c::CBuilder> builder = std::make_unique<builder::c::CBuilder>();
-    builder->build(ir);
-    builder->output(output_file);
+    if(G_SETTINGS.is_asm) {
+        LOG_INFO("Generating RISC-V assembly code...");
+        std::unique_ptr<builder::riscv::RiscvBuilder> builder = std::make_unique<builder::riscv::RiscvBuilder>();
+        builder->build(ir);
+        builder->output(output_file);
+    } else {
+        LOG_INFO("Generating C code...");
+        std::unique_ptr<builder::c::CBuilder> builder = std::make_unique<builder::c::CBuilder>();
+        builder->build(ir);
+        builder->output(output_file);
+    }
+    
     LOG_DEBUG("Generating target code done.");
     
     return 0;

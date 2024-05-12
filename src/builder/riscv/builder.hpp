@@ -17,6 +17,7 @@ class BasicBlock {
 public:
     std::shared_ptr<Label> label_;
     std::vector<std::shared_ptr<Instruction>> insts_; // 基本块中的指令
+    int placeholder_cnt_; // 用于占位符常量的命名
 };
 
 class Function {

@@ -527,6 +527,10 @@ void IRGenerator::visit(LValStmt &stmt) {
         }
     } else {
         // 处理数组
+        // 获取数组维度信息
+        auto tmp = std::static_pointer_cast<ArrayType>(val->type_);
+        auto array_type = std::make_shared<ArrayType>(tmp->elem_type_,tmp->dims_elem_num_);
+        array_type->dims_elem_num_.erase(array_type->dims_elem_num_.begin());
         for (int i = 0; i < stmt.array_index.size(); i++) {
             stmt.array_index[i] -> accept(*this);
             std::shared_ptr<Value> idx = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
@@ -539,10 +543,11 @@ void IRGenerator::visit(LValStmt &stmt) {
                 inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
                 this->module_.all_instructions_.emplace_back(inst);
             } else {
-                std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(val->type_, val, idx, this->scope_.current_f_->basic_blocks_.back());
+                std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(array_type, val, idx, this->scope_.current_f_->basic_blocks_.back());
                 this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
                 inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
                 this->module_.all_instructions_.emplace_back(inst);
+                array_type->dims_elem_num_.erase(array_type->dims_elem_num_.begin());
             }
             val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
             if (i != int(stmt.array_index.size()) - 1) {

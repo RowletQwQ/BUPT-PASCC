@@ -39,6 +39,9 @@ void Settings::parse_args(int argc, char *argv[])
             case 'O':
                 opt_level = 1;
                 break;
+            case '-D':
+                is_asm = true;
+                break;
             default:
                 LOG_FATAL("Unknown option: %c", opt);
                 say_help();

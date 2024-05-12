@@ -166,7 +166,13 @@ public:
         return type_str;
     }
     virtual std::string placeholder() override { return ""; }
-    virtual size_t get_size() override { return elem_type_->get_size() * dims_elem_num_.back(); }
+    virtual size_t get_size() override { 
+        unsigned sum = 0;
+        for (unsigned i = 0; i < dims_elem_num_.size(); i++) {
+            sum += dims_elem_num_[i];
+        }
+        return sum * elem_type_->get_size();
+    }
     Type::TID get_elem_tid() const { 
         if(elem_type_->tid_ == Type::ArrayTID) {
             return std::dynamic_pointer_cast<ArrayType>(elem_type_)->get_elem_tid();
@@ -886,12 +892,14 @@ public:
       : Instruction(ty, OpID::Visit, 2, bb) {
         set_operand(0, array);
         set_operand(1, idx);
+        name_ = array->name_;
     }
 
     LoadInst(std::shared_ptr<Type> ty, std::shared_ptr<Value> id,
             std::weak_ptr<BasicBlock> bb)
       : Instruction(ty, OpID::Visit, 1, bb) {
         set_operand(0, id);
+        name_ = id->name_;
     }
     ~LoadInst() = default;
     virtual std::string print() override {
@@ -907,6 +915,7 @@ public:
     //     return operands_[i];
     // }
     virtual void accept(IrVisitor &visitor) override;
+    bool is_array_visit() const { return num_ops_ == 2; }
 };
 
 /**
@@ -927,9 +936,9 @@ public:
         for (int i = 0; i < operands_.size(); i++) {
             std::string placeholder = operands_[i].lock()->type_->placeholder();
             ans = ans + placeholder;
-            if (i != operands_.size() - 1) {
-                ans = ans + ", ";
-            }
+            // if (i != operands_.size() - 1) {
+            //     ans = ans + ", ";
+            // }
         }
         ans = ans + "\", ";
         for (int i = 0; i < operands_.size(); i++) {
