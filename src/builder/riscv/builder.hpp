@@ -36,6 +36,7 @@ public:
     void add_const(std::shared_ptr<GlobalConst> global);
     void add_func(std::shared_ptr<Function> func);
     void add_global(std::shared_ptr<GlobalId> global);
+    bool find_global(std::string name);
 private:
     std::mutex const_mutex_;
     std::mutex func_mutex_;

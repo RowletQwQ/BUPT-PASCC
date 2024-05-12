@@ -53,6 +53,7 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
     {Instruction::J, "j"},
     {Instruction::JAL, "jal"},
     {Instruction::JALR, "jalr"},
+    {Instruction::LA, "la"},
     {Instruction::LB, "lb"},
     {Instruction::LH, "lh"},
     {Instruction::LW, "lw"},
@@ -151,6 +152,7 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
     {Instruction::FSGNJ_D, "fsgnj_d"},
     {Instruction::FSGNJN_D, "fsgnjn_d"},
     {Instruction::FSGNJX_D, "fsgnjx_d"}
+
 };
 
 Instruction::Instruction(InstrType type, int op_nums)
@@ -342,7 +344,7 @@ JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> target)
 : Instruction(type, 0)
 {
     if (type == Instruction::J) {
-        if (target->type_ == Operand::Immediate) {
+        if (target->type_ == Operand::Immediate || target->isFunction()) {
             // 正确的指令类型和操作数类型
         } else {
             LOG_ERROR("Error Instruction: %s, target %s", 
@@ -360,7 +362,8 @@ JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> ret, std::shared_ptr
 : Instruction(type, 1)
 {
     if (type == Instruction::JAL) {
-        if (ret->type_ == Operand::Register && desc->type_ == Operand::Immediate) {
+        if (ret->type_ == Operand::Register && 
+        (desc->type_ == Operand::Immediate || desc->isFunction())) {
             // 正确的指令类型和操作数类型
         } else {
             LOG_ERROR("Error Instruction: %s, ret %s, desc %s", 
@@ -389,6 +392,10 @@ JumpInst::JumpInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_pt
     } else {
         LOG_FATAL("JumpInst type error, %s not a triple operand JumpInst", instrTypeToString[type].c_str());
     }
+    type_ = type;
+    operands_[0] = op1;
+    operands_[1] = op2;
+    dest_ = dest;
 }
 
 std::string NoOperandInst::print() const {
@@ -467,7 +474,17 @@ LoadInst::LoadInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_pt
             LOG_FATAL("LoadInst type error, dest should be Register, src should be Memory");
         }
     } else {
-        LOG_FATAL("LoadInst type error, %s not a LoadInst", instrTypeToString[type].c_str());
+        if(type == LA) {
+            if (dest->type_ == Operand::Register && src->type_ == Operand::Immediate) {
+                // 正确的指令类型和操作数类型
+            } else {
+                LOG_ERROR("Error Instruction: %s, dest %s, src %s", 
+                        instrTypeToString[type].c_str(), dest->print().c_str(), src->print().c_str());
+                LOG_FATAL("LoadInst type error, dest should be Register, src should be Immediate");
+            }
+        } else {
+            LOG_FATAL("LoadInst type error, %s not a LoadInst", instrTypeToString[type].c_str());
+        }
     }
     type_ = type;
     operands_[0] = src;
@@ -476,8 +493,8 @@ LoadInst::LoadInst(InstrType type, std::shared_ptr<Operand> dest, std::shared_pt
 
 std::string LoadInst::print() const {
     if (op_nums_ == 2) {
-        return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print() + 
-                ", " + operands_.at(1)->print();
+        return instrTypeToString[type_] + " " + dest_->print() + ", "  + 
+                 operands_.at(1)->print() + "(" +operands_.at(0)->print() + ")";
     } else {
         return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print();
     }
@@ -533,8 +550,8 @@ StoreInst::StoreInst(InstrType type, std::shared_ptr<Operand> src, std::shared_p
 
 std::string StoreInst::print() const {
     if (op_nums_ == 3) {
-        return instrTypeToString[type_] + " " + operands_.at(0)->print() + ", " + operands_.at(1)->print() + 
-                ", " + operands_.at(2)->print();
+        return instrTypeToString[type_] + " " + operands_.at(0)->print() + ", " + operands_.at(2)->print() 
+        + "(" + operands_.at(1)->print() + ")";
     } else {
         return instrTypeToString[type_] + " " + operands_.at(0)->print() + ", " + operands_.at(1)->print();
     }

@@ -15,14 +15,10 @@ Register::Register(Register::RegType reg_type, int reg_id /* = -1*/)
         LOG_FATAL("There is no t%d register in RISC-V", reg_id);
     } else if (reg_type == Saved && (reg_id < 0 || reg_id > 11)) {
         LOG_FATAL("There is no s%d register in RISC-V", reg_id);
-    } else if (reg_type == IntArg || reg_type == FloatArg && (reg_id < 0 || reg_id > 7)) {
+    } else if (reg_type == IntArg && (reg_id < 0 || reg_id > 7)) {
         LOG_FATAL("There is no a%d register in RISC-V", reg_id);
-    } else if (reg_type == Float && (reg_id < 8 || reg_id > 31)) {
-        if(reg_id < 0 || reg_id > 7) {
-            LOG_FATAL("Trying to use args register as a universal reg");
-        } else {
-            LOG_FATAL("There is no f%d register in RISC-V", reg_id);
-        }
+    } else if (reg_type == Float && (reg_id < 0 || reg_id > 31)) {
+        LOG_FATAL("There is no f%d register in RISC-V", reg_id);
     }
     reg_id_ = reg_id;
     switch(reg_type_) {
@@ -97,6 +93,7 @@ std::string Register::print() const {
         default:
             LOG_FATAL("Unknown register type");
     }
+    return "zero";
 }
 
 std::string Immediate::print() const {
@@ -130,7 +127,7 @@ std::string GlobalConst::print() const {
         case Double:
             return name_ + ": .double " + std::to_string(f64_);
         case ASCIIZ:
-            return name_ + ": .asciiz \"" + str_val_ + "\"";
+            return name_ + ": .string \"" + str_val_ + "\"";
         case ARRAY:
             break;
         default:
@@ -192,7 +189,7 @@ std::string Memory::print() const {
 }
 
 std::string GlobalId::print() const {
-    return name_ + ": .space" + std::to_string(size_);
+    return name_ + ": .space " + std::to_string(size_);
 }
 
 // Function::Function(const std::string &name, int num_args, OpType ret_type) 

@@ -38,7 +38,10 @@ void init_env()
         }
         else
         {
-            G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
+            if (G_SETTINGS.is_asm)
+                G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".s";
+            else
+                G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
         }
         pos = G_SETTINGS.input_file.find_last_of("/\\");
         std::string filename;

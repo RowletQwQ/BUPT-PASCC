@@ -71,6 +71,7 @@ public:
         JALR, // Jump and link register
 
         /**Load**/
+        LA, // Load address
         // RV32I
         LB, // Load byte
         LH, // Load halfword
