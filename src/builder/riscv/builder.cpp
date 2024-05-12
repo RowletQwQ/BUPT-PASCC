@@ -627,7 +627,7 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
         }
         auto mem = std::static_pointer_cast<Memory>(res);
         last_result_ = current_scope_.alloc_tmp_reg(false);
-        auto inst = std::make_shared<LoadInst>(Instruction::ADDI, last_result_, mem->base_, mem->offset_);
+        auto inst = std::make_shared<LoadInst>(Instruction::LA, last_result_, mem->base_, mem->offset_);
         cur_bb_->insts_.emplace_back(inst);
     } else {
         // 只需要将值传入即可
