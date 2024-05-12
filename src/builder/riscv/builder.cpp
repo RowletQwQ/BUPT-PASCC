@@ -905,6 +905,11 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
     auto jal_inst = std::make_shared<JumpInst>(Instruction::JAL, ra, func_label);
 
     // 调用返回，需要恢复环境
+    // 先把a0的值存入last_result_
+    auto a0 = std::make_shared<Register>(Register::IntArg, 0);
+    last_result_ = current_scope_.alloc_tmp_reg(false);
+    auto load_a0_inst = std::make_shared<LoadInst>(Instruction::ADD, last_result_, a0, zero);
+    cur_bb_->insts_.emplace_back(load_a0_inst);
     // 将s1存入ra
     auto load_ra_inst = std::make_shared<BinaryInst>(Instruction::ADD, ra, zero, s1);
     cur_bb_->insts_.emplace_back(load_ra_inst);
@@ -1061,12 +1066,29 @@ void RiscvBuilder::visit(const ir::Function* func) {
         bb->accept(*this);
     }
     // 离开当前作用域
+    // 检查有没有返回值，有就保存到a0
+    if(func->func_type_.lock()->result_->is_number()) {
+        auto ret = current_scope_.find("__");
+        if(ret == nullptr) {
+            LOG_FATAL("Function %s has no return value", func->name_.c_str());
+        }
+        if(ret->isRegister()) {
+            auto ret_reg = std::static_pointer_cast<Register>(ret);
+            auto a0 = std::make_shared<Register>(Register::IntArg, 0);
+            auto move_inst = std::make_shared<BinaryInst>(Instruction::ADD, a0, std::make_shared<Register>(Register::Zero), ret_reg);
+            cur_func_->after_insts_.emplace_back(move_inst);
+        } else {
+            auto mem = std::static_pointer_cast<Memory>(ret);
+            auto a0 = std::make_shared<Register>(Register::IntArg, 0);
+            auto load_inst = std::make_shared<LoadInst>(Instruction::LD, a0, mem->base_, mem->offset_);
+            cur_func_->after_insts_.emplace_back(load_inst);
+        }
+    }
     // 先恢复s0
     auto load_s0 = std::make_shared<LoadInst>(Instruction::LD, s0, s0, imm_zero);
     auto leave_inst = current_scope_.leave();
     cur_func_->after_insts_.emplace_back(leave_inst);
     cur_func_->after_insts_.emplace_back(load_s0);
-    // 检查有没有返回值，有就保存到a0
     
     // 加上返回指令
     auto ra = std::make_shared<Register>(Register::Return);

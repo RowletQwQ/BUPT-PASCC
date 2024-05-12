@@ -228,6 +228,12 @@ BinaryInst::BinaryInst(InstrType type, std::shared_ptr<Operand> dest, std::share
         FSGNJ_S, FSGNJN_S, FSGNJX_S, FSGNJ_D, FSGNJN_D, FSGNJX_D
     };
 
+    static const std::set<Instruction::InstrType> valid_int_with_imm_types = {
+        SLLI, SRLI, SRAI, SLLIW, SRLIW, SRAIW, ADDI, ADDIW
+    };
+
+
+
     if (vaild_int_types.count(type) > 0) {
         if (dest->type_ == Operand::Register && op1->type_ == Operand::Register && op2->type_ == Operand::Register) {
             auto reg1 = std::dynamic_pointer_cast<Register>(op1);
@@ -255,6 +261,19 @@ BinaryInst::BinaryInst(InstrType type, std::shared_ptr<Operand> dest, std::share
             LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 
                     instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str(), op2->print().c_str());
             LOG_FATAL("BinaryInst type error, dest, op1 and op2 should be Register");
+        }
+    } else if (valid_int_with_imm_types.count(type) > 0) {
+        if (dest->type_ == Operand::Register && op1->type_ == Operand::Register && op2->type_ == Operand::Immediate) {
+            auto reg1 = std::dynamic_pointer_cast<Register>(op1);
+            if(reg1->is_real()) {
+                LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 
+                    instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str(), op2->print().c_str());
+                LOG_FATAL("BinaryInst type error, dest and op1 should be Register, op2 should be Immediate");
+            }
+        } else {
+            LOG_ERROR("Error Instruction: %s, dest %s, op1 %s, op2 %s", 
+                    instrTypeToString[type].c_str(), dest->print().c_str(), op1->print().c_str(), op2->print().c_str());
+            LOG_FATAL("BinaryInst type error, dest and op1 should be Register, op2 should be Immediate");
         }
     } else {
         LOG_FATAL("BinaryInst type error, %s not a BinaryInst", instrTypeToString[type].c_str());
