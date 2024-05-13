@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,7 @@ class BasicBlock {
 public:
     std::shared_ptr<Label> label_;
     std::vector<std::shared_ptr<Instruction>> insts_; // 基本块中的指令
+    std::vector<std::string> succ_; // 后继基本块
     int placeholder_cnt_; // 用于占位符常量的命名
     int branch_label_cnt_; // 用于分支标签的命名
 };
@@ -27,7 +29,10 @@ public:
     std::vector<std::shared_ptr<Instruction>> before_insts_; // 函数开始前的指令
     std::vector<std::shared_ptr<BasicBlock>> bbs_; // 函数所属的基本块
     std::vector<std::shared_ptr<Instruction>> after_insts_; // 函数结束后的指令
+    std::set<std::string> scan_bb_; // 用于记录已经扫描过的基本块
+    // std::map<std::string, std::shared_ptr<BasicBlock>> bb_map_; // 用于记录基本块的名字和基本块的映射
     void output(std::ofstream &out) const;
+    // void handle_bb(std::shared_ptr<BasicBlock> bb, std::ofstream &out); // 输出基本块
 };
 class Module {
 public:

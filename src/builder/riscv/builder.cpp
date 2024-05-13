@@ -1103,17 +1103,49 @@ void RiscvBuilder::visit(const ir::BranchInst* inst) {
     }
     // 释放寄存器
     current_scope_.free_tmp_reg(last_result_);
+    // 先保存当前bb
+    auto now_bb = cur_bb_;
+    // 接着接受then分支
+    then_bb->accept(*this);
+    auto then_rv_bb = cur_bb_;
+    // 如果存在else分支
+    if(else_bb) {
+        // 接受else分支
+        else_bb->accept(*this);
+    }
+    cur_bb_ = now_bb;
+    // 在当前位置加个label，表示分支的结束
+    auto end_label = std::make_shared<Label>(Operand::Block, "END_OF_" + then_label->name_);
+    auto label_inst = std::make_shared<LabelInst>(end_label);
+    cur_bb_->insts_.emplace_back(label_inst);
+    // 在then分支的最后加上一个跳转指令
+    auto jump_inst = std::make_shared<JumpInst>(Instruction::J, end_label);
+    then_rv_bb->insts_.emplace_back(jump_inst);
 }
 
 void RiscvBuilder::visit(const ir::BasicBlock* bb) {
     // 无脑接收指令就行
+    auto bb_name = make_bb_name(cur_func_->label_->name_, bb->index_);
+    if(cur_func_->scan_bb_.find(bb_name) != cur_func_->scan_bb_.end()) {
+        // 说明这个基本块已经被扫描过了
+        return;
+    }
+    cur_func_->scan_bb_.insert(bb_name);
     cur_bb_ = std::make_shared<BasicBlock>();
-    cur_bb_->label_ = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, bb->index_));
+    cur_bb_->label_ = std::make_shared<Label>(Operand::Block, bb_name);
     LOG_DEBUG("Generating code for basic block %s", cur_bb_->label_->name_.c_str());
     for(auto &inst : bb->instructions_) {
         inst->accept(*this);
     }
+    // 记录基本块信息
+    // cur_func_->bb_map_[bb_name] = cur_bb_;
+    // // 把后继基本块的信息保存在里面
+    // for(auto &succ : bb->succ_bbs_) {
+    //     bb_name = make_bb_name(cur_func_->label_->name_, succ.lock()->index_);
+    //     cur_bb_->succ_.emplace_back(bb_name);
+    // }
     cur_func_->bbs_.emplace_back(cur_bb_);
+    
 }
 
 void RiscvBuilder::visit(const ir::Function* func) {
@@ -1425,7 +1457,25 @@ void Module::add_global(std::shared_ptr<GlobalId> global) {
     global_vars_.emplace_back(global);
 }
 
-void Function::output(std::ofstream &out) const{
+// void Function::handle_bb(std::shared_ptr<BasicBlock> bb, std::ofstream &out) {
+//     // 检查是否处理过
+//     if(scan_bb_.find(bb->label_->name_) != scan_bb_.end()) {
+//         return;
+//     }
+//     scan_bb_.insert(bb->label_->name_);
+//     // 输出基本块的label
+//     out << bb->label_->print() << ":\n";
+//     // 输出基本块的指令
+//     for(auto &inst : bb->insts_) {
+//         out << "\t" << inst->print() << "\n";
+//     }
+//     // 处理基本块的后继基本块
+//     for(auto &succ : bb->succ_) {
+//         handle_bb(bb_map_[succ], out);
+//     }
+// }
+
+void Function::output(std::ofstream &out) const {
     // 先输出Label
     out << label_->print() << ":\n";
     // 输出函数开始前的指令
@@ -1442,6 +1492,7 @@ void Function::output(std::ofstream &out) const{
                 out << "\t" << inst->print() << "\n";
             }
         }
+        // handle_bb(bb, out);
     }
     // 输出函数结束后的指令
     for(auto &inst : after_insts_) {
