@@ -18,10 +18,12 @@ def run_pascc(file, source_dir, dest_dir):
     filename = os.path.basename(file)
     try:
         with open(dest_dir + filename[:-4] + ".log", 'w') as log_file:
-            subprocess.run(['../bin/pascc', '-i', file, '-o', dest_dir + filename[:-4] + ".s", '-D', '-d', '3'], stdout=log_file, stderr=subprocess.STDOUT, check=True, timeout=20)
+            subprocess.run(['../bin/pascc', '-i', file, '-o', dest_dir + filename[:-4] + ".s", '-D', '-d', '4'], stdout=log_file, stderr=subprocess.STDOUT, check=True, timeout=20)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         print(f"Error: {str(e)} for {filename}")
-        os.remove(dest_dir + filename[:-4] + ".s")
+        file_path = dest_dir + filename[:-4] + ".s"
+        if os.path.exists(file_path):
+            os.remove(file_path)
         return False
     print(f"Assembly for {filename} generated successfully")
     return True

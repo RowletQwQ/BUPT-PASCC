@@ -94,15 +94,15 @@ std::shared_ptr<Operand> Scope::find(const std::string &name) {
     return nullptr;
 }
 
-void Scope::enter() {
+void Scope::enter(int args) {
     stack_size_.emplace_back(0);
     symbols_.emplace_back();
     pointers_.emplace_back();
     reg_used_.assign(kMaxRegs, false);
-    // for(int i = 0; i < 7; i++){
-    //     avail_int_regs_.emplace_back(std::make_shared<Register>(Register::IntArg, i));
-    // }
-    for(int i = 0; i < 6; i++) {
+    for(int i = args; i <= 7; i++){
+        avail_int_regs_.emplace_back(std::make_shared<Register>(Register::IntArg, i));
+    }
+    for(int i = 0; i < 7; i++) {
         avail_int_regs_.emplace_back(std::make_shared<Register>(Register::Temp, i));
     }
     for(int i = 0; i < 32; i++){
@@ -251,22 +251,32 @@ static Instruction::InstrType get_arith_type(ir::Instruction::OpID id, std::shar
 static void make_unary_inst
 (ir::Instruction::OpID id, std::shared_ptr<ir::Type> type, std::shared_ptr<Register> reg)
 {
+    if(id == ir::Instruction::Bracket)
+        return;
     // 同理, RISC-V中没有完整的一元运算符支持，此处需要更多转换
     // 最后的结果一定保存在reg中
     auto imm_1 = std::make_shared<Immediate>(1);
     auto imm_neg1 = std::make_shared<Immediate>(-1);
+    if(reg->is_real()) {
+        if(id != ir::Instruction::Minus && id != ir::Instruction::Not) {
+            // 浮点数的一元运算符只有负号
+            LOG_FATAL("Unknown unary operator for float");
+        }
+        cur_bb_->insts_.emplace_back(std::make_shared<UnaryInst>(Instruction::FNEG_D, reg, reg));
+        return;
+    }
     switch(id) {
         case ir::Instruction::Minus:
             cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SUB, reg, std::make_shared<Register>(Register::Zero), reg));
             break;
         case ir::Instruction::LogicalNot:
-            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg, reg, imm_1));
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg, reg, imm_1));
             break;
         case ir::Instruction::BitReverse:
-            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg, reg, imm_neg1));
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg, reg, imm_neg1));
             break;
         case ir::Instruction::Not:
-            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg, reg, imm_neg1));
+            cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg, reg, imm_neg1));
             break;
         case ir::Instruction::Inc:
             cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg, reg, imm_1));
@@ -306,7 +316,10 @@ static void make_cmp_inst
         }
     }
     // 此时reg1和reg2的类型一定相同
-    auto zero = std::make_shared<Register>(Register::Zero);
+    auto f_zero = current_scope_.alloc_tmp_reg(true);
+    auto make_zero = std::make_shared<UnaryInst>(Instruction::FNEG_D, f_zero, f_zero);
+    cur_bb_->insts_.emplace_back(make_zero);
+    cur_bb_->insts_.emplace_back(make_zero);
     if(reg1->is_real()) {
         // 此时为浮点数
         switch (id) {
@@ -315,7 +328,7 @@ static void make_cmp_inst
                 break;
             case ir::Instruction::Ne:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FEQ_D, reg1, reg1, reg2));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FEQ_D, reg1, reg1, zero));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FEQ_D, reg1, reg1, f_zero));
                 break;
             case ir::Instruction::Lt:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::FLT_D, reg1, reg1, reg2));
@@ -335,6 +348,7 @@ static void make_cmp_inst
     } else {
         // 此时为整数
         auto imm_true = std::make_shared<Immediate>(1);
+        auto zero = std::make_shared<Register>(Register::Zero);
         std::string true_label_name = cur_bb_->label_->name_ + "_true_" + std::to_string(cur_bb_->branch_label_cnt_);
         std::string false_label_name = cur_bb_->label_->name_ + "_false_" + std::to_string(cur_bb_->branch_label_cnt_);
         cur_bb_->branch_label_cnt_++;
@@ -348,7 +362,7 @@ static void make_cmp_inst
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
                 cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, false_label));
                 cur_bb_->insts_.emplace_back(true_label_inst);
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, zero, imm_true));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, imm_true));
                 cur_bb_->insts_.emplace_back(false_label_inst);
                 break;
             case ir::Instruction::Ne:
@@ -356,7 +370,7 @@ static void make_cmp_inst
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
                 cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, false_label));
                 cur_bb_->insts_.emplace_back(true_label_inst);
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, zero, imm_true));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, imm_true));
                 cur_bb_->insts_.emplace_back(false_label_inst);
                 break;
             case ir::Instruction::Lt:
@@ -364,19 +378,20 @@ static void make_cmp_inst
                 break;
             case ir::Instruction::Le:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg2, reg1));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, imm_true));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, reg1, imm_true));
                 break;
             case ir::Instruction::Gt:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg2, reg1));
                 break;
             case ir::Instruction::Ge:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg1, reg2));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, reg1, imm_true));
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, reg1, imm_true));
                 break;
             default:
                 LOG_FATAL("Unknown compare operator");
         }
     }
+    current_scope_.free_tmp_reg(reg2);
 }
 
 void RiscvBuilder::visit(const ir::BinaryInst* inst) {
@@ -400,6 +415,14 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
         // 将结果保存在reg1中
         auto reg1 = current_scope_.alloc_tmp_reg(false);
         auto zero = std::make_shared<Register>(Register::Zero);
+        if(last_result_->is_real()) {
+            // 转换到整数寄存器
+            auto int_reg = current_scope_.alloc_tmp_reg(false);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_W_D, int_reg, last_result_);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(last_result_);
+            last_result_ = int_reg;
+        }
         auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg1, zero, last_result_);
         cur_bb_->insts_.emplace_back(ins);
         current_scope_.free_tmp_reg(last_result_);
@@ -417,6 +440,14 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
             literal->accept(*this);
         }
         // 此时第二个操作数的计算结果被存在last_result_中
+        if(last_result_->is_real()) {
+            // 转换到整数寄存器
+            auto int_reg = current_scope_.alloc_tmp_reg(false);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_W_D, int_reg, last_result_);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(last_result_);
+            last_result_ = int_reg;
+        }
         // 计算此时的结果
         if (inst->op_id_ == ir::Instruction::And || inst->op_id_ == ir::Instruction::AndThen) {
             auto res_inst = std::make_shared<BinaryInst>(Instruction::AND, last_result_, reg1, last_result_);
@@ -438,27 +469,8 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
         }
         // 加上标记
         cur_bb_->insts_.emplace_back(true_label_inst);
+        current_scope_.free_tmp_reg(reg1);
         return;
-    }
-    auto op1 = inst->operands_[0].lock();
-    if(op1->is_inst()) {
-        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
-        inst1->accept(*this);
-    } else if (op1->is_literal()) {
-        auto literal = std::static_pointer_cast<ir::Literal>(op1);
-        literal->accept(*this);
-    }
-    // 将计算结果暂存到reg1中
-    std::shared_ptr<Register> reg1;
-    auto zero = std::make_shared<Register>(Register::Zero);
-    if(last_result_->is_real()) {
-        reg1 = current_scope_.alloc_tmp_reg(true);
-        auto ins = std::make_shared<BinaryInst>(Instruction::FADD_D, reg1, last_result_, zero);
-        cur_bb_->insts_.emplace_back(ins);
-    } else {
-        reg1 = current_scope_.alloc_tmp_reg(false);
-        auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg1, last_result_, zero);
-        cur_bb_->insts_.emplace_back(ins);
     }
     auto op2 = inst->operands_[1].lock();
     if(op2->is_inst()) {
@@ -468,28 +480,87 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
         auto literal = std::static_pointer_cast<ir::Literal>(op2);
         literal->accept(*this);
     }
+    
+    // 将计算结果暂存到reg1中
+    std::shared_ptr<Register> reg1;
+    auto zero = std::make_shared<Register>(Register::Zero);
+    if(last_result_->is_real()) {
+        reg1 = current_scope_.alloc_tmp_reg(true);
+        auto ins = std::make_shared<BinaryInst>(Instruction::FSGNJ_D, reg1, last_result_, last_result_);
+        cur_bb_->insts_.emplace_back(ins);
+    } else {
+        reg1 = current_scope_.alloc_tmp_reg(false);
+        auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg1, last_result_, zero);
+        cur_bb_->insts_.emplace_back(ins);
+    }
+    current_scope_.free_tmp_reg(last_result_);
+    auto op1 = inst->operands_[0].lock();
+    if(op1->is_inst()) {
+        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
+        inst1->accept(*this);
+    } else if (op1->is_literal()) {
+        auto literal = std::static_pointer_cast<ir::Literal>(op1);
+        literal->accept(*this);
+    }
+    // 判断返回值类型
     // 注意类型转换！
-    if(reg1->is_real() != last_result_->is_real()) {
-        // 需要进行类型转换
-        // 必须要一律转换成浮点数才能计算
-        if(reg1->is_real()) {
-            // reg1是浮点数，last_result_是整数
+    if (inst->type_->is_real()) {
+        // 检查是否需要类型转换
+        if(!reg1->is_real()) {
+            // 需要进行类型转换
             auto reg2 = current_scope_.alloc_tmp_reg(true);
-            auto zero = std::make_shared<Register>(Register::Zero);
-            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_D_L, reg2, last_result_);
-            cur_bb_->insts_.emplace_back(ins);
-            current_scope_.free_tmp_reg(last_result_);
-            last_result_ = reg2;
-        } else {
-            // reg1是整数，last_result_是浮点数
-            auto reg2 = current_scope_.alloc_tmp_reg(true);
-            auto zero = std::make_shared<Register>(Register::Zero);
             auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_L_D, reg2, reg1);
             cur_bb_->insts_.emplace_back(ins);
             current_scope_.free_tmp_reg(reg1);
             reg1 = reg2;
         }
+        if(!last_result_->is_real()) {
+            // 需要进行类型转换
+            auto reg2 = current_scope_.alloc_tmp_reg(true);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_L_D, reg2, last_result_);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(last_result_);
+            last_result_ = reg2;
+        }
+    } else {
+        if(reg1->is_real()) {
+            // 需要进行类型转换
+            auto reg2 = current_scope_.alloc_tmp_reg(false);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_W_D, reg2, reg1);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(reg1);
+            reg1 = reg2;
+        }
+        if(last_result_->is_real()) {
+            // 需要进行类型转换
+            auto reg2 = current_scope_.alloc_tmp_reg(false);
+            auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_W_D, reg2, last_result_);
+            cur_bb_->insts_.emplace_back(ins);
+            current_scope_.free_tmp_reg(last_result_);
+            last_result_ = reg2;
+        }
     }
+    // if(reg1->is_real() != last_result_->is_real()) {
+    //     // 需要进行类型转换
+    //     // 必须要一律转换成浮点数才能计算
+    //     if(reg1->is_real()) {
+    //         // reg1是浮点数，last_result_是整数
+    //         auto reg2 = current_scope_.alloc_tmp_reg(true);
+    //         auto zero = std::make_shared<Register>(Register::Zero);
+    //         auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_D_L, reg2, last_result_);
+    //         cur_bb_->insts_.emplace_back(ins);
+    //         current_scope_.free_tmp_reg(last_result_);
+    //         last_result_ = reg2;
+    //     } else {
+    //         // reg1是整数，last_result_是浮点数
+    //         auto reg2 = current_scope_.alloc_tmp_reg(true);
+    //         auto zero = std::make_shared<Register>(Register::Zero);
+    //         auto ins = std::make_shared<UnaryInst>(Instruction::FCVT_L_D, reg2, reg1);
+    //         cur_bb_->insts_.emplace_back(ins);
+    //         current_scope_.free_tmp_reg(reg1);
+    //         reg1 = reg2;
+    //     }
+    // }
     auto type = get_arith_type(inst->op_id_, inst->type_);
     auto ins = std::make_shared<BinaryInst>(type, last_result_, reg1, last_result_);
     cur_bb_->insts_.emplace_back(ins);
@@ -513,15 +584,6 @@ void RiscvBuilder::visit(const ir::UnaryInst* inst) {
 }
 void RiscvBuilder::visit(const ir::CompareInst* inst) {
     // 先处理操作数
-    auto op1 = inst->operands_[0].lock();
-    if(op1->is_inst()) {
-        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
-        inst1->accept(*this);
-    } else if (op1->is_literal()) {
-        auto literal = std::static_pointer_cast<ir::Literal>(op1);
-        literal->accept(*this);
-    }
-    auto reg1 = last_result_;
     auto op2 = inst->operands_[1].lock();
     if(op2->is_inst()) {
         auto inst2 = std::static_pointer_cast<ir::Instruction>(op2);
@@ -530,16 +592,52 @@ void RiscvBuilder::visit(const ir::CompareInst* inst) {
         auto literal = std::static_pointer_cast<ir::Literal>(op2);
         literal->accept(*this);
     }
+    auto reg1 = last_result_;
+    auto op1 = inst->operands_[0].lock();
+    if(op1->is_inst()) {
+        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
+        inst1->accept(*this);
+    } else if (op1->is_literal()) {
+        auto literal = std::static_pointer_cast<ir::Literal>(op1);
+        literal->accept(*this);
+    }
     make_cmp_inst(inst->op_id_, inst->type_, reg1, last_result_);
     current_scope_.free_tmp_reg(last_result_);
     last_result_ = reg1;
 }
 void RiscvBuilder::visit(const ir::StoreInst* inst) {
     // 先接收左值
-    is_lval_ = true;
-    auto op1 = std::static_pointer_cast<ir::Instruction>(inst->operands_[0].lock());
-    op1->accept(*this);
-    is_lval_ = false;
+    auto op1 = inst->operands_[0].lock();
+    if(op1->is_inst()) {
+        is_lval_ = true;
+        auto inst1 = std::static_pointer_cast<ir::Instruction>(op1);
+        inst1->accept(*this);
+        is_lval_ = false;
+    } else {
+        // 不是左值，单纯是个标识符，直接找到对应的寄存器
+        auto res = current_scope_.find(op1->name_);
+        if(res == nullptr) {
+            // 全局标识，直接读取
+            auto label = std::make_shared<Label>(Operand::Immediate, op1->name_);
+            auto reg = current_scope_.alloc_tmp_reg(false);
+            auto la_inst = std::make_shared<LoadInst>(Instruction::LA, reg, label);
+            cur_bb_->insts_.emplace_back(la_inst);
+            last_result_ = reg;
+        } else {
+            if (res->isRegister()) {
+                last_result_ = std::static_pointer_cast<Register>(res);
+                is_reg_ = true;
+            } else {
+                // 是内存
+                auto mem = std::static_pointer_cast<Memory>(res);
+                auto reg = current_scope_.alloc_tmp_reg(false);
+                auto load_inst = std::make_shared<LoadInst>(Instruction::LD, reg, mem->base_, mem->offset_);
+                cur_bb_->insts_.emplace_back(load_inst);
+                last_result_ = reg;
+            }
+        }
+    }
+    
     if(is_reg_) {
         LOG_DEBUG("StoreInst target: Reg %s", last_result_->print().c_str());
         auto res_reg = last_result_;
@@ -593,25 +691,59 @@ void RiscvBuilder::visit(const ir::StoreInst* inst) {
 void RiscvBuilder::visit(const ir::LoadInst* inst) {
     // 先判断是不是数组
     if(inst->is_array_visit()) {
-        // 两个操作数都是指令
-        auto op1 = std::static_pointer_cast<ir::Instruction>(inst->operands_[0].lock());
-        auto op2 = std::static_pointer_cast<ir::Instruction>(inst->operands_[1].lock());
-        // 接受左边，算出偏移地址
-        op1->accept(*this);
-        // 保存在新寄存器中
-        auto reg1 = current_scope_.alloc_tmp_reg(false);
-        auto zero = std::make_shared<Register>(Register::Zero);
-        auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg1, zero, last_result_);
-        cur_bb_->insts_.emplace_back(ins);
-        current_scope_.free_tmp_reg(last_result_);
-        // 接受idx
-        op2->accept(*this);
-        // 获取要偏移的值
-        int64_t shift = inst->type_->get_size();
-        auto shift_imm = std::make_shared<Immediate>(shift);
-        auto shift_inst = std::make_shared<BinaryInst>(Instruction::MUL, last_result_, last_result_, shift_imm);
-        cur_bb_->insts_.emplace_back(shift_inst);
-        // 此时，last_result_中保存了偏移量
+        // 第二个操作数一定是指令，第一个可能为id
+        auto op1 = inst->operands_[0].lock();
+        int base_shift = inst->type_->get_size();
+        if(op1->is_inst()) {
+            const ir::Instruction * cur_inst = inst;
+            // 多维数组的访问，先将多维数组的各维度数据获取到
+            auto array_type = std::dynamic_pointer_cast<ir::ArrayType>(op1->type_);
+            auto dims = array_type->all_dims();
+            auto reg = current_scope_.alloc_tmp_reg(false); // 用于计算偏移量信息
+            auto zero = std::make_shared<Register>(Register::Zero);
+            while(op1->is_inst()) {
+                auto op2 = std::static_pointer_cast<ir::Instruction>(cur_inst->operands_[1].lock());
+                op2->accept(*this);
+                auto tmp_reg = current_scope_.alloc_tmp_reg(false);
+                auto imm = std::make_shared<Immediate>(base_shift);
+                auto ins1 = std::make_shared<BinaryInst>(Instruction::ADDI, tmp_reg, zero, imm);
+                auto ins = std::make_shared<BinaryInst>(Instruction::MUL, last_result_, last_result_, tmp_reg);
+                current_scope_.free_tmp_reg(tmp_reg);
+                auto ins2 = std::make_shared<BinaryInst>(Instruction::ADD, reg, reg, last_result_);
+                current_scope_.free_tmp_reg(last_result_);
+                cur_bb_->insts_.emplace_back(ins1);
+                cur_bb_->insts_.emplace_back(ins);
+                cur_bb_->insts_.emplace_back(ins2);
+                base_shift *= dims.back();
+                dims.pop_back();
+                // 转换op1
+                auto op_inst = std::static_pointer_cast<ir::Instruction>(op1).get();
+                cur_inst = op_inst;
+                op1 = op_inst->operands_[0].lock();
+            }
+            last_result_ = reg;
+            auto op2 = std::static_pointer_cast<ir::Instruction>(cur_inst->operands_[1].lock());
+            op2->accept(*this);
+            auto tmp_reg = current_scope_.alloc_tmp_reg(false);
+            auto imm = std::make_shared<Immediate>(base_shift);
+            auto ins1 = std::make_shared<BinaryInst>(Instruction::ADDI, tmp_reg, zero, imm);
+            auto ins = std::make_shared<BinaryInst>(Instruction::MUL, last_result_, last_result_, tmp_reg);
+            current_scope_.free_tmp_reg(tmp_reg);
+            auto ins2 = std::make_shared<BinaryInst>(Instruction::ADD, last_result_, reg, last_result_);
+            cur_bb_->insts_.emplace_back(ins1);
+            cur_bb_->insts_.emplace_back(ins);
+            cur_bb_->insts_.emplace_back(ins2);
+            current_scope_.free_tmp_reg(reg);
+        } else {
+            auto op2 = std::static_pointer_cast<ir::Instruction>(inst->operands_[1].lock());
+            op2->accept(*this);
+            auto reg = current_scope_.alloc_tmp_reg(false);
+            auto imm = std::make_shared<Immediate>(base_shift);
+            auto ins1 = std::make_shared<BinaryInst>(Instruction::ADDI, reg, last_result_, imm);
+            auto ins2 = std::make_shared<BinaryInst>(Instruction::MUL, last_result_, last_result_, reg);
+            current_scope_.free_tmp_reg(reg);
+        }
+        // 此时last_result_中保存了数组的基地址
     }
     // 在current scope中查找是否有对应的变量
     auto res = current_scope_.find(inst->name_);
@@ -658,6 +790,11 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
                 auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg, reg, last_result_);
                 cur_bb_->insts_.emplace_back(ins);
             }
+            // auto elem_size = inst->type_->get_size();
+            // if(inst->is_array_visit()) {
+            //     auto elem = std::static_pointer_cast<ir::ArrayType>(inst->type_);
+            //     elem_size = elem->get_single_elem_size();
+            // }
             switch (inst->type_->get_size()) {
                 case 1:
                     cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LB, reg, reg, imm_zero));
@@ -687,7 +824,9 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
     if(need_pointer_ || is_lval_) {
         // 需要将对应操作数的内存地址存入last_result_
         if(res->isRegister()) {
-            LOG_FATAL("LoadInst: Data is in register %s", res->print().c_str());
+            last_result_ = std::static_pointer_cast<Register>(res);
+            is_reg_ = true;
+            return;
         }
         auto mem = std::static_pointer_cast<Memory>(res);
         auto reg = current_scope_.alloc_tmp_reg(false);
@@ -1037,14 +1176,26 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
         // 将参数放入正确的位置
         if (i < 8) {
             auto dest = std::make_shared<Register>(Register::IntArg, i);
-            auto move_inst = std::make_shared<BinaryInst>(Instruction::ADD, dest, zero, last_result_);
-            cur_bb_->insts_.emplace_back(move_inst);
+            if(last_result_->is_real()) {
+                // 浮点寄存器转换成整数寄存器
+                auto move_inst = std::make_shared<UnaryInst>(Instruction::FMV_X_D, dest, last_result_);
+                cur_bb_->insts_.emplace_back(move_inst);
+            } else {
+                auto move_inst = std::make_shared<BinaryInst>(Instruction::ADD, dest, zero, last_result_);
+                cur_bb_->insts_.emplace_back(move_inst);
+            }
         } else {
             // 参数放入栈中
             auto sp = std::make_shared<Register>(Register::Stack);
             auto imm = std::make_shared<Immediate>(8 * (i - 8));
-            auto store_inst = std::make_shared<StoreInst>(Instruction::SD, last_result_, sp, imm);
-            cur_bb_->insts_.emplace_back(store_inst);
+            if(last_result_->is_real()) {
+                // 浮点寄存器转换成整数寄存器
+                auto store_inst = std::make_shared<StoreInst>(Instruction::FSD, last_result_, sp, imm);
+                cur_bb_->insts_.emplace_back(store_inst);
+            } else {
+                auto store_inst = std::make_shared<StoreInst>(Instruction::SW, last_result_, sp, imm);
+                cur_bb_->insts_.emplace_back(store_inst);
+            }
         }
         current_scope_.free_tmp_reg(last_result_);
     }
@@ -1209,7 +1360,7 @@ void RiscvBuilder::visit(const ir::Function* func) {
     // 首先根据函数参数和函数对应的局部变量/ 常量 ，分配寄存器和栈空间
     // 先计算要给局部变量/常量开辟的栈空间
     int stack_size = 0;
-    current_scope_.enter();
+    current_scope_.enter(func->args_.size());
     // 进入新的作用域
     for(auto &local : func->local_identifiers_) {
         bool isFuncParam = false;
@@ -1221,10 +1372,22 @@ void RiscvBuilder::visit(const ir::Function* func) {
         }
         if(!isFuncParam) {
             auto tid = local->get_elem_tid();
-            auto mem = gen_sp_mem(stack_size, tid == ir::Type::RealTID, local->type_->get_size());
+            // if(tid == ir::Type::ArrayTID) {
+            //     // 数组
+            //     size_t single_size = std::dynamic_pointer_cast<ir::ArrayType>(local->type_)->get_single_elem_size();
+            //     size_t elem_cnt = std::dynamic_pointer_cast<ir::ArrayType>(local->type_)->dims_elem_num_.size();
+            //     bool is_real = local->type_->is_real();
+            //     auto mem = gen_sp_mem(stack_size, is_real, single_size, elem_cnt);
+            //     current_scope_.push(local->name_, mem);
+            //     stack_size += local->type_->get_size();
+            //     LOG_DEBUG("Alloc %d byte(s) for variable %s", local->type_->get_size(), local->name_.c_str());
+            // } else {
+            auto mem = gen_sp_mem(stack_size, local->type_->is_real(), 
+                local->type_->get_elem_size(), local->type_->get_size() / local->type_->get_elem_size());
             current_scope_.push(local->name_, mem);
             stack_size += local->type_->get_size();
-            LOG_DEBUG("Alloc %d byte(s) for variable %s", local->type_->get_size(), local->name_.c_str());
+            LOG_DEBUG("Alloc %d byte(s) for variable %s", local->type_->get_size(), local->name_.c_str());  
+            //}
         }
     }
     stack_size = UpperAlign(stack_size, 8);
@@ -1446,7 +1609,7 @@ void RiscvBuilder::build(ir::Module &program) {
         futures.emplace_back(
             common::g_thpool->enqueue(
                 [this, &func] {
-                    current_scope_.enter();
+                    current_scope_.enter(0);
                     func->accept(*this);
                     current_scope_.leave();
                 }

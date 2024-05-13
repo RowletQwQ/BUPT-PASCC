@@ -63,8 +63,10 @@ public:
     virtual std::string print() { return "";}
     virtual std::string placeholder() { return "";}
     virtual bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
+    virtual bool is_real() const { return tid_ == RealTID; }
     virtual TID get_tid() const { return tid_; }
     virtual size_t get_size() { return 0; }
+    virtual size_t get_elem_size() { return get_size(); }
     TID tid_;
     bool is_pointer_;
 };
@@ -179,7 +181,22 @@ public:
         }
         return elem_type_->tid_;
     }
+    bool is_number() const override {
+        return elem_type_->is_number();
+    }
+    bool is_real() const override {
+        return elem_type_->is_real();
+    }
+    size_t get_elem_size() override {
+        if(elem_type_->tid_ == ArrayTID) {
+            return elem_type_->get_elem_size();
+        }
+        return elem_type_->get_size();
+    }
 
+    std::vector<unsigned> all_dims() const {
+        return dims_elem_num_;
+    }
     std::shared_ptr<Type> elem_type_; // 元素类型
     std::vector<unsigned> dims_elem_num_; // 数组各维度元素数量
 };

@@ -62,7 +62,7 @@ public:
     };
     Scope();
     // 进入一个新的作用域
-    void enter();
+    void enter(int args);
     std::shared_ptr<Instruction> alloc_stack(int size);
     std::shared_ptr<Instruction> dealloc_stack(int size);
     // 离开当前作用域

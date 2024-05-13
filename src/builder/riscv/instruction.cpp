@@ -227,7 +227,7 @@ BinaryInst::BinaryInst(InstrType type, std::shared_ptr<Operand> dest, std::share
 
     static const std::set<Instruction::InstrType> valid_float_types = {
         FADD_S, FSUB_S, FMUL_S, FDIV_S, FADD_D, FSUB_D, FMUL_D, FDIV_D,
-        FSGNJ_S, FSGNJN_S, FSGNJX_S, FSGNJ_D, FSGNJN_D, FSGNJX_D
+        FSGNJ_S, FSGNJN_S, FSGNJX_S, FSGNJ_D, FSGNJN_D, FSGNJX_D, FEQ_D, FEQ_S
     };
 
     static const std::set<Instruction::InstrType> valid_int_with_imm_types = {

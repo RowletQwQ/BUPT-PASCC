@@ -55,7 +55,7 @@ public:
     int reg_unique_id_; // 寄存器唯一编号
     Register(RegType reg_type, int reg_id = -1);
     int getUniqueId() const { return reg_unique_id_; }
-    bool is_real() const { return reg_unique_id_ >= 32; }
+    bool is_real() const { return reg_unique_id_ >= 32;}
     std::string print() const override;
 };
 
@@ -91,10 +91,11 @@ public:
     };
     std::shared_ptr<riscv::Register> base_; // 基地址寄存器
     std::shared_ptr<riscv::Immediate> offset_; // 偏移寄存器
+    int count_; // 元素个数
     MemType type_;
     Memory(std::shared_ptr<riscv::Register> base, std::shared_ptr<riscv::Immediate> offset, MemType type,
         int size, int count = 1) 
-        : Operand(Operand::Memory, size), base_(base), offset_(offset), type_(type) {}
+        : Operand(Operand::Memory, size), base_(base), offset_(offset), type_(type), count_(count) {}
     std::string print() const override;
 };
 

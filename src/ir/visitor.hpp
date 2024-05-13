@@ -1,5 +1,4 @@
 #pragma once
-#include "ir.hpp"
 namespace ir {
 
 class BinaryInst;

@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.10)
 project(assembly_project ASM)
 
 # 找到目录下的所有 .s 文件
-file(GLOB SOURCES "asm/*.s")
+file(GLOB SOURCES "*.s")
 
 add_compile_options(-g)
 
