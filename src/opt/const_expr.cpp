@@ -8,6 +8,7 @@
 namespace opt {
 
 const int MAX_DEPTH = 100;
+ir::Module *prog = nullptr;
 
 // 执行一元运算
 std::shared_ptr<ir::Literal> compute(std::shared_ptr<ir::Literal> l1, ir::Instruction::OpID op, bool is_real) {
@@ -16,6 +17,8 @@ std::shared_ptr<ir::Literal> compute(std::shared_ptr<ir::Literal> l1, ir::Instru
         switch(op) {
             case ir::Instruction::OpID::Sub:
                 return ir::Literal::make_literal(-val);
+            case ir::Instruction::OpID::Null:
+                return ir::Literal::make_literal(val);
             default:
                 LOG_WARN("Unexpected Computation: %s %f", ir::Instruction::op_to_string(op).c_str(), val);
                 LOG_WARN("OpID: %d", op);
@@ -24,10 +27,12 @@ std::shared_ptr<ir::Literal> compute(std::shared_ptr<ir::Literal> l1, ir::Instru
     } else {
         long val = l1->get_int();
         switch(op) {
-            case ir::Instruction::OpID::Sub:
+            case ir::Instruction::OpID::Minus:
                 return ir::Literal::make_literal(-val);
             case ir::Instruction::OpID::Not: case ir::Instruction::OpID::BitReverse:
                 return ir::Literal::make_literal(~val);
+            case ir::Instruction::OpID::Null:
+                return ir::Literal::make_literal(val);
             default:
                 LOG_ERROR("Unknown Operator ID: %d", op);
                 break; // 无法优化
@@ -108,6 +113,7 @@ std::shared_ptr<ir::Value> opt_arith_inst(std::shared_ptr<ir::Instruction> inst,
                 auto result = opt_arith_inst(lhs_inst, depth + 1);
                 if(result) {
                     inst->set_operand(0, result);
+                    prog->all_values_.emplace_back(result);
                 }
             }
         }
@@ -117,6 +123,7 @@ std::shared_ptr<ir::Value> opt_arith_inst(std::shared_ptr<ir::Instruction> inst,
                 auto result = opt_arith_inst(rhs_inst, depth + 1);
                 if(result) {
                     inst->set_operand(1, result);
+                    prog->all_values_.emplace_back(result);
                 }
             }
         }
@@ -130,12 +137,17 @@ std::shared_ptr<ir::Value> opt_arith_inst(std::shared_ptr<ir::Instruction> inst,
         }
     } else if (inst->is_unary_inst()) {
         auto operand = inst->get_operand(0).lock();
+        if(inst->op_id_ == ir::Instruction::OpID::Bracket) {
+            // 括号表达式，进入内部
+            opt_arith_inst(std::dynamic_pointer_cast<ir::Instruction>(operand), depth + 1);
+        }
         if(operand->is_inst()) {
             auto operand_inst = std::dynamic_pointer_cast<ir::Instruction>(operand);
             if(operand_inst->is_arith_inst()) {
                 auto result = opt_arith_inst(operand_inst, depth + 1);
                 if(result) {
                     inst->set_operand(0, result);
+                    prog->all_values_.emplace_back(result);
                 }
             }
         }
@@ -151,6 +163,7 @@ std::shared_ptr<ir::Value> opt_arith_inst(std::shared_ptr<ir::Instruction> inst,
 
 void ConstExprOpt::optimize(ir::Module &program) {
     // 遍历基本块，找到所有表达式
+    prog = &program;
     for (auto &func : program.functions_) {
         for(auto &bb: func->basic_blocks_) {
             for(auto &inst: bb->instructions_) {
@@ -168,6 +181,7 @@ void ConstExprOpt::optimize(ir::Module &program) {
                                     auto result = opt_arith_inst(array_inst, 0);
                                     if(result) {
                                         inst_ptr->set_operand(1, result);
+                                        program.all_values_.emplace_back(result);
                                     }
                                 }
                             }
@@ -186,6 +200,7 @@ void ConstExprOpt::optimize(ir::Module &program) {
                             auto result = opt_arith_inst(inst_ptr, 0);
                             if(result) {
                                 inst->set_operand(1, result);
+                                program.all_values_.emplace_back(result);
                             }
                         }
                     }
@@ -199,6 +214,7 @@ void ConstExprOpt::optimize(ir::Module &program) {
                             auto result = opt_arith_inst(inst_ptr, 0);
                             if(result) {
                                 inst->set_operand(0, result);
+                                program.all_values_.emplace_back(result);
                             }
                         }
                     }
@@ -212,6 +228,7 @@ void ConstExprOpt::optimize(ir::Module &program) {
                                 auto result = opt_arith_inst(inst_ptr, 0);
                                 if(result) {
                                     inst->set_operand(i, result);
+                                    program.all_values_.emplace_back(result);
                                 }
                             } else if (inst_ptr->is_array_visit_inst()) {
                                 while (inst_ptr->is_array_visit_inst()) {
@@ -223,6 +240,7 @@ void ConstExprOpt::optimize(ir::Module &program) {
                                             auto result = opt_arith_inst(array_inst, 0);
                                             if(result) {
                                                 inst_ptr->set_operand(1, result);
+                                                program.all_values_.emplace_back(result);
                                             }
                                         }
                                     }

@@ -9,7 +9,7 @@ public:
     virtual ~ConstExprOpt() = default;
     void optimize(ir::Module &program) override;
     std::string get_name() override { return "ConstExprOpt"; }
-
+private:
 }; // class ConstExprOpt
 
 } // namespace opt

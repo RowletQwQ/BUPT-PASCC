@@ -692,7 +692,7 @@ public:
     bool is_ret_inst() { return op_id_ == OpID::Ret; }
     bool is_br_inst() { return op_id_ == OpID::Br; }
     bool is_binary_inst() { return op_id_ >= OpID::Add && op_id_ <= OpID::AndThen; }
-    bool is_unary_inst() { return op_id_ >= OpID::Not && op_id_ <= OpID::LogicalNot; }
+    bool is_unary_inst() { return op_id_ >= OpID::Not && op_id_ <= OpID::Inc; }
     bool is_assign_inst() { return op_id_ == OpID::Assign; }
     bool is_load_inst() { return op_id_ == OpID::Visit; }
     bool is_expr() { return is_binary_inst() || is_unary_inst() || is_assign_inst() || is_load_inst(); }
@@ -1268,6 +1268,8 @@ public:
     std::vector<std::shared_ptr<Instruction> > all_instructions_;
     // 下面保存所有的常量
     std::vector<std::shared_ptr<Literal> > all_literals_;
+    // 下面保存优化阶段生成的所有的value
+    std::vector<std::shared_ptr<Value> > all_values_;
 };
 
 
