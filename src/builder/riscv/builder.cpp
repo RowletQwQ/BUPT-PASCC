@@ -635,32 +635,51 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
             LOG_FATAL("LoadInst: identifier %s not found in scope", inst->name_.c_str());
         auto label = std::make_shared<Label>(Operand::Immediate, inst->name_);
         if(need_pointer_ || is_lval_) {
-            last_result_ = current_scope_.alloc_tmp_reg(false);
-            auto la_inst = std::make_shared<LoadInst>(Instruction::LA, last_result_, label);
+            auto reg = current_scope_.alloc_tmp_reg(false);
+            auto la_inst = std::make_shared<LoadInst>(Instruction::LA, reg, label);
             cur_bb_->insts_.emplace_back(la_inst);
+            if (inst->is_array_visit()) {
+                // 加上偏移量
+                auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg, reg, last_result_);
+                cur_bb_->insts_.emplace_back(ins);
+            }
+            // 将结果存入last_result_
+            if(last_result_) {
+                current_scope_.free_tmp_reg(last_result_);
+            }
+            last_result_ = reg;
         } else {
             auto reg = current_scope_.alloc_tmp_reg(false);
             auto imm_zero = std::make_shared<Immediate>(0);
             auto la_inst = std::make_shared<LoadInst>(Instruction::LA, reg, label);
             cur_bb_->insts_.emplace_back(la_inst);
+            if (inst->is_array_visit()) {
+                // 加上偏移量
+                auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg, reg, last_result_);
+                cur_bb_->insts_.emplace_back(ins);
+            }
             switch (inst->type_->get_size()) {
                 case 1:
-                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LB, last_result_, reg, imm_zero));
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LB, reg, reg, imm_zero));
                     break;
                 case 2:
-                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LH, last_result_, reg, imm_zero));
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LH, reg, reg, imm_zero));
                     break;
                 case 4:
-                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LW, last_result_, reg, imm_zero));
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LW, reg, reg, imm_zero));
                     break;
                 case 8:
-                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LD, last_result_, reg, imm_zero));
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LD, reg, reg, imm_zero));
                     break;
                 default:
                     LOG_FATAL("Unknown align memory size %d", inst->type_->get_size());
             
             }
-            current_scope_.free_tmp_reg(reg);
+            // 将结果存入last_result_
+            if(last_result_) {
+                current_scope_.free_tmp_reg(last_result_);
+            }
+            last_result_ = reg;
             is_reg_ = true;
         }
         return;
@@ -671,12 +690,25 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
             LOG_FATAL("LoadInst: Data is in register %s", res->print().c_str());
         }
         auto mem = std::static_pointer_cast<Memory>(res);
-        last_result_ = current_scope_.alloc_tmp_reg(false);
-        auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, last_result_, mem->base_, mem->offset_);
-        cur_bb_->insts_.emplace_back(inst);
+        auto reg = current_scope_.alloc_tmp_reg(false);
+        auto inst_rv = std::make_shared<BinaryInst>(Instruction::ADDI, reg, mem->base_, mem->offset_);
+        cur_bb_->insts_.emplace_back(inst_rv);
+        if (inst->is_array_visit()) {
+            // 加上偏移量
+            auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg, reg, last_result_);
+            cur_bb_->insts_.emplace_back(ins);
+        }
+        // 将结果存入last_result_
+        if(last_result_) {
+            current_scope_.free_tmp_reg(last_result_);
+        }
+        last_result_ = reg;
     } else {
         // 只需要将值传入即可
         if(res->isRegister()) {
+            if(inst->is_array_visit()) {
+                LOG_FATAL("LoadInst: Data is in register %s, Can not execute an array visit", res->print().c_str());
+            }
             auto res_reg = std::static_pointer_cast<Register>(res);
             if(res_reg->is_real()) {
                 last_result_ = current_scope_.alloc_tmp_reg(true);
@@ -690,35 +722,44 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
             is_reg_ = true;
         } else {
             auto mem = std::static_pointer_cast<Memory>(res);
+            auto mem_base = current_scope_.alloc_tmp_reg(false);
+            auto zero = std::make_shared<Register>(Register::Zero);
+            auto inst_rv = std::make_shared<BinaryInst>(Instruction::XOR, mem_base, mem->base_, zero);
+            cur_bb_->insts_.emplace_back(inst_rv);
+            if(inst->is_array_visit()) {
+                // 将last_result_和base相加
+                auto add_inst = std::make_shared<BinaryInst>(Instruction::ADD, mem_base, mem_base, last_result_);
+                current_scope_.free_tmp_reg(last_result_);
+            }
             if(mem->type_ == Memory::Float) {
                 last_result_ = current_scope_.alloc_tmp_reg(true);
                 if (mem->size_ == 4) {
-                    auto inst = std::make_shared<LoadInst>(Instruction::FLW, last_result_, mem->base_, mem->offset_);
+                    auto inst = std::make_shared<LoadInst>(Instruction::FLW, last_result_, mem_base, mem->offset_);
                     cur_bb_->insts_.emplace_back(inst);
                 } else {
-                    auto inst = std::make_shared<LoadInst>(Instruction::FLD, last_result_, mem->base_, mem->offset_);
+                    auto inst = std::make_shared<LoadInst>(Instruction::FLD, last_result_, mem_base, mem->offset_);
                     cur_bb_->insts_.emplace_back(inst);
                 }
             } else {
                 last_result_ = current_scope_.alloc_tmp_reg(false);
                 switch(mem->size_) {
                     case 1:
-                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LB, last_result_, mem->base_, mem->offset_));
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LB, last_result_, mem_base, mem->offset_));
                         break;
                     case 2:
-                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LH, last_result_, mem->base_, mem->offset_));
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LH, last_result_, mem_base, mem->offset_));
                         break;
                     case 4:
-                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LW, last_result_, mem->base_, mem->offset_));
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LW, last_result_, mem_base, mem->offset_));
                         break;
                     case 8:
-                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LD, last_result_, mem->base_, mem->offset_));
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LD, last_result_, mem_base, mem->offset_));
                         break;
                     default:
                         LOG_FATAL("Unknown align memory size %d", mem->size_);
                 }
             }
-            
+            current_scope_.free_tmp_reg(mem_base);
         }
     }
 }
