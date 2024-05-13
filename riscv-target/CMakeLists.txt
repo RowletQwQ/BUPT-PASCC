@@ -7,6 +7,8 @@ project(assembly_project ASM)
 # 找到目录下的所有 .s 文件
 file(GLOB SOURCES "asm/*.s")
 
+add_compile_options(-g)
+
 # 为每个 .s 文件生成一个可执行文件
 foreach(source ${SOURCES})
     get_filename_component(executable ${source} NAME_WE)

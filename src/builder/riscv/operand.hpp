@@ -21,10 +21,11 @@ public:
         Block, // 基本块
         Global, // 全局变量
     };
-    explicit Operand(OpType type) : type_(type) {}
+    explicit Operand(OpType type, int size) : type_(type), size_(size) {}
     ~Operand() = default;
     virtual std::string print() const = 0;
     OpType type_;
+    int size_; // 每个元素的大小
     // 快速判断
     bool isRegister() const { return type_ == Register; }
     bool isMemory() const { return type_ == Memory; }
@@ -73,10 +74,10 @@ public:
         float imm_f32_;
         double imm_f64_;
     };
-    Immediate(int imm) : Operand(Operand::Immediate), imm_type_(ImmType::Int32), imm_i32_(imm) {}
-    Immediate(int64_t imm) : Operand(Operand::Immediate), imm_type_(ImmType::Int64), imm_i64_(imm) {}
-    Immediate(float imm) : Operand(Operand::Immediate), imm_type_(ImmType::Float32), imm_f32_(imm) {}
-    Immediate(double imm) : Operand(Operand::Immediate), imm_type_(ImmType::Float64), imm_f64_(imm) {}
+    Immediate(int imm) : Operand(Operand::Immediate, 4), imm_type_(ImmType::Int32), imm_i32_(imm) {}
+    Immediate(int64_t imm) : Operand(Operand::Immediate, 8), imm_type_(ImmType::Int64), imm_i64_(imm) {}
+    Immediate(float imm) : Operand(Operand::Immediate, 4), imm_type_(ImmType::Float32), imm_f32_(imm) {}
+    Immediate(double imm) : Operand(Operand::Immediate, 8), imm_type_(ImmType::Float64), imm_f64_(imm) {}
     std::string print() const override;
 };
 
@@ -91,10 +92,9 @@ public:
     std::shared_ptr<riscv::Register> base_; // 基地址寄存器
     std::shared_ptr<riscv::Immediate> offset_; // 偏移寄存器
     MemType type_;
-    int size_; // 每个元素的大小
     Memory(std::shared_ptr<riscv::Register> base, std::shared_ptr<riscv::Immediate> offset, MemType type,
         int size, int count = 1) 
-        : Operand(Operand::Memory), base_(base), offset_(offset), type_(type) {}
+        : Operand(Operand::Memory, size), base_(base), offset_(offset), type_(type) {}
     std::string print() const override;
 };
 
@@ -102,7 +102,7 @@ public:
 class Label : public Operand {
 public:
     std::string name_;
-    Label(OpType type, const std::string &name) : Operand(type), name_(name) {}
+    Label(OpType type, const std::string &name) : Operand(type, 0), name_(name) {}
     std::string print() const override;
 };
 
@@ -118,20 +118,20 @@ public:
         ARRAY, // 数组
     };
     GlobalConst(const int val, const std::string &name) 
-        : Operand(OpType::Const), name_(name) , type_(Word), i32_(val){}
-    GlobalConst(const long val, const std::string &name) 
-        : Operand(OpType::Const), name_(name) , type_(DWord), i64_(val){}
+        : Operand(OpType::Const, 4), name_(name) , type_(Word), i32_(val){}
+    GlobalConst(const int64_t val, const std::string &name) 
+        : Operand(OpType::Const, 8), name_(name) , type_(DWord), i64_(val){}
     GlobalConst(const float val, const std::string &name)
-        : Operand(OpType::Const), name_(name), type_(Float), f32_(val){}
+        : Operand(OpType::Const, 4), name_(name), type_(Float), f32_(val){}
     GlobalConst(const double val, const std::string &name)
-        : Operand(OpType::Const), name_(name), type_(Double), f64_(val){}
+        : Operand(OpType::Const, 8), name_(name), type_(Double), f64_(val){}
     GlobalConst(const std::string &val, const std::string &name)
-        : Operand(OpType::Const), name_(name), type_(ASCIIZ), str_val_(val){}
+        : Operand(OpType::Const, val.length()), name_(name), type_(ASCIIZ), str_val_(val){}
     GlobalConst(std::vector<std::shared_ptr<GlobalConst>> &val, const std::string &name)
-        : Operand(OpType::Const), name_(name), type_(ARRAY), array_val_(val){}
+        : Operand(OpType::Const, val.size() * val[0]->size_), name_(name), type_(ARRAY), array_val_(val){}
     union {
         int i32_;
-        long i64_;
+        int64_t i64_;
         float f32_;
         double f64_;
     };
@@ -147,9 +147,8 @@ public:
 class GlobalId : public Operand {
 public:
     std::string name_;
-    int size_;
     GlobalId(const std::string &name, int size) 
-        : Operand(OpType::Global), name_(name), size_(size) {}
+        : Operand(OpType::Global, size), name_(name) {}
     std::string print() const override;
 };
 

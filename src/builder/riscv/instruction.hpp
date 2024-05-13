@@ -12,6 +12,8 @@ class Instruction {
 public:
     enum InstrType {
         NOP,
+        /** Label **/
+        LABEL,
         /**Shifts**/
         // RV32I
         SLL, // Shift left logical
@@ -242,6 +244,7 @@ public:
     virtual void setOperand(int index, std::shared_ptr<Operand> operand);
     virtual std::string print() const = 0;
     int getOpNums() const { return op_nums_; }
+    bool is_label() const { return type_ == LABEL; }
     int op_nums_;
     InstrType type_; // 指令类型    
     std::shared_ptr<Operand> dest_; // 指令的目的操作数
@@ -313,6 +316,13 @@ public:
     JumpInst(InstrType type, std::shared_ptr<Operand> ret, std::shared_ptr<Operand> desc);
     JumpInst(InstrType type, std::shared_ptr<Operand> target);
     JumpInst(InstrType type, std::shared_ptr<Operand> src, std::shared_ptr<Operand> base, std::shared_ptr<Operand> target);
+    std::string print() const override;
+};
+
+// 给逻辑and提供一个快捷打印标签的方式
+class LabelInst : public Instruction {
+public:
+    LabelInst(std::shared_ptr<Operand> label);
     std::string print() const override;
 };
 

@@ -71,7 +71,7 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
     {Instruction::SRET, "sret"},
     {Instruction::URET, "uret"},
     {Instruction::WFI, "wfi"},
-    {Instruction::SFENCE_VMA, "sfence_vma"},
+    {Instruction::SFENCE_VMA, "sfence.vma"},
     {Instruction::CSRRW, "csrrw"},
     {Instruction::CSRRS, "csrrs"},
     {Instruction::CSRRC, "csrrc"},
@@ -79,7 +79,7 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
     {Instruction::CSRRSI, "csrrsi"},
     {Instruction::CSRRCI, "csrrci"},
     {Instruction::FENCE, "fence"},
-    {Instruction::FENCE_I, "fence_i"},
+    {Instruction::FENCE_I, "fence.i"},
     {Instruction::MUL, "mul"},
     {Instruction::MULH, "mulh"},
     {Instruction::MULHSU, "mulhsu"},
@@ -92,66 +92,66 @@ std::map<Instruction::InstrType, std::string> instrTypeToString = {
     {Instruction::DIVW, "divw"},
     {Instruction::DIVUW, "divuw"},
     {Instruction::REMW, "remw"},
-    {Instruction::FMV_W_X, "fmv_w_x"},
-    {Instruction::FMV_X_W, "fmv_x_w"},
-    {Instruction::FMV_D_X, "fmv_d_x"},
-    {Instruction::FMV_X_D, "fmv_x_d"},
+    {Instruction::FMV_W_X, "fmv.w.x"},
+    {Instruction::FMV_X_W, "fmv.x.w"},
+    {Instruction::FMV_D_X, "fmv.d.x"},
+    {Instruction::FMV_X_D, "fmv.x.d"},
     {Instruction::FLW, "flw"},
     {Instruction::FLD, "fld"},
     {Instruction::FSW, "fsw"},
     {Instruction::FSD, "fsd"},
-    {Instruction::FCVT_S_W, "fcvt_s_w"},
-    {Instruction::FCVT_S_WU, "fcvt_s_wu"},
-    {Instruction::FCVT_D_W, "fcvt_d_w"},
-    {Instruction::FCVT_D_WU, "fcvt_d_wu"},
-    {Instruction::FCVT_W_S, "fcvt_w_s"},
-    {Instruction::FCVT_WU_S, "fcvt_wu_s"},
-    {Instruction::FCVT_W_D, "fcvt_w_d"},
-    {Instruction::FCVT_WU_D, "fcvt_wu_d"},
-    {Instruction::FCVT_L_S, "fcvt_l_s"},
-    {Instruction::FCVT_LU_S, "fcvt_lu_s"},
-    {Instruction::FCVT_L_D, "fcvt_l_d"},
-    {Instruction::FCVT_LU_D, "fcvt_lu_d"},
-    {Instruction::FCVT_S_L, "fcvt_s_l"},
-    {Instruction::FCVT_S_LU, "fcvt_s_lu"},
-    {Instruction::FCVT_D_L, "fcvt_d_l"},
-    {Instruction::FCVT_D_LU, "fcvt_d_lu"},
-    {Instruction::FNEG_S, "fneg_s"},
-    {Instruction::FNEG_D, "fneg_d"},
-    {Instruction::FADD_S, "fadd_s"},
-    {Instruction::FSUB_S, "fsub_s"},
-    {Instruction::FMUL_S, "fmul_s"},
-    {Instruction::FDIV_S, "fdiv_s"},
-    {Instruction::FSQRT_S, "fsqrt_s"},
-    {Instruction::FADD_D, "fadd_d"},
-    {Instruction::FSUB_D, "fsub_d"},
-    {Instruction::FMUL_D, "fmul_d"},
-    {Instruction::FDIV_D, "fdiv_d"},
-    {Instruction::FSQRT_D, "fsqrt_d"},
-    {Instruction::FMADD_S, "fmadd_s"},
-    {Instruction::FMSUB_S, "fmsub_s"},
-    {Instruction::FNMADD_S, "fnmadd_s"},
-    {Instruction::FNMSUB_S, "fnmsub_s"},
-    {Instruction::FMADD_D, "fmadd_d"},
-    {Instruction::FMSUB_D, "fmsub_d"},
-    {Instruction::FNMADD_D, "fnmadd_d"},
-    {Instruction::FNMSUB_D, "fnmsub_d"},
-    {Instruction::FEQ_S, "feq_s"},
-    {Instruction::FLT_S, "flt_s"},
-    {Instruction::FLE_S, "fle_s"},
-    {Instruction::FEQ_D, "feq_d"},
-    {Instruction::FLT_D, "flt_d"},
-    {Instruction::FLE_D, "fle_d"},
-    {Instruction::FMIN_S, "fmin_s"},
-    {Instruction::FMAX_S, "fmax_s"},
-    {Instruction::FMIN_D, "fmin_d"},
-    {Instruction::FMAX_D, "fmax_d"},
-    {Instruction::FSGNJ_S, "fsgnj_s"},
-    {Instruction::FSGNJN_S, "fsgnjn_s"},
-    {Instruction::FSGNJX_S, "fsgnjx_s"},
-    {Instruction::FSGNJ_D, "fsgnj_d"},
-    {Instruction::FSGNJN_D, "fsgnjn_d"},
-    {Instruction::FSGNJX_D, "fsgnjx_d"}
+    {Instruction::FCVT_S_W, "fcvt.s.w"},
+    {Instruction::FCVT_S_WU, "fcvt.s.wu"},
+    {Instruction::FCVT_D_W, "fcvt.d.w"},
+    {Instruction::FCVT_D_WU, "fcvt.d.wu"},
+    {Instruction::FCVT_W_S, "fcvt.w.s"},
+    {Instruction::FCVT_WU_S, "fcvt.wu.s"},
+    {Instruction::FCVT_W_D, "fcvt.w.d"},
+    {Instruction::FCVT_WU_D, "fcvt.wu.d"},
+    {Instruction::FCVT_L_S, "fcvt.l.s"},
+    {Instruction::FCVT_LU_S, "fcvt.lu.s"},
+    {Instruction::FCVT_L_D, "fcvt.l.d"},
+    {Instruction::FCVT_LU_D, "fcvt.lu.d"},
+    {Instruction::FCVT_S_L, "fcvt.s.l"},
+    {Instruction::FCVT_S_LU, "fcvt.s.lu"},
+    {Instruction::FCVT_D_L, "fcvt.d.l"},
+    {Instruction::FCVT_D_LU, "fcvt.d.lu"},
+    {Instruction::FNEG_S, "fneg.s"},
+    {Instruction::FNEG_D, "fneg.d"},
+    {Instruction::FADD_S, "fadd.s"},
+    {Instruction::FSUB_S, "fsub.s"},
+    {Instruction::FMUL_S, "fmul.s"},
+    {Instruction::FDIV_S, "fdiv.s"},
+    {Instruction::FSQRT_S, "fsqrt.s"},
+    {Instruction::FADD_D, "fadd.d"},
+    {Instruction::FSUB_D, "fsub.d"},
+    {Instruction::FMUL_D, "fmul.d"},
+    {Instruction::FDIV_D, "fdiv.d"},
+    {Instruction::FSQRT_D, "fsqrt.d"},
+    {Instruction::FMADD_S, "fmadd.s"},
+    {Instruction::FMSUB_S, "fmsub.s"},
+    {Instruction::FNMADD_S, "fnmadd.s"},
+    {Instruction::FNMSUB_S, "fnmsub.s"},
+    {Instruction::FMADD_D, "fmadd.d"},
+    {Instruction::FMSUB_D, "fmsub.d"},
+    {Instruction::FNMADD_D, "fnmadd.d"},
+    {Instruction::FNMSUB_D, "fnmsub.d"},
+    {Instruction::FEQ_S, "feq.s"},
+    {Instruction::FLT_S, "flt.s"},
+    {Instruction::FLE_S, "fle.s"},
+    {Instruction::FEQ_D, "feq.d"},
+    {Instruction::FLT_D, "flt.d"},
+    {Instruction::FLE_D, "fle.d"},
+    {Instruction::FMIN_S, "fmin.s"},
+    {Instruction::FMAX_S, "fmax.s"},
+    {Instruction::FMIN_D, "fmin.d"},
+    {Instruction::FMAX_D, "fmax.d"},
+    {Instruction::FSGNJ_S, "fsgnj.s"},
+    {Instruction::FSGNJN_S, "fsgnjn.s"},
+    {Instruction::FSGNJX_S, "fsgnjx.s"},
+    {Instruction::FSGNJ_D, "fsgnj.d"},
+    {Instruction::FSGNJN_D, "fsgnjn.d"},
+    {Instruction::FSGNJX_D, "fsgnjx.d"}
 
 };
 
@@ -231,7 +231,7 @@ BinaryInst::BinaryInst(InstrType type, std::shared_ptr<Operand> dest, std::share
     };
 
     static const std::set<Instruction::InstrType> valid_int_with_imm_types = {
-        SLLI, SRLI, SRAI, SLLIW, SRLIW, SRAIW, ADDI, ADDIW
+        SLLI, SRLI, SRAI, SLLIW, SRLIW, SRAIW, ADDI, ADDIW, XORI, ORI, ANDI, SLTI, SLTIU
     };
 
 
@@ -557,6 +557,21 @@ std::string StoreInst::print() const {
     } else {
         return instrTypeToString[type_] + " " + operands_.at(0)->print() + ", " + operands_.at(1)->print();
     }
+}
+
+LabelInst::LabelInst(std::shared_ptr<Operand> label)
+:Instruction(Instruction::LABEL, 1)
+{
+    if (label->type_ == Operand::Block) {
+        operands_[0] = label;
+    } else {
+        LOG_FATAL("LabelInst type error, label should be Label");
+    }
+}
+
+std::string LabelInst::print() const {
+    auto label = std::dynamic_pointer_cast<Label>(operands_[0]);
+    return label->print() + ":";
 }
 
 

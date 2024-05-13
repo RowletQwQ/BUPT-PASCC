@@ -8,7 +8,7 @@ namespace riscv {
     
 
 Register::Register(Register::RegType reg_type, int reg_id /* = -1*/) 
-: Operand(Operand::Register), reg_type_(reg_type)
+: Operand(Operand::Register, 8), reg_type_(reg_type)
 {
     // 判断reg_id是否在范围内
     if(reg_type == RegType::Temp && (reg_id < 0 || reg_id > 6)) {

@@ -335,20 +335,29 @@ static void make_cmp_inst
     } else {
         // 此时为整数
         auto imm_true = std::make_shared<Immediate>(1);
-        auto imm_8 = std::make_shared<Immediate>(8);
-        auto imm_16 = std::make_shared<Immediate>(16);
+        std::string true_label_name = cur_bb_->label_->name_ + "_true_" + std::to_string(cur_bb_->branch_label_cnt_);
+        std::string false_label_name = cur_bb_->label_->name_ + "_false_" + std::to_string(cur_bb_->branch_label_cnt_);
+        cur_bb_->branch_label_cnt_++;
+        auto true_label = std::make_shared<Label>(Operand::Block, true_label_name);
+        auto false_label = std::make_shared<Label>(Operand::Block, false_label_name);
+        auto true_label_inst = std::make_shared<LabelInst>(true_label);
+        auto false_label_inst = std::make_shared<LabelInst>(false_label);
         switch (id) {
             case ir::Instruction::Eq:
-                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, reg1, reg2, imm_16));
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, reg1, reg2, true_label));
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
-                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, imm_8));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, imm_true));
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, false_label));
+                cur_bb_->insts_.emplace_back(true_label_inst);
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, zero, imm_true));
+                cur_bb_->insts_.emplace_back(false_label_inst);
                 break;
             case ir::Instruction::Ne:
-                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BNE, reg1, reg2, imm_16));
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BNE, reg1, reg2, true_label));
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XOR, reg1, zero, zero));
-                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, imm_8));
-                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::ADDI, reg1, zero, imm_true));
+                cur_bb_->insts_.emplace_back(std::make_shared<BranchInst>(Instruction::BEQ, zero, zero, false_label));
+                cur_bb_->insts_.emplace_back(true_label_inst);
+                cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::XORI, reg1, zero, imm_true));
+                cur_bb_->insts_.emplace_back(false_label_inst);
                 break;
             case ir::Instruction::Lt:
                 cur_bb_->insts_.emplace_back(std::make_shared<BinaryInst>(Instruction::SLT, reg1, reg1, reg2));
@@ -373,6 +382,11 @@ static void make_cmp_inst
 void RiscvBuilder::visit(const ir::BinaryInst* inst) {
     // 先处理操作数
     if(inst->is_logical()) {
+        // 创建新的基本块
+        std::string true_label_name = cur_bb_->label_->name_ + "_target_" + std::to_string(cur_bb_->branch_label_cnt_);
+        cur_bb_->branch_label_cnt_++;
+        auto true_label = std::make_shared<Label>(Operand::Block, true_label_name);
+        auto true_label_inst = std::make_shared<LabelInst>(true_label);
         // 逻辑运算符和其他运算符不同，需要特殊处理
         // 如 a1 and a2, 需要先计算a1, 如果a1为0, 则结果为0, 否则计算a2
         auto op1 = inst->operands_[0].lock();
@@ -411,19 +425,19 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
             auto res_inst = std::make_shared<BinaryInst>(Instruction::OR, last_result_, reg1, last_result_);
             cur_bb_->insts_.emplace_back(res_inst);
         }
-        // 计算跳转指令立即数
-        auto imm = std::make_shared<Immediate>((int64_t)(cur_bb_->insts_.size() - index - 1) * 8);
         if(inst->op_id_ == ir::Instruction::And || inst->op_id_ == ir::Instruction::AndThen) {
             // 如果是and, 需要判断第一个操作数是否为0
             // 第一个操作数为0直接跳转
-            auto jmp_inst = std::make_shared<BranchInst>(Instruction::BEQ, reg1, zero, imm);
+            auto jmp_inst = std::make_shared<BranchInst>(Instruction::BEQ, reg1, zero, true_label);
             cur_bb_->insts_[index] = jmp_inst;
         } else {
             // 如果是or, 需要判断第一个操作数是否为1
             // 第一个操作数为1直接跳转
-            auto jmp_inst = std::make_shared<BranchInst>(Instruction::BNE, reg1, zero, imm);
+            auto jmp_inst = std::make_shared<BranchInst>(Instruction::BNE, reg1, zero, true_label);
             cur_bb_->insts_[index] = jmp_inst;
         }
+        // 加上标记
+        cur_bb_->insts_.emplace_back(true_label_inst);
         return;
     }
     auto op1 = inst->operands_[0].lock();
@@ -434,7 +448,18 @@ void RiscvBuilder::visit(const ir::BinaryInst* inst) {
         auto literal = std::static_pointer_cast<ir::Literal>(op1);
         literal->accept(*this);
     }
-    auto reg1 = last_result_;
+    // 将计算结果暂存到reg1中
+    std::shared_ptr<Register> reg1;
+    auto zero = std::make_shared<Register>(Register::Zero);
+    if(last_result_->is_real()) {
+        reg1 = current_scope_.alloc_tmp_reg(true);
+        auto ins = std::make_shared<BinaryInst>(Instruction::FADD_D, reg1, last_result_, zero);
+        cur_bb_->insts_.emplace_back(ins);
+    } else {
+        reg1 = current_scope_.alloc_tmp_reg(false);
+        auto ins = std::make_shared<BinaryInst>(Instruction::ADD, reg1, last_result_, zero);
+        cur_bb_->insts_.emplace_back(ins);
+    }
     auto op2 = inst->operands_[1].lock();
     if(op2->is_inst()) {
         auto inst2 = std::static_pointer_cast<ir::Instruction>(op2);
@@ -541,6 +566,7 @@ void RiscvBuilder::visit(const ir::StoreInst* inst) {
         auto zero = std::make_shared<Register>(Register::Zero);
         auto ins = std::make_shared<BinaryInst>(Instruction::ADD, mem_reg, zero, last_result_);
         cur_bb_->insts_.emplace_back(ins);
+        current_scope_.free_tmp_reg(last_result_);
         // 接收右值
         auto op2 = std::static_pointer_cast<ir::Instruction>(inst->operands_[1].lock());
         op2->accept(*this);
@@ -617,26 +643,36 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
             auto imm_zero = std::make_shared<Immediate>(0);
             auto la_inst = std::make_shared<LoadInst>(Instruction::LA, reg, label);
             cur_bb_->insts_.emplace_back(la_inst);
-            if(inst->type_->get_size() == 8) {
-                auto load_inst = std::make_shared<LoadInst>(Instruction::LD, reg, reg, imm_zero);
-                cur_bb_->insts_.emplace_back(load_inst);
-            } else {
-                auto load_inst = std::make_shared<LoadInst>(Instruction::LW, reg, reg, imm_zero);
-                cur_bb_->insts_.emplace_back(load_inst);
+            switch (inst->type_->get_size()) {
+                case 1:
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LB, last_result_, reg, imm_zero));
+                    break;
+                case 2:
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LH, last_result_, reg, imm_zero));
+                    break;
+                case 4:
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LW, last_result_, reg, imm_zero));
+                    break;
+                case 8:
+                    cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LD, last_result_, reg, imm_zero));
+                    break;
+                default:
+                    LOG_FATAL("Unknown align memory size %d", inst->type_->get_size());
+            
             }
-            last_result_ = reg;
+            current_scope_.free_tmp_reg(reg);
             is_reg_ = true;
         }
         return;
     }
-    if(need_pointer_) {
+    if(need_pointer_ || is_lval_) {
         // 需要将对应操作数的内存地址存入last_result_
         if(res->isRegister()) {
             LOG_FATAL("LoadInst: Data is in register %s", res->print().c_str());
         }
         auto mem = std::static_pointer_cast<Memory>(res);
         last_result_ = current_scope_.alloc_tmp_reg(false);
-        auto inst = std::make_shared<LoadInst>(Instruction::LA, last_result_, mem->base_, mem->offset_);
+        auto inst = std::make_shared<BinaryInst>(Instruction::ADDI, last_result_, mem->base_, mem->offset_);
         cur_bb_->insts_.emplace_back(inst);
     } else {
         // 只需要将值传入即可
@@ -665,12 +701,21 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
                 }
             } else {
                 last_result_ = current_scope_.alloc_tmp_reg(false);
-                if(mem->size_ == 4) {
-                    auto inst = std::make_shared<LoadInst>(Instruction::LW, last_result_, mem->base_, mem->offset_);
-                    cur_bb_->insts_.emplace_back(inst);
-                } else {
-                    auto inst = std::make_shared<LoadInst>(Instruction::LD, last_result_, mem->base_, mem->offset_);
-                    cur_bb_->insts_.emplace_back(inst);
+                switch(mem->size_) {
+                    case 1:
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LB, last_result_, mem->base_, mem->offset_));
+                        break;
+                    case 2:
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LH, last_result_, mem->base_, mem->offset_));
+                        break;
+                    case 4:
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LW, last_result_, mem->base_, mem->offset_));
+                        break;
+                    case 8:
+                        cur_bb_->insts_.emplace_back(std::make_shared<LoadInst>(Instruction::LD, last_result_, mem->base_, mem->offset_));
+                        break;
+                    default:
+                        LOG_FATAL("Unknown align memory size %d", mem->size_);
                 }
             }
             
@@ -679,14 +724,14 @@ void RiscvBuilder::visit(const ir::LoadInst* inst) {
 }
 void RiscvBuilder::visit(const ir::ReadInst* inst) {
     // 在函数调用前保存调用环境
-    // 先将s2-s11写入栈
-    auto alloc = current_scope_.alloc_stack(80);
+    // 先将s1-s11写入栈
+    auto alloc = current_scope_.alloc_stack(88);
     cur_bb_->insts_.emplace_back(alloc);
     auto sp = std::make_shared<Register>(Register::Stack);
     auto zero = std::make_shared<Register>(Register::Zero);
-    for(int i = 2; i < 12; i++){
+    for(int i = 1; i < 12; i++){
         auto s_reg = std::make_shared<Register>(Register::Saved, i);
-        auto imm = std::make_shared<Immediate>(8 * (i - 2));
+        auto imm = std::make_shared<Immediate>(8 * (i - 1));
         auto store_inst = std::make_shared<StoreInst>(Instruction::SD, s_reg, sp, imm);
         cur_bb_->insts_.emplace_back(store_inst);
     }
@@ -743,9 +788,15 @@ void RiscvBuilder::visit(const ir::ReadInst* inst) {
     }
     // 调用
     auto scanf_label = std::make_shared<Label>(Operand::Function, "scanf");
+    // 保存返回值
+    auto s1 = std::make_shared<Register>(Register::Saved, 1);
     auto ra = std::make_shared<Register>(Register::Return);
+    auto save_ra_inst = std::make_shared<BinaryInst>(Instruction::XOR, s1, zero, ra);
     auto jal_inst = std::make_shared<JumpInst>(Instruction::JAL, ra, scanf_label);
+    auto recover_ra_inst = std::make_shared<BinaryInst>(Instruction::XOR, ra, zero, s1);
+    cur_bb_->insts_.emplace_back(save_ra_inst);
     cur_bb_->insts_.emplace_back(jal_inst);
+    cur_bb_->insts_.emplace_back(recover_ra_inst);
     // 传参结束，需要恢复栈
     if (inst->operands_.size() > 7) {
         // 需要退栈
@@ -759,28 +810,28 @@ void RiscvBuilder::visit(const ir::ReadInst* inst) {
         auto load_reg_inst = std::make_shared<BinaryInst>(Instruction::ADD, a_reg, zero, s_reg);
         cur_bb_->insts_.emplace_back(load_reg_inst);
     }
-    // 恢复s2-s11
-    for(int i = 2; i < 12; i++){
+    // 恢复s1-s11
+    for(int i = 1; i < 12; i++){
         auto s_reg = std::make_shared<Register>(Register::Saved, i);
-        auto imm = std::make_shared<Immediate>(8 * (i - 2));
+        auto imm = std::make_shared<Immediate>(8 * (i - 1));
         auto load_inst = std::make_shared<LoadInst>(Instruction::LD, s_reg, sp, imm);
         cur_bb_->insts_.emplace_back(load_inst);
     }
     // 退栈
-    auto dealloc = current_scope_.dealloc_stack(80);
+    auto dealloc = current_scope_.dealloc_stack(88);
     cur_bb_->insts_.emplace_back(dealloc);
 
 }
 void RiscvBuilder::visit(const ir::WriteInst* inst) {
     // 在函数调用前保存调用环境
-    // 先将s2-s11写入栈
-    auto alloc = current_scope_.alloc_stack(80);
+    // 先将s1-s11写入栈
+    auto alloc = current_scope_.alloc_stack(88);
     cur_bb_->insts_.emplace_back(alloc);
     auto sp = std::make_shared<Register>(Register::Stack);
     auto zero = std::make_shared<Register>(Register::Zero);
-    for(int i = 2; i < 12; i++){
+    for(int i = 1; i < 12; i++){
         auto s_reg = std::make_shared<Register>(Register::Saved, i);
-        auto imm = std::make_shared<Immediate>(8 * (i - 2));
+        auto imm = std::make_shared<Immediate>(8 * (i - 1));
         auto store_inst = std::make_shared<StoreInst>(Instruction::SD, s_reg, sp, imm);
         cur_bb_->insts_.emplace_back(store_inst);
     }
@@ -797,14 +848,7 @@ void RiscvBuilder::visit(const ir::WriteInst* inst) {
     for(auto &op:inst->operands_) {
         placeholder += op.lock()->type_->placeholder();
     }
-    // 生成一个占位符
-    auto ph = std::make_shared<GlobalConst>(placeholder, ph_name);
-    modules_->add_const(ph);
-    // 把占位符的地址传入a0
-    auto ph_op = std::make_shared<Label>(Operand::Immediate, ph_name);
-    auto a0 = std::make_shared<Register>(Register::IntArg, 0);
-    auto ph_load = std::make_shared<LoadInst>(Instruction::LA, a0, ph_op);
-    cur_bb_->insts_.emplace_back(ph_load);
+    
     // 计算是否需要开栈
     if (inst->operands_.size() > 7) {
         // 需要开栈
@@ -842,11 +886,26 @@ void RiscvBuilder::visit(const ir::WriteInst* inst) {
             cur_bb_->insts_.emplace_back(move_inst);
         }
     }
+    // 生成一个占位符
+    auto ph = std::make_shared<GlobalConst>(placeholder, ph_name);
+    modules_->add_const(ph);
+    // 把占位符的地址传入a0
+    auto ph_op = std::make_shared<Label>(Operand::Immediate, ph_name);
+    auto a0 = std::make_shared<Register>(Register::IntArg, 0);
+    auto ph_load = std::make_shared<LoadInst>(Instruction::LA, a0, ph_op);
+    cur_bb_->insts_.emplace_back(ph_load);
     // 调用
     auto printf_label = std::make_shared<Label>(Operand::Function, "printf");
+    // 将ra保存在s1
+    auto s1 = std::make_shared<Register>(Register::Saved, 1);
     auto ra = std::make_shared<Register>(Register::Return);
+    auto save_ra = std::make_shared<BinaryInst>(Instruction::XOR, s1, zero, ra);
     auto jal_inst = std::make_shared<JumpInst>(Instruction::JAL, ra, printf_label);
+    // 恢复ra
+    auto recover_ra = std::make_shared<BinaryInst>(Instruction::XOR, ra, zero, s1);
+    cur_bb_->insts_.emplace_back(save_ra);
     cur_bb_->insts_.emplace_back(jal_inst);
+    cur_bb_->insts_.emplace_back(recover_ra);
     // 传参结束，需要恢复栈
     if (inst->operands_.size() > 7) {
         // 需要退栈
@@ -860,15 +919,15 @@ void RiscvBuilder::visit(const ir::WriteInst* inst) {
         auto load_reg_inst = std::make_shared<BinaryInst>(Instruction::ADD, a_reg, zero, s_reg);
         cur_bb_->insts_.emplace_back(load_reg_inst);
     }
-    // 恢复s2-s11
-    for(int i = 2; i < 12; i++){
+    // 恢复s1-s11
+    for(int i = 1; i < 12; i++){
         auto s_reg = std::make_shared<Register>(Register::Saved, i);
-        auto imm = std::make_shared<Immediate>(8 * (i - 2));
+        auto imm = std::make_shared<Immediate>(8 * (i - 1));
         auto load_inst = std::make_shared<LoadInst>(Instruction::LD, s_reg, sp, imm);
         cur_bb_->insts_.emplace_back(load_inst);
     }
     // 退栈
-    auto dealloc = current_scope_.dealloc_stack(80);
+    auto dealloc = current_scope_.dealloc_stack(88);
     cur_bb_->insts_.emplace_back(dealloc);
 
 }
@@ -962,7 +1021,7 @@ void RiscvBuilder::visit(const ir::CallInst* inst) {
     // 组装jal指令
     auto func_label = std::make_shared<Label>(Operand::Function, func->name_);
     auto jal_inst = std::make_shared<JumpInst>(Instruction::JAL, ra, func_label);
-
+    cur_bb_->insts_.emplace_back(jal_inst);
     // 调用返回，需要恢复环境
     // 先把a0的值存入last_result_
     auto a0 = std::make_shared<Register>(Register::IntArg, 0);
@@ -1050,6 +1109,7 @@ void RiscvBuilder::visit(const ir::BasicBlock* bb) {
     // 无脑接收指令就行
     cur_bb_ = std::make_shared<BasicBlock>();
     cur_bb_->label_ = std::make_shared<Label>(Operand::Block, make_bb_name(cur_func_->label_->name_, bb->index_));
+    LOG_DEBUG("Generating code for basic block %s", cur_bb_->label_->name_.c_str());
     for(auto &inst : bb->instructions_) {
         inst->accept(*this);
     }
@@ -1057,6 +1117,7 @@ void RiscvBuilder::visit(const ir::BasicBlock* bb) {
 }
 
 void RiscvBuilder::visit(const ir::Function* func) {
+    LOG_DEBUG("Generating code for function %s", func->name_.c_str());
     auto function = std::make_shared<Function>();
     function->label_ = std::make_shared<Label>(Operand::Function,func->name_);
     cur_func_ = function;
@@ -1090,6 +1151,7 @@ void RiscvBuilder::visit(const ir::Function* func) {
             auto mem = gen_sp_mem(stack_size, tid == ir::Type::RealTID, local->type_->get_size());
             current_scope_.push(local->name_, mem);
             stack_size += local->type_->get_size();
+            LOG_DEBUG("Alloc %d byte(s) for variable %s", local->type_->get_size(), local->name_.c_str());
         }
     }
     stack_size = UpperAlign(stack_size, 8);
@@ -1153,17 +1215,14 @@ void RiscvBuilder::visit(const ir::Function* func) {
     // 退s0的栈空间
     auto dealloc_stack = current_scope_.dealloc_stack(8);
     cur_func_->after_insts_.emplace_back(dealloc_stack);
-    // 如果是main函数，需要召唤系统调用退出
+    // 如果是main函数，需要ret退出
     if(func->name_ == "main") {
-        auto a7 = std::make_shared<Register>(Register::IntArg, 7);
-        auto imm = std::make_shared<Immediate>(10);
         auto a0 = std::make_shared<Register>(Register::IntArg, 0);
-        auto set_a7 = std::make_shared<BinaryInst>(Instruction::ADDI, a7, zero, imm);
         auto set_a0 = std::make_shared<BinaryInst>(Instruction::XOR, a0, zero, zero);
-        auto ecall = std::make_shared<NoOperandInst>(Instruction::ECALL);
-        cur_func_->after_insts_.emplace_back(set_a7);
+        auto ra = std::make_shared<Register>(Register::Return);
+        auto ret_inst = std::make_shared<JumpInst>(Instruction::JALR, zero, ra, imm_zero);
         cur_func_->after_insts_.emplace_back(set_a0);
-        cur_func_->after_insts_.emplace_back(ecall);
+        cur_func_->after_insts_.emplace_back(ret_inst);
         modules_->add_func(cur_func_);
         return;
     }
@@ -1377,7 +1436,11 @@ void Function::output(std::ofstream &out) const{
     for(auto &bb : bbs_) {
         out << bb->label_->print() << ":\n";
         for(auto &inst : bb->insts_) {
-            out << "\t" << inst->print() << "\n";
+            if(inst->is_label()) {
+                out << inst->print() << "\n";
+            } else {
+                out << "\t" << inst->print() << "\n";
+            }
         }
     }
     // 输出函数结束后的指令
