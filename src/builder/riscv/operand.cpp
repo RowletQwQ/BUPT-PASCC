@@ -7,8 +7,8 @@ namespace builder {
 namespace riscv {
     
 
-Register::Register(Register::RegType reg_type, int reg_id /* = -1*/) 
-: Operand(Operand::Register, 8), reg_type_(reg_type)
+Register::Register(Register::RegType reg_type, int reg_id /* = -1*/, bool is_address_real /* = false*/) 
+: Operand(Operand::Register, 8), reg_type_(reg_type), is_address_real_(is_address_real)
 {
     // 判断reg_id是否在范围内
     if(reg_type == RegType::Temp && (reg_id < 0 || reg_id > 6)) {
@@ -65,6 +65,9 @@ Register::Register(Register::RegType reg_type, int reg_id /* = -1*/)
         case RegType::Float:
             reg_unique_id_ = 32 + reg_id_;
             break;
+        case RegType::Address:
+            reg_unique_id_ = 64 + reg_id_;
+            break;
         default:
             LOG_FATAL("Unknown register type");
     }
@@ -90,6 +93,8 @@ std::string Register::print() const {
             return "a" + std::to_string(reg_id_);
         case RegType::Float: case RegType::FloatArg:
             return "f" + std::to_string(reg_id_);
+        case RegType::Address:
+            return "address" + std::to_string(reg_id_);
         default:
             LOG_FATAL("Unknown register type");
     }

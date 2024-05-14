@@ -31,7 +31,10 @@ public:
     std::vector<std::shared_ptr<Instruction>> after_insts_; // 函数结束后的指令
     std::set<std::string> scan_bb_; // 用于记录已经扫描过的基本块
     // std::map<std::string, std::shared_ptr<BasicBlock>> bb_map_; // 用于记录基本块的名字和基本块的映射
-    void output(std::ofstream &out) const;
+    void output(std::ofstream &out);
+    void print_inst(const std::shared_ptr<Instruction> inst, std::ofstream &out);
+    // std::vector<std::shared_ptr<GlobalId>> temp_vars_; // 临时变量
+    // std::set<std::string> temp_vars_name_; // 临时变量的名字
     // void handle_bb(std::shared_ptr<BasicBlock> bb, std::ofstream &out); // 输出基本块
 };
 class Module {
@@ -39,6 +42,7 @@ public:
     std::vector<std::shared_ptr<GlobalConst>> consts_; // 常量和已经定义的全局变量
     std::vector<std::shared_ptr<GlobalId>> global_vars_; // 未初始化的全局变量
     std::vector<std::shared_ptr<Function>> funcs_; // 函数
+    std::set<std::string> global_set;
     void add_const(std::shared_ptr<GlobalConst> global);
     void add_func(std::shared_ptr<Function> func);
     void add_global(std::shared_ptr<GlobalId> global);
@@ -89,11 +93,13 @@ public:
         pointers_.back()[name] = type;
     }
 
+    std::vector<std::shared_ptr<Register>> allocated_mem_;
 private:
     // 作用域栈
     std::vector<bool> reg_used_;
     std::vector<std::shared_ptr<Register>> avail_int_regs_;
     std::vector<std::shared_ptr<Register>> avail_float_regs_;
+    
     int timestamp_;
     std::vector<int> reg_access_timestamp_;
     std::vector<int> stack_size_;

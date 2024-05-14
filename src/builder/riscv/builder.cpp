@@ -7,16 +7,20 @@
 #include "common/log/log.hpp"
 #include "builder/riscv/operand.hpp"
 
+#include <alloca.h>
 #include <cstdint>
 #include <cstring>
 #include <future>
+#include <iterator>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 namespace builder {
 namespace riscv {
 
 const std::string PREFIX_PLACEHOLDER = "__PLACEHOLDER__";
+const std::string REGISTER_BSS_PREFIX = "_bss_reg_";
 // 声明线程唯一变量
 thread_local std::shared_ptr<BasicBlock> cur_bb_;
 thread_local std::shared_ptr<Function> cur_func_;
@@ -163,8 +167,24 @@ std::shared_ptr<Register> Scope::alloc_tmp_reg(bool is_real) {
             }
         }
     }
-    LOG_FATAL("No available register");
-    return nullptr;
+    // 在已经申请过的临时空间里找一个
+    for(auto &addr: allocated_mem_) {
+        if(!is_reg_allocated(addr->getUniqueId())) {
+            LOG_DEBUG("Alloc addr reg %s", addr->print().c_str());
+            touch_reg(addr->getUniqueId());
+            // 设置其的浮点型和整型
+            addr->is_address_real_ = is_real;
+            return addr;
+        }
+    }
+    // 新增一个用于代表地址的寄存器
+    LOG_DEBUG("No available register, Add an address");
+    reg_used_.emplace_back(true);
+    reg_access_timestamp_.emplace_back(++timestamp_);
+    size_t size = allocated_mem_.size();
+    auto reg = std::make_shared<Register>(Register::Address, size, is_real);
+    allocated_mem_.emplace_back(reg);
+    return reg;
 }
 
 void Scope::free_tmp_reg(std::shared_ptr<Register> reg) {
@@ -1611,12 +1631,30 @@ void RiscvBuilder::build(ir::Module &program) {
                 [this, &func] {
                     current_scope_.enter(0);
                     func->accept(*this);
+                    // 将scope中创建的临时地址寄存器给获取出来
+                    for(auto &reg : current_scope_.allocated_mem_) {
+                        std::stringstream label_name;
+                        label_name << REGISTER_BSS_PREFIX << reg->getUniqueId();
+                        auto global_id = std::make_shared<GlobalId>(label_name.str(), 8);
+                        if(!modules_->find_global(label_name.str()))
+                            modules_->add_global(global_id);
+                    }
                     current_scope_.leave();
                 }
             )
         );
     }
-
+    const std::string dest_temp = REGISTER_BSS_PREFIX + "DEST_TMP_";
+    const std::string src_temp = REGISTER_BSS_PREFIX + "SRC_TMP_";
+    // 将这俩加入
+    auto global_id = std::make_shared<GlobalId>(dest_temp, 8);
+    modules_->add_global(global_id);
+    for(int i = 0; i < 3; i++) {
+        std::stringstream label_name;
+        label_name << src_temp << i + 1;
+        global_id = std::make_shared<GlobalId>(label_name.str(), 8);
+        modules_->add_global(global_id);
+    }
     // 等待所有任务完成
     for(auto &fut : futures) {
         fut.get();
@@ -1644,6 +1682,7 @@ void RiscvBuilder::output(std::ofstream &out) {
     for(auto &func : modules_->funcs_) {
         func->output(out);
     }
+    
 }
 
 void Module::add_const(std::shared_ptr<GlobalConst> global) {
@@ -1659,32 +1698,129 @@ void Module::add_func(std::shared_ptr<Function> func) {
 void Module::add_global(std::shared_ptr<GlobalId> global) {
     std::lock_guard<std::mutex> lock(global_mutex_);
     global_vars_.emplace_back(global);
+    global_set.insert(global->name_);
 }
 
-// void Function::handle_bb(std::shared_ptr<BasicBlock> bb, std::ofstream &out) {
-//     // 检查是否处理过
-//     if(scan_bb_.find(bb->label_->name_) != scan_bb_.end()) {
-//         return;
-//     }
-//     scan_bb_.insert(bb->label_->name_);
-//     // 输出基本块的label
-//     out << bb->label_->print() << ":\n";
-//     // 输出基本块的指令
-//     for(auto &inst : bb->insts_) {
-//         out << "\t" << inst->print() << "\n";
-//     }
-//     // 处理基本块的后继基本块
-//     for(auto &succ : bb->succ_) {
-//         handle_bb(bb_map_[succ], out);
-//     }
-// }
+bool Module::find_global(std::string name) {
+    std::lock_guard<std::mutex> lock(global_mutex_);
+    return global_set.find(name) != global_set.end();
+}
 
-void Function::output(std::ofstream &out) const {
+void Function::print_inst(const std::shared_ptr<Instruction> inst, std::ofstream &out) {
+    // 检查指令中是否存在代表内存的寄存器，有就替换
+    // 目标必定是寄存器
+    auto dest_reg = std::static_pointer_cast<Register>(inst->dest_);
+    const std::string dest_temp = REGISTER_BSS_PREFIX + "DEST_TMP_";
+    const std::string src_temp = REGISTER_BSS_PREFIX + "SRC_TMP_";
+    std::vector<std::shared_ptr<Operand>> original_src;
+    for(int i = 0; i < inst->op_nums_; i ++) {
+        // 先看操作数
+        auto op = inst->operands_[i];
+        original_src.emplace_back(op);
+        if(op->isRegister()) {
+            auto reg = std::static_pointer_cast<Register>(op);
+            if(reg->is_address()) {
+                // 是个伪寄存器，需要从对应bss段上读取相应数据
+                // 如果是整数，我们用ti寄存器暂存，如果是浮点数，我们用fi寄存器暂存
+                // std::stringstream label_name;
+                // label_name << REGISTER_BSS_PREFIX << reg->getUniqueId();
+                // if (temp_vars_name_.find(label_name.str()) == temp_vars_name_.end()) {
+                //     // 说明这个变量还没有被声明
+                //     auto global_id = std::make_shared<GlobalId>(label_name.str(), 8);
+                //     temp_vars_.emplace_back(global_id);
+                //     temp_vars_name_.insert(label_name.str());
+                // }
+                if(reg->is_real()) {
+                    out << "\tla s11," << src_temp << i+1 << "\n";
+                    out << "\tfsd f" << i + 1 << ",0(s11)\n";
+                    out << "\tla s11," << REGISTER_BSS_PREFIX << reg->getUniqueId() << "\n";
+                    out << "\tfld f" << i + 1 << ",0(s11)\n";
+                    auto f_reg = std::make_shared<Register>(Register::Float, i + 1);
+                    inst->operands_[i] = f_reg;
+                } else {
+                    out << "\tla s11," << src_temp << i+1 << "\n";
+                    out << "\tsd t" << i + 1 << ",0(s11)\n";
+                    out << "\tla s11," << REGISTER_BSS_PREFIX << reg->getUniqueId() << "\n";
+                    out << "\tld t" << i + 1 << ",0(s11)\n";
+                    auto t_reg = std::make_shared<Register>(Register::Temp, i + 1);
+                    inst->operands_[i] = t_reg;
+                }
+            }
+        }
+    }
+
+    // 检查dest, dest使用t5/f5进行存储
+    if(dest_reg && dest_reg->is_address()) {
+        // std::stringstream label_name;
+        // label_name << REGISTER_BSS_PREFIX << dest_reg->getUniqueId();
+        // if (temp_vars_name_.find(label_name.str()) == temp_vars_name_.end()) {
+        //     // 说明这个变量还没有被声明
+        //     auto global_id = std::make_shared<GlobalId>(label_name.str(), 8);
+        //     temp_vars_.emplace_back(global_id);
+        //     temp_vars_name_.insert(label_name.str());
+        // }
+        if(dest_reg->is_real()) {
+            out << "\tla s11," << dest_temp << "\n";
+            out << "\tfsd f5,0(s11)\n";
+            out << "\tla s11," << REGISTER_BSS_PREFIX << dest_reg->getUniqueId() << "\n";
+            out << "\tfld f5,0(s11)\n";
+            auto f_reg = std::make_shared<Register>(Register::Float, 5);
+            inst->dest_ = f_reg;
+        } else {
+            out << "\tla s11," << dest_temp << "\n";
+            out << "\tsd t5,0(s11)\n";
+            out << "\tla s11," << REGISTER_BSS_PREFIX << dest_reg->getUniqueId() << "\n";
+            out << "\tld t5,0(s11)\n";
+            auto t_reg = std::make_shared<Register>(Register::Temp, 5);
+            inst->dest_ = t_reg;
+        }
+    }
+    // 输入inst
+    out << "\t" << inst->print() << "\n";
+    // 接着，恢复回去
+    for(int i = 0; i < inst->op_nums_; i++) {
+        auto op = original_src[i];
+        if(op->isRegister()) {
+            auto reg = std::static_pointer_cast<Register>(op);
+            if(reg->is_address()) {
+                if(reg->is_real()) {
+                    out << "\tla s11," << REGISTER_BSS_PREFIX << reg->getUniqueId() << "\n";
+                    out << "\tfsd f" << i + 1 << ",0(s11)\n";
+                    out << "\tla s11," << src_temp << i+1 << "\n";
+                    out << "\tfld f" << i + 1 << ",0(s11)\n";
+                } else {
+                    out << "\tla s11," << REGISTER_BSS_PREFIX << reg->getUniqueId() << "\n";
+                    out << "\tsd t" << i + 1 << ",0(s11)\n";
+                    out << "\tla s11," << src_temp << i+1 << "\n";
+                    out << "\tld t" << i + 1 << ",0(s11)\n";
+                }
+            }
+        }
+        inst->operands_[i] = op;
+    }
+
+    if(dest_reg && dest_reg->is_address()) {
+        if(dest_reg->is_real()) {
+            out << "\tla s11," << REGISTER_BSS_PREFIX << dest_reg->getUniqueId() << "\n";
+            out << "\tfsd f5,0(s11)\n";
+            out << "\tla s11," << dest_temp << "\n";
+            out << "\tfld f5,0(s11)\n";
+        } else {
+            out << "\tla s11," << REGISTER_BSS_PREFIX << dest_reg->getUniqueId() << "\n";
+            out << "\tsd t5,0(s11)\n";
+            out << "\tla s11," << dest_temp << "\n";
+            out << "\tld t5,0(s11)\n";
+        }
+    }
+    
+}
+
+void Function::output(std::ofstream &out) {
     // 先输出Label
     out << label_->print() << ":\n";
     // 输出函数开始前的指令
     for(auto &inst : before_insts_) {
-        out << "\t" << inst->print() << "\n";
+        print_inst(inst, out);
     }
     // 输出基本块
     for(auto &bb : bbs_) {
@@ -1693,14 +1829,13 @@ void Function::output(std::ofstream &out) const {
             if(inst->is_label()) {
                 out << inst->print() << "\n";
             } else {
-                out << "\t" << inst->print() << "\n";
+                print_inst(inst, out);
             }
         }
-        // handle_bb(bb, out);
     }
     // 输出函数结束后的指令
     for(auto &inst : after_insts_) {
-        out << "\t" << inst->print() << "\n";
+        print_inst(inst, out);
     }
 }
 

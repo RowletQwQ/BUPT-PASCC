@@ -47,15 +47,17 @@ public:
         Saved, // 保存寄存器，s1-s11
         IntArg, // 整型参数寄存器，a0-a7, 需要注意的是,a0兼顾返回值/函数的第一个参数
         FloatArg, // 浮点参数寄存器，fa0-fa7
-        Float // 浮点寄存器
+        Float, // 浮点寄存器
+        Address, // 伪寄存器，代表内存地址
     };
-
+    bool is_address_real_;
     RegType reg_type_;
     int reg_id_; // 寄存器编号
     int reg_unique_id_; // 寄存器唯一编号
-    Register(RegType reg_type, int reg_id = -1);
+    Register(RegType reg_type, int reg_id = -1, bool is_address_real = false);
     int getUniqueId() const { return reg_unique_id_; }
-    bool is_real() const { return reg_unique_id_ >= 32;}
+    bool is_real() const { return (reg_unique_id_ >= 32 && reg_unique_id_ < 64) || is_address_real_;}
+    bool is_address() const { return reg_type_ == Address; }
     std::string print() const override;
 };
 
