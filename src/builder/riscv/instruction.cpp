@@ -409,6 +409,23 @@ std::string UnaryInst::print() const {
 }
 
 std::string BinaryInst::print() const {
+    if(type_ == ADDI) {
+        // 如果是addi, 需要判读操作数是否大于12位
+        auto imm = std::dynamic_pointer_cast<Immediate>(operands_.at(1));
+        int64_t value = 0;
+        if(imm->imm_type_ == Immediate::Int32) {
+            value = imm->imm_i32_;
+        } else {
+            value = imm->imm_i64_;
+        }
+        if(value >= -2048 && value <= 2047) {
+            return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print() + 
+                ", " + std::to_string(value);
+        }
+        // 大于12位的立即数，利用其他寄存器读入
+        return " li s11," + std::to_string(value) + "\n\t" +
+            instrTypeToString[ADD] + " " + dest_->print() + ", " + dest_->print() + ", " + "s11";
+    }
     return instrTypeToString[type_] + " " + dest_->print() + ", " + operands_.at(0)->print() + 
             ", " + operands_.at(1)->print();
 }
