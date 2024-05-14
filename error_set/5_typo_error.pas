@@ -1,9 +1,8 @@
 prgoram main;
 var
-  a, b: integer;
-began
+  a, b: integear;
+begin
   a := 3;
   b := 5;
   a := 5;
-  wrote(a + b);
 end.

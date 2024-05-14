@@ -1,8 +1,9 @@
 program ;
+const
+  a = 10;
 var
-  a: integer;
+  b : integer;
 begin
-  a := 3;
+  a := 3 ;
+  b := 4 + 3;
 end.
-
-// 程序头部缺少程序名称（ID）
