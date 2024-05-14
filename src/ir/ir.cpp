@@ -1,8 +1,10 @@
 #include "ir/ir.hpp"
+#include "ir/visitor.hpp"
 #include <deque>
 #include <iterator>
 #include <memory>
 #include <iostream>
+#include <stdlib.h>
 
 namespace ir {
 // 函数类型类相关函数实现
@@ -32,6 +34,7 @@ std::map<Instruction::OpID, std::string> Instruction::op2str_ = {
     {Instruction::OpID::LogicalNot, "LogicalNot"},
     {Instruction::OpID::Bracket, "()"},
     {Instruction::OpID::Null, ""},
+    {Instruction::OpID::Minus, "-"},
     {Instruction::OpID::Inc, "++"},
     {Instruction::OpID::Eq, "=="},
     {Instruction::OpID::Ne, "!="},
@@ -54,6 +57,14 @@ Instruction::Instruction(const std::string name, std::shared_ptr<Type> ty, OpID 
     : Value(ty, ValueID::Instruction, name), op_id_(id), num_ops_(num_ops), bb_(bb) {
         init();
 }
+
+std::string Instruction::op_to_string(OpID id) {
+    if (op2str_.find(id) == op2str_.end()) {
+        return "";
+    }
+    return op2str_[id];
+}
+
 void Instruction::init() {
     operands_.resize(num_ops_, std::weak_ptr<Value>()); // 此句不能删去！否则operands_为空时无法用set_operand设置操作数，而只能用push_back设置操作数！
     use_pos_.resize(num_ops_);
@@ -66,7 +77,8 @@ GlobalIdentifier::GlobalIdentifier(std::shared_ptr<Type> type, const std::string
 
 // 局部标识符类相关函数实现
 LocalIdentifier::LocalIdentifier(std::shared_ptr<Type> type, const std::string name,bool is_const, std::shared_ptr<Literal> init_val)
-    : Value(type, ValueID::LocalIdentifier, name), is_const_(is_const), init_val_(init_val) {}
+    : Value(type, ValueID::LocalIdentifier, name), is_const_(is_const), init_val_(init_val) {
+    }
 
 // 函数类相关函数实现
 Function::Function(std::shared_ptr<FunctionType> type, const std::string name, std::vector<std::string> arg_name) 
@@ -95,6 +107,7 @@ bool BinaryInst::can_compute(const Type *t1, const Type *t2) {
 }
 
 void Function::add_basic_block(std::shared_ptr<BasicBlock> bb) {
+    bb->index_ = basic_blocks_.size();
     basic_blocks_.emplace_back(bb);
 }
 
@@ -104,6 +117,120 @@ std::string BasicBlock::print() {
         s += inst->print() + "\t";
     }
     return s;
+}
+
+
+std::shared_ptr<ir::Literal> ir::Literal::make_literal(bool val) {
+    std::shared_ptr<Type> type;
+    type = std::make_shared<BooleanType>(false);
+    return std::make_shared<ir::LiteralBool>(type, val);
+}
+
+// 创建一个实数常量
+std::shared_ptr<ir::Literal> ir::Literal::make_literal(double val) {
+    std::string s = std::to_string(val);
+    std::shared_ptr<Type> type;
+    type = std::make_shared<RealType>(kDefaultRealBitWidth, false);
+    return std::make_shared<LiteralDouble>(type, val, s);
+}
+
+// 创建一个整数常量
+std::shared_ptr<ir::Literal> ir::Literal::make_literal(long val) {
+    std::shared_ptr<Type> type;
+    type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth, false);
+    return std::make_shared<LiteralInt>(type, val);
+}
+
+void GlobalIdentifier::accept(IrVisitor &visitor) {
+    visitor.visit(this);
+}
+
+void BinaryInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void UnaryInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void CompareInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void StoreInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LoadInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ReadInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void WriteInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void CallInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ReturnInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void BreakInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ContinueInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void ContinueIncInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void BranchInst::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void BasicBlock::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void Function::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralBool::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralInt::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralDouble::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralChar::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralString::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralArray::accept(IrVisitor &visitor){
+    visitor.visit(this);
+}
+
+void LiteralFloat::accept(IrVisitor &visitor){
+    visitor.visit(this);
 }
 
 } // namespace ir

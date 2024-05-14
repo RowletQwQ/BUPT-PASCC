@@ -11,10 +11,6 @@
 
 namespace ir {
 
-// 常量
-constexpr unsigned kDefaultRealBitWidth = 64;
-constexpr unsigned kDefaultIntegerBitWidth = 32;
-
 // 工具函数
 std::shared_ptr<Type> build_basic_type(BasicType type, bool is_pointer) {
     switch (type) {
@@ -85,7 +81,7 @@ Instruction::OpID build_op_id(MulExprStmt::MulExprType type) {
 Instruction::OpID build_op_id(UnaryExprStmt::UnaryExprType type) {
     switch (type) {
         case UnaryExprStmt::UnaryExprType::Minus:
-            return Instruction::OpID::Sub;
+            return Instruction::OpID::Minus;
         case UnaryExprStmt::UnaryExprType::Not:
             return Instruction::OpID::Not;
         default:
@@ -319,7 +315,7 @@ void IRGenerator::visit(NumberStmt &stmt) {
         val = std::make_shared<LiteralChar>(type, stmt.char_val);
     } else {
         type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth, false);
-        val = std::make_shared<LiteraltInt>(type, stmt.int_val);
+        val = std::make_shared<LiteralInt>(type, stmt.int_val);
     }
     std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(type, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back()); 
     this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
@@ -389,7 +385,7 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
                 val = std::make_shared<LiteralChar>(type, num_stmt->char_val);
             } else {
                 type = std::make_shared<IntegerType>(kDefaultIntegerBitWidth,false);
-                val = std::make_shared<LiteraltInt>(type, num_stmt->int_val);
+                val = std::make_shared<LiteralInt>(type, num_stmt->int_val);
             }
         } else if (value_stmt->type == ValueStmt::ValueType::Str) {
             type = std::make_shared<StringType>();
@@ -398,13 +394,14 @@ void IRGenerator::visit(ConstDeclStmt &stmt) {
             LOG_ERROR("常量声明:不支持的类型, 常量名:%s, 类型:%d, 指针:%p", name.c_str(), value_stmt->type, value_stmt);
         }
         this->module_.add_literal(val);
-
+        val->name_ = name;
         // 判断是否是全局作用域
         if (this->scope_.is_global()) {
             auto g = std::make_shared<GlobalIdentifier>(type, name, true, val);
             this->module_.add_global_identifier(g);
             this->scope_.push(name, g);
         } else {
+
             auto l = std::make_shared<LocalIdentifier>(type, name, true, val);
             this->scope_.current_f_->add_local_identifier(l);
             this->scope_.push(name, l);
@@ -513,13 +510,26 @@ void IRGenerator::visit(LValStmt &stmt) {
         LOG_FATAL("没有这样的符号：%s",stmt.id.c_str());
     }
     assert (val != nullptr);
-    if (stmt.array_index.size() == 0) { // 如果不是数组, 就说明是一个普通变量, 如 a、b 等, 当成一个 Null 的一元指令
-        std::shared_ptr<UnaryInst> inst = std::make_shared<UnaryInst>(val->type_, Instruction::OpID::Null, val, this->scope_.current_f_->basic_blocks_.back(), val->name_); 
-        this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
-        inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
-        this->module_.all_instructions_.emplace_back(inst);
+    if (stmt.array_index.size() == 0) { // 如果不是数组, 就说明是一个普通变量, 如 a、b 等
+        // 判断是不是函数，Pascal可以不用()直接进行函数调用
+        if (val->get_val_id() == Value::ValueID::Function) {
+            // 构建函数调用指令
+            std::shared_ptr<Function> func = std::static_pointer_cast<Function>(val);
+            std::vector<std::shared_ptr<Value>> args; // 参数为0
+            std::shared_ptr<CallInst> inst = std::make_shared<CallInst>(func, args, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+            inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+            this->module_.all_instructions_.emplace_back(inst);
+        } else {
+            std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(val->type_, val, this->scope_.current_f_->basic_blocks_.back());
+            this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
+            inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
+            this->module_.all_instructions_.emplace_back(inst);
+        }
     } else {
         // 处理数组
+        // 获取数组维度信息
+        auto tmp = std::static_pointer_cast<ArrayType>(val->type_);
         for (int i = 0; i < stmt.array_index.size(); i++) {
             stmt.array_index[i] -> accept(*this);
             std::shared_ptr<Value> idx = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
@@ -532,7 +542,7 @@ void IRGenerator::visit(LValStmt &stmt) {
                 inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
                 this->module_.all_instructions_.emplace_back(inst);
             } else {
-                std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(val->type_, val, idx, this->scope_.current_f_->basic_blocks_.back());
+                std::shared_ptr<LoadInst> inst = std::make_shared<LoadInst>(tmp, val, idx, this->scope_.current_f_->basic_blocks_.back());
                 this->scope_.current_f_->basic_blocks_.back()->instructions_.emplace_back(inst);
                 inst->set_pos_in_bb(std::prev(this->scope_.current_f_->basic_blocks_.back()->instructions_.end()));
                 this->module_.all_instructions_.emplace_back(inst);
@@ -578,8 +588,23 @@ void IRGenerator::visit(AssignStmt &stmt) {
     this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     // 判断构造的 val 是不是一个函数名
     bool is_return = false;
-    if (val->op_id_ == Instruction::OpID::Null && val->operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
+    if (val->get_op_id() == Instruction::OpID::Call) {
         is_return = true;
+        if(!this->scope_.find(DefaultReturnName)) {
+            // 获取函数信息
+            std::shared_ptr<Function> func = std::static_pointer_cast<Function>(val->get_operand(0).lock());
+            // 获取返回值类型
+            auto ret_type = func->func_type_.lock()->result_;
+            auto id = std::make_shared<LocalIdentifier>(ret_type, DefaultReturnName, false, nullptr);
+            this->scope_.current_f_->add_local_identifier(id);
+            this->scope_.push(DefaultReturnName, id);
+        }
+        // 更改val
+        std::unique_ptr<LValStmt> lval = std::make_unique<LValStmt>();
+        lval->id = DefaultReturnName;
+        lval->accept(*this);
+        val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
     }
 
     // 处理右值
@@ -754,7 +779,25 @@ void IRGenerator::visit(ReadFuncStmt &stmt) {
     std::vector<std::shared_ptr<Value>> args;
     for (const auto &lval : stmt.lval) {
         lval->accept(*this);
-        args.emplace_back(this->scope_.current_f_->basic_blocks_.back()->instructions_.back());
+        auto val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+        if (val->get_op_id() == Instruction::OpID::Call) {
+            if(!this->scope_.find(DefaultReturnName)) {
+                // 获取函数信息
+                std::shared_ptr<Function> func = std::static_pointer_cast<Function>(val->get_operand(0).lock());
+                // 获取返回值类型
+                auto ret_type = func->func_type_.lock()->result_;
+                auto id = std::make_shared<LocalIdentifier>(ret_type, DefaultReturnName, false, nullptr);
+                this->scope_.current_f_->add_local_identifier(id);
+                this->scope_.push(DefaultReturnName, id);
+            }
+            // 更改val
+            std::unique_ptr<LValStmt> lval = std::make_unique<LValStmt>();
+            lval->id = DefaultReturnName;
+            lval->accept(*this);
+            val = this->scope_.current_f_->basic_blocks_.back()->instructions_.back();
+            this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(1); // 弹出一个操作数
+        }
+        args.emplace_back(val);
     }
     this->scope_.current_f_->basic_blocks_.back()->pop_back_inst(args.size()); // 弹出参数
     std::shared_ptr<ReadInst> inst = std::make_shared<ReadInst>(args, this->scope_.current_f_->basic_blocks_.back());

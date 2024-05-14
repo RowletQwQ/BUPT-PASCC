@@ -1,4 +1,4 @@
-#include "builder/c_builder.hpp"
+#include "builder/c/c_builder.hpp"
 #include "common/log/log.hpp"
 #include "ir/ir.hpp"
 #include "common/setting/settings.hpp"
@@ -7,6 +7,7 @@
 #include <sstream>
 namespace builder
 {
+namespace c {
     std::stringstream output;
     std::unordered_set<const ir::BasicBlock *>processed_bbs;
 // 处理基本块
@@ -105,29 +106,29 @@ void CBuilder::build(ir::Module &program)
         out << func.lock()->print() << "\n";
         // 4.2 加入函数左大括号
         out << "{\n";
-        if (func.lock()->print() == "int main()") {
-            // 如果是 main 函数，创建子线程
-            out << "pid_t pid;\n";
-            out << "pid = fork();\n";
-            out << "if (pid < 0) {\n";
-            out << "    fprintf(stderr, \"fork failed\");\n";
-            out << "    exit(1);\n";
-            out << "} else if (pid == 0) {\n";
-            out << "    char filename[] =\"" << G_SETTINGS.input_file + ".empty" << "\";\n";
-            out << "    FILE* file = fopen((char*)filename, \"w\");\n";
-            out << "    if (file == NULL) {\n";
-            out << "        fprintf(stderr, \"file open failed\");\n";
-            out << "        exit(1);\n";
-            out << "    }\n";
-            out << "    exit(0);\n";
-            out << "}\n";
-        }
+        // if (func.lock()->print() == "int main()") {
+        //     // 如果是 main 函数，创建子线程
+        //     out << "pid_t pid;\n";
+        //     out << "pid = fork();\n";
+        //     out << "if (pid < 0) {\n";
+        //     out << "    fprintf(stderr, \"fork failed\");\n";
+        //     out << "    exit(1);\n";
+        //     out << "} else if (pid == 0) {\n";
+        //     out << "    char filename[] =\"" << G_SETTINGS.input_file + ".empty" << "\";\n";
+        //     out << "    FILE* file = fopen((char*)filename, \"w\");\n";
+        //     out << "    if (file == NULL) {\n";
+        //     out << "        fprintf(stderr, \"file open failed\");\n";
+        //     out << "        exit(1);\n";
+        //     out << "    }\n";
+        //     out << "    exit(0);\n";
+        //     out << "}\n";
+        // }
         // 4.3 加入局部标识符
-        // 一上来先先加上代表函数的一个变量, 这个变量名字是函数名加上下划线
-        if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) { // 如果不是 procedure
-            std::string typeStr = func.lock()->func_type_.lock()->result_->print();
-            out << typeStr << " " << func.lock()->name_ << "_;\n";
-        }
+        // // 一上来先先加上代表函数的一个变量, 这个变量名字是双下划线
+        // if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) { // 如果不是 procedure
+        //     std::string typeStr = func.lock()->func_type_.lock()->result_->print();
+        //     out << typeStr << " __;\n";
+        // }
 
         for (const auto &local : func.lock()->local_identifiers_)
         {
@@ -173,7 +174,7 @@ void CBuilder::build(ir::Module &program)
         {
             out << "return 0;\n";
         } else if (func.lock()->func_type_.lock()->result_->tid_ != ir::Type::VoidTID) {
-            out << "return " + func.lock()->name_ + "_;\n"; 
+            out << "return __;\n"; 
         }
         out << "}\n";
     }
@@ -185,4 +186,5 @@ void CBuilder::output(std::ofstream &out)
     out << code_;
 }
 
-}
+} // namespace c
+} // namespace builder

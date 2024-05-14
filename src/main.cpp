@@ -1,3 +1,4 @@
+
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
@@ -8,14 +9,17 @@
 #include <string>
 #include <vector>
 
-
+#include "builder/riscv/builder.hpp"
+#include "common/thpool/thpool.hpp"
 #include "common/log/log.hpp"
 #include "opt/opt.hpp"
 #include "ast/stmt.hpp"
 #include "ir/ir_gen.hpp"
 #include "common/setting/settings.hpp"
+#include "builder/c/c_builder.hpp"
+#include "opt/const_expr.hpp"
 #include "parser/yacc_pascal.hpp"
-#include "builder/c_builder.hpp"
+#include "builder/c/c_builder.hpp"
 
 int code_parse(const char *code, ProgramStmt **program_stmt);
 
@@ -26,11 +30,18 @@ void init_env()
         size_t pos = G_SETTINGS.input_file.find_last_of('.');
         if (pos == std::string::npos)
         {
-            G_SETTINGS.output_file = G_SETTINGS.input_file + ".c";
+            if(G_SETTINGS.is_asm) {
+                G_SETTINGS.output_file = G_SETTINGS.input_file + ".s";
+            } else {
+                G_SETTINGS.output_file = G_SETTINGS.input_file + ".c";
+            }
         }
         else
         {
-            G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
+            if (G_SETTINGS.is_asm)
+                G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".s";
+            else
+                G_SETTINGS.output_file = G_SETTINGS.input_file.substr(0, pos) + ".c";
         }
         pos = G_SETTINGS.input_file.find_last_of("/\\");
         std::string filename;
@@ -55,7 +66,7 @@ void init_env()
         //     }
         // }
     }
-#ifndef RELEASE
+#ifndef ONLINE_JUDGE
     switch (G_SETTINGS.log_level)
     {
         case 0:
@@ -78,6 +89,7 @@ void init_env()
             break;
     }
 #endif
+    common::g_thpool = new common::ThreadPool(G_SETTINGS.thread_num);
     
 }
 
@@ -87,6 +99,10 @@ int main(int argc, char *argv[])
     G_SETTINGS.parse_args(argc, argv);
     // 初始化环境
     init_env();
+    // 管理线程池
+    std::unique_ptr<common::ThreadPool> thpool(common::g_thpool);
+    // 管理日志
+    std::unique_ptr<common::Log> log(common::g_log);
     // 从输入文件中读取代码
     std::ifstream input_file(G_SETTINGS.input_file);
     if (!input_file.is_open())
@@ -107,10 +123,15 @@ int main(int argc, char *argv[])
         return ret;
     }
     LOG_DEBUG("Parsing code done.");
+    if(!program_stmt) {
+        LOG_FATAL("Program exit");
+        return -1;
+    }
     // 第二步: 语义分析 & 生成中间代码
     LOG_DEBUG("Start generating intermediate code...");
     std::unique_ptr<ir::IRGenerator> visitor = std::make_unique<ir::IRGenerator>();
     visitor->visit(*program_stmt);
+    std::unique_ptr<ProgramStmt> program_stmt_ptr(program_stmt);
     //visitor->show_result();
     ir::Module ir = visitor->get_ir();
     LOG_DEBUG("Generating intermediate code done.");
@@ -119,21 +140,32 @@ int main(int argc, char *argv[])
     {
         LOG_DEBUG("Start optimizing intermediate code...");
         // TODO
-        std::vector<opt::Optimize> opts;
-
+        std::vector<std::unique_ptr<opt::Optimize>> opts;
+        opts.emplace_back(std::make_unique<opt::ConstExprOpt>());
         for (auto &opt : opts)
         {
-            opt.optimize(ir);
+            LOG_DEBUG("Optimizing with %s...", opt->get_name().c_str());
+            opt->optimize(ir);
+            LOG_DEBUG("Optimizing with %s done.", opt->get_name().c_str());
         }
         LOG_DEBUG("Optimizing intermediate code done.");
     }
     // 第四步: 生成目标代码
     std::ofstream output_file(G_SETTINGS.output_file);
     LOG_DEBUG("Start generating target code...");
-    std::unique_ptr<builder::CBuilder> builder = std::make_unique<builder::CBuilder>();
-    builder->build(ir);
-    builder->output(output_file);
+    if(G_SETTINGS.is_asm) {
+        LOG_INFO("Generating RISC-V assembly code...");
+        std::unique_ptr<builder::riscv::RiscvBuilder> builder = std::make_unique<builder::riscv::RiscvBuilder>();
+        builder->build(ir);
+        builder->output(output_file);
+    } else {
+        LOG_INFO("Generating C code...");
+        std::unique_ptr<builder::c::CBuilder> builder = std::make_unique<builder::c::CBuilder>();
+        builder->build(ir);
+        builder->output(output_file);
+    }
+    
     LOG_DEBUG("Generating target code done.");
-    delete program_stmt;
+    
     return 0;
 }

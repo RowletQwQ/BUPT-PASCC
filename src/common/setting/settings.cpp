@@ -16,7 +16,7 @@ Settings &Settings::get_instance()
 void Settings::parse_args(int argc, char *argv[])
 {
     int opt;
-    while((opt = getopt(argc,argv,"d:i:o:h:O")) != -1)
+    while((opt = getopt(argc,argv,"d:i:o:h:j:O:D")) != -1)
     {
         switch(opt)
         {
@@ -33,8 +33,14 @@ void Settings::parse_args(int argc, char *argv[])
                 say_help();
                 exit(0);
                 break;
+            case 'j':
+                thread_num = atoi(optarg);
+                break;
             case 'O':
                 opt_level = 1;
+                break;
+            case 'D':
+                is_asm = true;
                 break;
             default:
                 LOG_FATAL("Unknown option: %c", opt);
@@ -53,6 +59,7 @@ void Settings::say_help()
     LOG_INFO("  -o <file>   Set output file");
     LOG_INFO("  -h          Show this help message");
     LOG_INFO("  -O          Enable optimization");
+    LOG_INFO("  -D          Generate assembly code");
 }
 
 } // namespace common

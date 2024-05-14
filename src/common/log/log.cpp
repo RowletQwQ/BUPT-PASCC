@@ -64,10 +64,14 @@ void Log::output(const common::LogLevel level, const char *prefix, const char *f
     va_start(args, f);
     vsnprintf(buf, MAX_LOG_HEADER_SIZE, f, args);
     va_end(args);
-
-    std::lock_guard<std::mutex> lock(log_mutex);
-    log_queue.push({level, prefix, buf});
-    log_cv.notify_one();
+    {
+        std::lock_guard<std::mutex> lock(log_mutex);
+        log_queue.push({level, prefix, buf});
+        log_cv.notify_one();
+    }
+    while(level == FATAL) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 }
 
 void Log::log_thread()
@@ -90,6 +94,7 @@ void Log::log_thread()
 
         if (log.level == FATAL)
         {
+            std::cout.flush();
             exit(1);
         }
     }

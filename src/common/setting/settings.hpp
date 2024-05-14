@@ -10,8 +10,10 @@ public:
     std::string input_file;
     int log_level;
     int opt_level;
+    int thread_num;
+    bool is_asm; // 是否输出汇编代码
 
-    Settings() : output_file(""), input_file(""), log_level(-1), opt_level(0) {}
+    Settings() : output_file(""), input_file(""), log_level(-1), opt_level(0), thread_num(4), is_asm(false) {}
 
     /**
      * @brief 解析命令行参数

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstddef>
 #include <iterator>
 #include <list>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -20,6 +22,12 @@ class Instruction;
 class Module;
 class BasicBlock;
 class Function;
+class IrVisitor;
+
+// 常量
+constexpr unsigned kDefaultRealBitWidth = 32;
+constexpr unsigned kDefaultIntegerBitWidth = 32;
+const char* const DefaultReturnName = "__"; // 默认返回值名称
 
 /**
  * @brief Use 类
@@ -55,7 +63,10 @@ public:
     virtual std::string print() { return "";}
     virtual std::string placeholder() { return "";}
     virtual bool is_number() const { return tid_ == IntegerTID || tid_ == RealTID || tid_ == CharTID || tid_ == BooleanTID; }
+    virtual bool is_real() const { return tid_ == RealTID; }
     virtual TID get_tid() const { return tid_; }
+    virtual size_t get_size() { return 0; }
+    virtual size_t get_elem_size() { return get_size(); }
     TID tid_;
     bool is_pointer_;
 };
@@ -68,6 +79,7 @@ public:
     explicit VoidType() : Type(Type::VoidTID, false) {}
     virtual std::string print() override { return "void"; }
     virtual std::string placeholder() override { return ""; }
+    virtual size_t get_size() override { return 0; }
 };
 
 /**
@@ -84,6 +96,7 @@ public:
     virtual std::string placeholder() override {
         return num_bits_ == 32 ? "%d" : "%lld";
     }
+    virtual size_t get_size() override { return num_bits_ / 8; }
 };
 
 /**
@@ -100,6 +113,7 @@ public:
     virtual std::string placeholder() override {
         return num_bits_ == 32 ? "%f" : "%lf";
     }
+    virtual size_t get_size() override { return num_bits_ / 8; }
 };
 
 /**
@@ -111,6 +125,7 @@ public:
     explicit BooleanType(bool is_pointer) : Type(Type::BooleanTID, is_pointer) {}
     virtual std::string print() override { return "int"; } // c 语言中没有 bool 类型
     virtual std::string placeholder() override { return "%d"; }
+    virtual size_t get_size() override { return 1; }
 };
 
 /**
@@ -122,6 +137,7 @@ public:
     explicit CharType(bool is_pointer) : Type(Type::CharTID, is_pointer) {}
     virtual std::string print() override { return "char"; }
     virtual std::string placeholder() override { return "%c"; }
+    virtual size_t get_size() override { return 1; }
 };
 
 /**
@@ -133,6 +149,7 @@ public:
     explicit StringType() : Type(Type::StringTID, false) {}
     virtual std::string print() override { return "const char *"; }
     virtual std::string placeholder() override { return "%s"; }
+    virtual size_t get_size() override { return 8; } // 指针大小
 };
 
 /**
@@ -151,7 +168,35 @@ public:
         return type_str;
     }
     virtual std::string placeholder() override { return ""; }
+    virtual size_t get_size() override { 
+        unsigned sum = 0;
+        for (unsigned i = 0; i < dims_elem_num_.size(); i++) {
+            sum += dims_elem_num_[i];
+        }
+        return sum * elem_type_->get_size();
+    }
+    Type::TID get_elem_tid() const { 
+        if(elem_type_->tid_ == Type::ArrayTID) {
+            return std::dynamic_pointer_cast<ArrayType>(elem_type_)->get_elem_tid();
+        }
+        return elem_type_->tid_;
+    }
+    bool is_number() const override {
+        return elem_type_->is_number();
+    }
+    bool is_real() const override {
+        return elem_type_->is_real();
+    }
+    size_t get_elem_size() override {
+        if(elem_type_->tid_ == ArrayTID) {
+            return elem_type_->get_elem_size();
+        }
+        return elem_type_->get_size();
+    }
 
+    std::vector<unsigned> all_dims() const {
+        return dims_elem_num_;
+    }
     std::shared_ptr<Type> elem_type_; // 元素类型
     std::vector<unsigned> dims_elem_num_; // 数组各维度元素数量
 };
@@ -169,7 +214,7 @@ public:
     TID get_tid() const override { return result_->tid_; }
     std::shared_ptr<Type> result_;
     std::vector<std::shared_ptr<Type> > args_; 
-
+    virtual size_t get_size() override { return result_->get_size(); }
 };
 
 // /**
@@ -240,6 +285,12 @@ public:
     */
     Value::ValueID get_val_id() { return val_id_; }
 
+    bool is_inst() { return val_id_ == ValueID::Instruction; }
+    bool is_literal() { return val_id_ == ValueID::Literal; }
+    bool is_real() { return type_->tid_ == Type::RealTID; }
+    bool is_integer() { return type_->tid_ == Type::IntegerTID || type_->tid_ == Type::BooleanTID || type_->tid_ == Type::CharTID; }
+    bool is_array() { return type_->tid_ == Type::ArrayTID; }
+
     Value::ValueID val_id_; // 值的类型
     std::shared_ptr<Type> type_; // 返回值类型
     std::string name_; // 名称
@@ -255,8 +306,12 @@ public:
 class Literal : public Value {
 public:
     Literal(std::shared_ptr<Type> type, const std::string name = "") : Value(type, ValueID::Literal, name) {}
-    virtual long get_int() = 0;
-    virtual double get_real() = 0;
+    virtual long get_int() const = 0;
+    virtual double get_real() const  = 0;
+    virtual void accept(IrVisitor &visitor) = 0;
+    static std::shared_ptr<ir::Literal> make_literal(bool val);
+    static std::shared_ptr<ir::Literal> make_literal(long val);
+    static std::shared_ptr<ir::Literal> make_literal(double val);
     ~Literal() = default;
 };
 
@@ -264,12 +319,13 @@ public:
  * @brief int 类型
  * 
 */
-class LiteraltInt : public Literal {
+class LiteralInt : public Literal {
 public:
-    LiteraltInt(std::shared_ptr<Type> type, int val) : Literal(type), val_(val) {}
+    LiteralInt(std::shared_ptr<Type> type, int val) : Literal(type), val_(val) {}
     virtual std::string print() override { return std::to_string(val_); }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
     int val_;
 };
 
@@ -283,8 +339,9 @@ public:
     LiteralLong(std::shared_ptr<Type> type, long long val) : Literal(type), val_(val) {}
     long long val_;
     virtual std::string print() override { return std::to_string(val_); }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -296,8 +353,9 @@ public:
     LiteralFloat(std::shared_ptr<Type> type, float val) : Literal(type), val_(val) {}
     float val_;
     virtual std::string print() override { return std::to_string(val_); }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -310,8 +368,9 @@ public:
     double val_;
     std::string str_;
     virtual std::string print() override { return str_; }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -323,8 +382,9 @@ public:
     LiteralBool(std::shared_ptr<Type> type, bool val) : Literal(type), val_(val) {}
     bool val_;
     virtual std::string print() override { return val_ ? "true" : "false"; }
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -336,8 +396,9 @@ public:
     LiteralChar(std::shared_ptr<Type> type, char val) : Literal(type), val_(val) {}
     char val_;
     virtual std::string print() override { return "'" + std::string(1, val_) + "'";}
-    virtual long get_int() override { return val_; }
-    virtual double get_real() override { return val_; }
+    virtual long get_int() const override { return val_; }
+    virtual double get_real() const  override { return val_; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -349,8 +410,9 @@ public:
     LiteralString(std::shared_ptr<Type> type, const std::string val) : Literal(type), val_(val) {}
     std::string val_;
     virtual std::string print() override { return "\"" + val_ + "\"";}
-    virtual long get_int() override { throw "string can't be converted to integer"; }
-    virtual double get_real() override { throw "string can't be converted to real"; }
+    virtual long get_int() const override { throw "string can't be converted to integer"; }
+    virtual double get_real() const  override { throw "string can't be converted to real"; }
+    void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -374,9 +436,10 @@ public:
         ret = ret + "}";
         return ret;
     }
-    virtual long get_int() override { throw "array can't be converted to integer"; }
-    virtual double get_real() override { throw "array can't be converted to real"; }
+    virtual long get_int() const override { throw "array can't be converted to integer"; }
+    virtual double get_real() const  override { throw "array can't be converted to real"; }
     std::vector<std::shared_ptr<Literal> > const_array;
+    void accept(IrVisitor &visitor) override;
 };
 
 // ----------------------------------------------------------------GlobalIdentifier---------------------------------------------------------------
@@ -396,7 +459,7 @@ public:
     virtual std::string print() override {
         return name_;
     }
-
+    void accept(IrVisitor &visitor);
     bool is_const_; // 是否为常量
     std::shared_ptr<Literal> init_val_; // 初始值
 };
@@ -412,7 +475,12 @@ public:
         }
         return name_;
     }
-
+    virtual Type::TID get_elem_tid() const { 
+        if(type_->tid_ == Type::ArrayTID) {
+            return std::dynamic_pointer_cast<ArrayType>(type_)->get_elem_tid();
+        }
+        return type_->tid_;
+    }
     bool is_const_; // 是否为常量
     std::shared_ptr<Literal> init_val_; // 初始值  
 };
@@ -458,7 +526,8 @@ public:
         return ret;
     }
 
-
+    void accept(IrVisitor &visitor);
+    
     /**
      * @brief 添加基本块
      * @param bb 基本块
@@ -505,10 +574,12 @@ public:
 
     void pop_back_inst(int n) { instructions_.erase(instructions_.end() - n, instructions_.end()); }
 
+    void accept(IrVisitor &visitor);
 
     std::vector<std::shared_ptr<ir::Instruction> > instructions_; // 指令列表
     std::vector<std::weak_ptr<BasicBlock> > pre_bbs_; // 前驱基本块
     std::vector<std::weak_ptr<BasicBlock> > succ_bbs_; // 后继基本块
+    int index_; // 基本块的索引
 };
 
 // ----------------------------------------------------------------Instruction---------------------------------------------------------------
@@ -547,7 +618,9 @@ public:
         LogicalNot,
         Bracket,
         Null, // 这个一元运算就是当做本身
+        Minus, // -a
         Inc, // ++a
+        
         
 
         // Compare Operation
@@ -570,6 +643,7 @@ public:
         Write
     };
 
+    virtual void accept(IrVisitor &visitor) = 0;
     static std::map<Instruction::OpID, std::string> op2str_;
     explicit Instruction(std::shared_ptr<Type> ty, OpID id, unsigned num_ops, 
         std::weak_ptr<BasicBlock> bb, bool before = false);
@@ -578,14 +652,33 @@ public:
     ~Instruction() = default;
     void init();
 
+    static std::string op_to_string(OpID op);
+
     /**
      * @brief 设置操作数
      * 
     */
-    void set_operand(unsigned i, std::weak_ptr<Value> val) {
-        operands_[i] = val;
+    virtual void set_operand(unsigned i, std::weak_ptr<Value> val) {
+        if (operands_[i].expired()) {
+            operands_[i] = val;
+        } else {
+            operands_[i].lock() = val.lock();
+            operands_[i] = val;
+        }
     }
+
+    /**
+     * @brief 获取操作数
+     * 
+    */
+    virtual std::weak_ptr<Value> get_operand(unsigned i) {
+        return operands_[i];
+    }
+
+    virtual OpID get_op_id() { return op_id_; }
     
+    unsigned get_num_ops() { return num_ops_; }
+
     /**
      * @brief 设置操作数的位置
      * 
@@ -594,21 +687,18 @@ public:
         pos_in_bb_ = pos;
     }
 
-    /**
-     * @brief 获取操作数
-     * 
-    */
-    virtual std::weak_ptr<Value> get_operand(unsigned i) = 0;
-
     // 以下是判断指令类型的函数
     bool is_call_inst() { return op_id_ == OpID::Call; }
     bool is_ret_inst() { return op_id_ == OpID::Ret; }
     bool is_br_inst() { return op_id_ == OpID::Br; }
-    bool is_binary_inst() { return op_id_ >= OpID::Add && op_id_ <= OpID::In; }
-    bool is_unary_inst() { return op_id_ >= OpID::Not && op_id_ <= OpID::LogicalNot; }
+    bool is_binary_inst() { return op_id_ >= OpID::Add && op_id_ <= OpID::AndThen; }
+    bool is_unary_inst() { return op_id_ >= OpID::Not && op_id_ <= OpID::Inc; }
     bool is_assign_inst() { return op_id_ == OpID::Assign; }
     bool is_load_inst() { return op_id_ == OpID::Visit; }
     bool is_expr() { return is_binary_inst() || is_unary_inst() || is_assign_inst() || is_load_inst(); }
+    bool is_io_inst() { return op_id_ == OpID::Read || op_id_ == OpID::Write; }
+    bool is_arith_inst() { return op_id_ >= OpID::Add && op_id_ <= OpID::Le; }
+    bool is_array_visit_inst() { return op_id_ == OpID::Visit && num_ops_ == 2; }
     
 
     OpID op_id_; // 操作码
@@ -646,14 +736,8 @@ public:
     virtual std::string print() override {
         return operands_[0].lock()->print() + " " + Instruction::op2str_[op_id_] + " " + operands_[1].lock()->print();
     }
+    virtual void accept(IrVisitor &visitor) override;
 
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
     /**
      * @brief 用来判断两个类型是否可以进行计算
      * 
@@ -663,6 +747,7 @@ public:
      * @return false 
      */
     static bool can_compute(const Type *t1, const Type *t2);
+    bool is_logical() const { return op_id_ == And || op_id_ == Or || op_id_ == AndThen || op_id_ == OrElse; }
 };
 
 /**
@@ -712,14 +797,14 @@ public:
         }
     }
 
+    virtual void accept(IrVisitor &visitor) override;
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
 
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 
 };
 
@@ -751,14 +836,14 @@ public:
     }
 
     static bool can_be_compared(const Type *t1, const Type *t2);
+    virtual void accept(IrVisitor &visitor) override;
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
 
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
 
 }; 
 
@@ -788,18 +873,21 @@ public:
     virtual std::string print() override {
         // 如果发现存储的是一个函数, 那么左值就是函数名_
         if (operands_[0].lock()->type_->tid_ == Type::FunctionTID) {
-            return operands_[0].lock()->name_ + "_" + " = " + operands_[1].lock()->print();
+            std::stringstream ss;
+            ss << DefaultReturnName << " = " << operands_[1].lock()->print();
+            return ss.str();
         } else if (operands_[0].lock()->type_->is_pointer_) {
             return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
         }
         return operands_[0].lock()->print() + " = " + operands_[1].lock()->print();
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -821,17 +909,30 @@ public:
       : Instruction(ty, OpID::Visit, 2, bb) {
         set_operand(0, array);
         set_operand(1, idx);
+        name_ = array->name_;
+    }
+
+    LoadInst(std::shared_ptr<Type> ty, std::shared_ptr<Value> id,
+            std::weak_ptr<BasicBlock> bb)
+      : Instruction(ty, OpID::Visit, 1, bb) {
+        set_operand(0, id);
+        name_ = id->name_;
     }
     ~LoadInst() = default;
     virtual std::string print() override {
+        if (num_ops_ == 1) {
+            return operands_[0].lock()->print();
+        }
         return operands_[0].lock()->print() + "[" + operands_[1].lock()->print() + "]";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
+    bool is_array_visit() const { return num_ops_ == 2; }
 };
 
 /**
@@ -852,17 +953,15 @@ public:
         for (int i = 0; i < operands_.size(); i++) {
             std::string placeholder = operands_[i].lock()->type_->placeholder();
             ans = ans + placeholder;
-            if (i != operands_.size() - 1) {
-                ans = ans + ", ";
-            }
+            // if (i != operands_.size() - 1) {
+            //     ans = ans + ", ";
+            // }
         }
         ans = ans + "\", ";
         for (int i = 0; i < operands_.size(); i++) {
             ans = ans + "&" + operands_[i].lock()->print();
             if (operands_[i].lock()->type_->tid_ == Type::FunctionTID) {
-                ans.pop_back();
-                ans.pop_back();
-                ans = ans + "_";
+                ans = DefaultReturnName;
             }
             if (i != operands_.size() - 1) {
                 ans = ans + ", ";
@@ -871,12 +970,13 @@ public:
         ans = ans + ")";
         return ans;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -908,12 +1008,13 @@ public:
         ans = ans + ")";
         return ans;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -957,12 +1058,13 @@ public:
         ret += ")";
         return ret;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 /**
@@ -986,12 +1088,13 @@ public:
     virtual std::string print() override {
         return "return " + operands_[0].lock()->print()+"";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 class BreakInst : public Instruction {
@@ -1010,12 +1113,13 @@ public:
     virtual std::string print() override {
         return "break";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
     std::weak_ptr<Value> get_operand(unsigned i) override {
         return operands_[i];
     }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 class ContinueInst : public Instruction {
@@ -1034,12 +1138,13 @@ public:
     virtual std::string print() override {
         return "continue";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 class ContinueIncInst : public Instruction {
@@ -1060,12 +1165,13 @@ public:
     virtual std::string print() override {
         return "continue_inc";
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 // 分支跳转指令
@@ -1107,12 +1213,13 @@ public:
         }
         return res;
     }
-    void set_operand(unsigned i, std::shared_ptr<Value> val) {
-        operands_[i] = val;
-    }
-    std::weak_ptr<Value> get_operand(unsigned i) override {
-        return operands_[i];
-    }
+    // void set_operand(unsigned i, std::shared_ptr<Value> val) {
+    //     operands_[i] = val;
+    // }
+    // std::weak_ptr<Value> get_operand(unsigned i) override {
+    //     return operands_[i];
+    // }
+    virtual void accept(IrVisitor &visitor) override;
 };
 
 
@@ -1153,12 +1260,16 @@ public:
     */
     void add_instruction(std::shared_ptr<Instruction> i) { all_instructions_.emplace_back(i); }
 
+    void accept(IrVisitor &visitor);
+
     std::vector<std::shared_ptr<GlobalIdentifier> > global_identifiers_; // 全局标识符, 包括全局变量和常量
     std::vector<std::shared_ptr<Function> > functions_; // 函数
     // 为防止循环引用，这里保存生成过程中会出现的所有指令
     std::vector<std::shared_ptr<Instruction> > all_instructions_;
     // 下面保存所有的常量
     std::vector<std::shared_ptr<Literal> > all_literals_;
+    // 下面保存优化阶段生成的所有的value
+    std::vector<std::shared_ptr<Value> > all_values_;
 };
 
 
