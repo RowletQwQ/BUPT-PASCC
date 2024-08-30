@@ -1,6 +1,6 @@
 # PASCC
 
-A Compiler that compile Pascal to C
+A Compiler that compile Pascal-S to C/RISC-V
 
 ## Run
 
